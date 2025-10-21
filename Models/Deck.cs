@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IT008.Q13_Project___fromScratch.Models
 {
-    class Deck
+    public class Deck
     {
         public int ID { get; private set; }
         public string Name { get; set; } = " ";

@@ -10,6 +10,7 @@ namespace IT008.Q13_Project___fromScratch.Models
     {
         public DbSet<Deck> Decks { get; set; }
         public DbSet<Card> Cards { get; set; }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -27,15 +28,15 @@ namespace IT008.Q13_Project___fromScratch.Models
             modelBuilder.Entity<Card>(e =>
             {
                 e.ToTable("Cards");
-                e.Hashkey(c => c.Id);
+                e.HasKey(c => c.ID);
 
                 e.Property(c => c.FrontText).IsRequired();
                 e.Property(c => c.BackText).IsRequired();
 
-                e.Property(c => FromImagePath).HasMaxLength(512);
-                e.Property(c => FrontAudioPath).HasMaxLength(512);
-                e.Property(c => BackImagePath).HasMaxLength(512);
-                e.Property(c => BackAudioPath).HasMaxLength(512);
+                e.Property(c => c.FrontImagePath).HasMaxLength(512);
+                e.Property(c => c.FrontAudioPath).HasMaxLength(512);
+                e.Property(c => c.BackImagePath).HasMaxLength(512);
+                e.Property(c => c.BackAudioPath).HasMaxLength(512);
 
                 e.Property(c => c.DueDate).IsRequired();
                 e.Property(c => c.Interval).HasPrecision(18, 6);
@@ -46,7 +47,7 @@ namespace IT008.Q13_Project___fromScratch.Models
                  .HasForeignKey(c => c.DeckId)
                  .OnDelete(DeleteBehavior.Cascade);
 
-                e.HashIndex(c => new { c.DeckId, c.DueDate });
+                e.HasIndex(c => new { c.DeckId, c.DueDate });
             });
 
         }
