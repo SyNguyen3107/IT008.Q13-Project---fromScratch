@@ -13,14 +13,14 @@ namespace IT008.Q13_Project___fromScratch.Models
 
         //Nội dung mặt trước
         public string FrontText { get; set; }
-        public string FrontImagePath { get; set; }
-        public string FrontAudioPath { get; set; }
+        public string? FrontImagePath { get; set; } = null;
+        public string? FrontAudioPath { get; set; } = null;
          
         //Nội dung mặt sau
 
         public string BackText { get; set; }
-        public string BackImagePath { get; set; }
-        public string BackAudioPath { get; set; }
+        public string? BackImagePath { get; set; } = null;
+        public string? BackAudioPath { get; set; } = null;
 
         //Thông tin ôn tập (giữ nguyên)
         public DateTime DueDate { get; set; }
