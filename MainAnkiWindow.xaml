@@ -34,48 +34,48 @@
         <!-- Menu trên cùng -->
         <Menu Grid.Row="0" Background="#2c2c2c" Foreground="White" FontSize="14" BorderThickness="0">
             <MenuItem Header="_File">
-                <MenuItem Header="_Switch Profile" InputGestureText="Ctrl+Shift+P" Foreground="Black"/>
+                <MenuItem Header="_Switch Profile" Cursor="Hand" InputGestureText="Ctrl+Shift+P" Foreground="Black"/>
                 <Separator/>
-                <MenuItem Header="_Import" InputGestureText="Ctrl+Shift+I" Foreground="Black"/>
-                <MenuItem Header="_Export" InputGestureText="Ctrl+E" Foreground="Black"/>
+                <MenuItem Header="_Import" Cursor="Hand" InputGestureText="Ctrl+Shift+I" Foreground="Black"/>
+                <MenuItem Header="_Export" Cursor="Hand" InputGestureText="Ctrl+E" Foreground="Black"/>
                 <Separator/>
-                <MenuItem Header="Create _Backup" Foreground="Black"/>
-                <MenuItem Header="_Revert to Backup" Foreground="Black"/>
+                <MenuItem Header="Create _Backup" Cursor="Hand" Foreground="Black"/>
+                <MenuItem Header="_Revert to Backup" Cursor="Hand" Foreground="Black"/>
                 <Separator/>
-                <MenuItem Header="E_xit" InputGestureText="Ctrl+Q" Foreground="Black"/>
+                <MenuItem Header="E_xit" Cursor="Hand" InputGestureText="Ctrl+Q" Foreground="Black"/>
             </MenuItem>
 
             <MenuItem Header="_Edit" Foreground="White">
-                <MenuItem Header="Undo" InputGestureText="Ctrl+Z" Foreground="Gray"/>
+                <MenuItem Header="Undo" Cursor="Hand" InputGestureText="Ctrl+Z" Foreground="Gray"/>
             </MenuItem>
 
             <MenuItem Header="_View" Foreground="White">
-                <MenuItem Header="Toggle _Full Screen" InputGestureText="F11" Foreground="Black"/>
+                <MenuItem Header="Toggle _Full Screen" Cursor="Hand" InputGestureText="F11" Foreground="Black"/>
                 <Separator/>
-                <MenuItem Header="Zoom _In" Foreground="Black"/>
-                <MenuItem Header="Zoom _Out" Foreground="Black"/>
-                <MenuItem Header="_Reset Zoom" InputGestureText="Ctrl+0" Foreground="Black"/>
+                <MenuItem Header="Zoom _In" Cursor="Hand" Foreground="Black"/>
+                <MenuItem Header="Zoom _Out" Cursor="Hand" Foreground="Black"/>
+                <MenuItem Header="_Reset Zoom" Cursor="Hand" InputGestureText="Ctrl+0" Foreground="Black"/>
             </MenuItem>
 
             <MenuItem Header="_Tools" Foreground="White">
-                <MenuItem Header="Study Deck..." InputGestureText="/" Foreground="Black"/>
-                <MenuItem Header="Create Filtered Deck..." InputGestureText="F" Foreground="Black"/>
+                <MenuItem Header="Study Deck..." Cursor="Hand" InputGestureText="/" Foreground="Black"/>
+                <MenuItem Header="Create Filtered Deck..." Cursor="Hand" InputGestureText="F" Foreground="Black"/>
                 <Separator/>
-                <MenuItem Header="_Check Database" Foreground="Black"/>
-                <MenuItem Header="Check _Media" Foreground="Black"/>
-                <MenuItem Header="Empty Cards..." Foreground="Black"/>
+                <MenuItem Header="_Check Database" Cursor="Hand" Foreground="Black"/>
+                <MenuItem Header="Check _Media" Cursor="Hand" Foreground="Black"/>
+                <MenuItem Header="Empty Cards..." Cursor="Hand" Foreground="Black"/>
                 <Separator/>
-                <MenuItem Header="Add-ons" InputGestureText="Ctrl+Shift+A" Foreground="Black"/>
-                <MenuItem Header="Manage Note Types" InputGestureText="Ctrl+Shift+N" Foreground="Black"/>
-                <MenuItem Header="Upgrade/Downgrade" Foreground="Black"/>
-                <MenuItem Header="_Preferences" InputGestureText="Ctrl+P" Foreground="Black"/>
+                <MenuItem Header="Add-ons" Cursor="Hand" InputGestureText="Ctrl+Shift+A" Foreground="Black"/>
+                <MenuItem Header="Manage Note Types" Cursor="Hand" InputGestureText="Ctrl+Shift+N" Foreground="Black"/>
+                <MenuItem Header="Upgrade/Downgrade" Cursor="Hand" Foreground="Black"/>
+                <MenuItem Header="_Preferences" Cursor="Hand" InputGestureText="Ctrl+P" Foreground="Black"/>
             </MenuItem>
 
             <MenuItem Header="_Help" Foreground="White">
-                <MenuItem Header="_Guide" InputGestureText="Ctrl+F1" Foreground="Black"/>
+                <MenuItem Header="_Guide" Cursor="Hand" InputGestureText="Ctrl+F1" Foreground="Black"/>
                 <Separator/>
-                <MenuItem Header="_Support Anki" Foreground="Black"/>
-                <MenuItem Header="About Anki" Foreground="Black"/>
+                <MenuItem Header="_Support Anki" Cursor="Hand" Foreground="Black"/>
+                <MenuItem Header="About Anki" Cursor="Hand" Foreground="Black"/>
             </MenuItem>
         </Menu>
 
