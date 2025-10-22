@@ -26,27 +26,9 @@ namespace fromScratch_project // Đảm bảo namespace này đúng
             LoadMockCard();
         }
 
-        private void LoadMockCard()
-        {
-            QuestionText = "Câu hỏi giả (mock data)";
-            AnswerText = "Trả lời giả";
-            // TODO: Thay bằng đường dẫn ảnh thật trên máy bạn để test
-            FrontImagePath = @"";
-            IsAnswerVisible = false;
-        }
+        
 
         // Command "ShowAnswer"
-        [RelayCommand]
-        private void ShowAnswer()
-        {
-            IsAnswerVisible = true;
-        }
-
-        // Command "ProcessReview"
-        [RelayCommand]
-        private void ProcessReview(string result)
-        {
-            LoadMockCard(); // Nạp lại thẻ giả
-        }
+  
     }
 }
