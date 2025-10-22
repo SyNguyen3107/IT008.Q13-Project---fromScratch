@@ -19,13 +19,6 @@ namespace fromScratch_project
     /// </summary>
     public partial class StudyWindow : Window
     {
-        public StudyWindow(StudyViewModel viewModel)
-        {
-            InitializeComponent();
-
-            // 2. Gán DataContext:
-            // Đây là dòng "ma thuật" kết nối View với ViewModel.
-            this.DataContext = viewModel;
-        }
+        
     }
 }
