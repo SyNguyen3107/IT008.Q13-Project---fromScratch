@@ -10,6 +10,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="Add.csproj" />
+    <None Include="Add.csproj.user" />
+    <None Include="CreateDeck.csproj" />
+    <None Include="CreateDeck.csproj.user" />
+    <None Include="MainAnkiWindow.csproj" />
+    <None Include="MainAnkiWindow.csproj.user" />
+    <None Include="MainAnkiWindow.sln" />
+    <None Include="Sync.csproj" />
+    <None Include="Sync.csproj.user" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.10">
