@@ -1,0 +1,67 @@
+﻿<UserControl x:Class="fromScratch_project.StudyCardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:fromScratch_project"
+             xmlns:converters="clr-namespace:fromScratch_project.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1200">
+    <Grid Background="#2c2c2c">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Margin="20">
+            <StackPanel x:Name ="FrontCardView"
+            VerticalAlignment="Center"
+            Visibility="{Binding isAnswerVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
+            HorizontalAlignment="Center">
+                <TextBlock Text="{Binding QuestionText}"  />
+                <TextBox Text="{Binding UserInputText}"
+         Visibility="{Binding IsInputRequired, Converter={StaticResource BooleanToVisibilityConverter}}"  />
+                <Image Source="{Binding FrontImagePath}"
+       Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"  />
+            </StackPanel>
+            <StackPanel x:Name="BackCardView" VerticalAlignment="Center"
+        Visibility="{Binding IsAnswerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                <TextBlock Text="{Binding AnswerText}"  />
+                <Button Command="{Binding PlayAudioCommand}"
+        Visibility="{Binding AudioPath, Converter={StaticResource NullToCollapsedConverter}}" />
+                <TextBlock Text="{Binding ExplanationText}"  />
+                <Image Source="{Binding BackImagePath}"
+       Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}" />
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="1" Margin="10">
+
+            <Button x:Name="ShowAnswerButton" Content="Show Answer"
+                Command="{Binding ShowAnswerCommand}"
+                Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
+                HorizontalAlignment="Center" />
+
+            <StackPanel x:Name="ReviewButtonsPanel" Orientation="Horizontal" HorizontalAlignment="Center"
+                    Visibility="{Binding IsAnswerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                <Button Content="Again" 
+                    Command="{Binding ReviewCommand}" 
+                    CommandParameter="Again" 
+                    Style="{StaticResource ReviewButtonStyle}" />
+                <Button Content="Hard" 
+                    Command="{Binding ReviewCommand}" 
+                    CommandParameter="Hard" 
+                    Style="{StaticResource ReviewButtonStyle}" />
+                <Button Content="Good" 
+                    Command="{Binding ReviewCommand}" 
+                    CommandParameter="Good" 
+                    Style="{StaticResource ReviewButtonStyle}" />
+                <Button Content="Easy" 
+                    Command="{Binding ReviewCommand}" 
+                    CommandParameter="Easy" 
+                    Style="{StaticResource ReviewButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+
+</UserControl>
