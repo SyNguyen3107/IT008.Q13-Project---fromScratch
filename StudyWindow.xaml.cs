@@ -12,7 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace fromScratch_project
+namespace IT008.Q13_Project___fromScratch
 {
     /// <summary>
     /// Interaction logic for StudyWindow.xaml

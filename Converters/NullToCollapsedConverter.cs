@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace fromScratch_project.Converters
+namespace IT008.Q13_Project___fromScratch.Converters
 {
     public class NullToCollapsedConverter : IValueConverter
     {
