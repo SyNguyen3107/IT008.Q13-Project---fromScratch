@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Windows.Input;
+using System.Windows.Input; // chứa ICommand
 
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
