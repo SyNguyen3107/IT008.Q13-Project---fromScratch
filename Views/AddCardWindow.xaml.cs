@@ -15,10 +15,13 @@ using System.Windows.Shapes;
 namespace IT008.Q13_Project___fromScratch
 {
     /// <summary>
-    /// Interaction logic for StudyWindow.xaml
+    /// Interaction logic for Add.xaml
     /// </summary>
-    public partial class StudyWindow : Window
+    public partial class AddCardWindow : Window
     {
-        
+        public AddCardWindow()
+        {
+            InitializeComponent();
+        }
     }
 }

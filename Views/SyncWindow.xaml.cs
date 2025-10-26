@@ -15,11 +15,11 @@ using System.Windows.Shapes;
 namespace IT008.Q13_Project___fromScratch
 {
     /// <summary>
-    /// Interaction logic for Add.xaml
+    /// Interaction logic for Sync.xaml
     /// </summary>
-    public partial class Add : Window
+    public partial class SyncWindow : Window
     {
-        public Add()
+        public SyncWindow()
         {
             InitializeComponent();
         }

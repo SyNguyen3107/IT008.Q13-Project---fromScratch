@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices; // cung cấp [CallerMemberName] - một 
 
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
-    public class BaseViewModel : INotifyPropertyChanged
+    public class BaseViewModel : INotifyPropertyChanged //Kế thừa Interface INotifyPropertyChanged để đảm bảo nó phải triển khai sự kiên PropertyChanged
     {
         // Sự kiện mà WPF listen. Khi thay đổi DL, ViewModel sẽ invoke sự kiện này
         public event PropertyChangedEventHandler? PropertyChanged;

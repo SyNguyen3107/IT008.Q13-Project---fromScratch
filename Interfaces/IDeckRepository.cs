@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using IT008.Q13_Project___fromScratch.Models;
 
-namespace IT008.Q13_Project___fromScratch.Repositories
+namespace IT008.Q13_Project___fromScratch.Interfaces
 {
     public interface IDeckRepository
     {

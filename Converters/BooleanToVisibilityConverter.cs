@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
-
+//Hàm chuyển kiểu Bool thành Visibility
 namespace IT008.Q13_Project___fromScratch.Converters
 {
     public class BooleanToVisibilityConverter : IValueConverter
