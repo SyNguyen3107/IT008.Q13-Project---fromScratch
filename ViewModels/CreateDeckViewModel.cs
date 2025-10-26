@@ -46,7 +46,6 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                 var newDeck = new Deck
                 {
                     Name = this.Name,
-                    Description = this.Description,
                     Cards = new System.Collections.Generic.List<Card>()
                 };
                 // (2) Gọi repository để lưu deck
@@ -54,7 +53,6 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                 // (3) Đóng cửa sổ (nếu CommandParameter là Window)
                 if (param is Window window)
                     window.Close();
-
             }, (param) => !string.IsNullOrWhiteSpace(Name)); // Chỉ khi có Name mới cho bấm Save
 
             CancelCommand = new RelayCommand((param) =>

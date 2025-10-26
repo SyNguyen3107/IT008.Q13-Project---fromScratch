@@ -41,7 +41,6 @@ namespace IT008.Q13_Project___fromScratch.Repositories
             if (existing != null)
             {
                 existing.Name = deck.Name;
-                existing.Description = deck.Description;
             }
         }
         // Xóa Deck có ID tương ứng khỏi _decks
