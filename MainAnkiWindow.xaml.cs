@@ -21,9 +21,16 @@ namespace IT008.Q13_Project___fromScratch
     /// </summary>
     public partial class MainAnkiWindow : Window
     {
-        public MainAnkiWindow()
+        private readonly MainAnkiViewModel _viewModel;
+        // Hàm khởi tạo nhận vào ViewModel
+        public MainAnkiWindow( MainAnkiViewModel viewModel)
         {
             InitializeComponent();
+            _viewModel = viewModel;
+            DataContext = _viewModel;
+            //Gọi hàm LoadDecksAsync khi cửa sổ được tải
+            Loaded += async (s, e) => await _viewModel.LoadDecksAsync();
+
         }
 
         private void ImportFileWindowOpen(object sender, RoutedEventArgs e)
