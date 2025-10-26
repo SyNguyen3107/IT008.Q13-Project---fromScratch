@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace fromScratch_project
+namespace IT008.Q13_Project___fromScratch
 {
     /// <summary>
     /// Interaction logic for StudyCardView.xaml

@@ -5,11 +5,11 @@ using IT008.Q13_Project___fromScratch.ViewModels;
 namespace IT008.Q13_Project___fromScratch
 {
     /// <summary>
-    /// Interaction logic for CreateDeck.xaml
+    /// Interaction logic for CreateDeckWindow.xaml
     /// </summary>
-    public partial class CreateDeck : Window
+    public partial class CreateDeckWindow : Window
     {
-        public CreateDeck()
+        public CreateDeckWindow()
         {
             InitializeComponent();
 
