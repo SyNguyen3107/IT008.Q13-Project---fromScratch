@@ -11,6 +11,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using IT008.Q13_Project___fromScratch.Repositories;
+using IT008.Q13_Project___fromScratch.ViewModels;
 
 namespace IT008.Q13_Project___fromScratch
 {
@@ -22,6 +24,12 @@ namespace IT008.Q13_Project___fromScratch
         public Add()
         {
             InitializeComponent();
+            // Tạo repository thật
+            ICardRepository cardRepository = new CardRepository();
+            IDeckRepository deckRepository = new DeckRepository();
+
+            // Khởi tạo ViewModel và gán DataContext
+            DataContext = new AddCardViewModel(cardRepository, deckRepository);
         }
     }
 }
