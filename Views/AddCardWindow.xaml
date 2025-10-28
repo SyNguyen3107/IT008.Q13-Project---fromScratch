@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:IT008.Q13_Project___fromScratch"
         mc:Ignorable="d"
-                Title="Add" Height="450" Width="800"
+        Title="Add" Height="450" Width="800"
+        Icon="/Resources/Anki-icon.ico"
         Background="#2c2c2c">
 
     <Grid Margin="20">

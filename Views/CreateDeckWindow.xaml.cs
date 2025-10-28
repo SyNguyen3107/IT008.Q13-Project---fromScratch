@@ -9,15 +9,13 @@ namespace IT008.Q13_Project___fromScratch
     /// </summary>
     public partial class CreateDeckWindow : Window
     {
-        public CreateDeckWindow()
+        // Yêu cầu "bộ não" (ViewModel) qua constructor
+        public CreateDeckWindow(CreateDeckViewModel viewModel)
         {
             InitializeComponent();
 
-            // (1) Khởi tạo Repository
-            var deckRepository = new DeckRepository();
-
-            // (2) Gán ViewModel cho DataContext
-            this.DataContext = new CreateDeckViewModel(deckRepository);
+            // Gán "bộ não" (DI đã tự động tạo nó cho bạn)
+            this.DataContext = viewModel;
         }
     }
 }

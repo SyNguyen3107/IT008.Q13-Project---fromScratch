@@ -61,10 +61,7 @@ namespace IT008.Q13_Project___fromScratch
                 // Người dùng đã nhấn "Cancel"
             }
         }
-        private void CreateDeckWindowOpen(object sender, RoutedEventArgs e)
-        {
-            CreateDeckWindow a = new CreateDeckWindow();
-        }
+        
         private async void MainAnkiWindowLoaded(object sender, RoutedEventArgs e)
         {
             // 1. Lấy "bộ não" (ViewModel) từ DataContext

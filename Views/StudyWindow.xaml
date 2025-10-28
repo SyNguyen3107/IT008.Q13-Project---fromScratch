@@ -1,24 +1,20 @@
-﻿<Window x:Class="IT008.Q13_Project___fromScratch.StudyWindow"
+﻿<Window x:Class="IT008.Q13_Project___fromScratch.Views.StudyWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        
-        xmlns:local="clr-namespace:IT008.Q13_Project___fromScratch"
-        
+        xmlns:local="clr-namespace:IT008.Q13_Project___fromScratch.Views"
         xmlns:converters="clr-namespace:IT008.Q13_Project___fromScratch.Converters"
-        
         mc:Ignorable="d"
+        Icon="/Resources/Anki-icon.ico"
         Title="StudyWindow" Height="600" Width="800">
-
+    
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
         <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBoolToVisConverter"/>
         <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
     </Window.Resources>
-
     <Grid>
-        <local:StudyCardView />
+        <local:StudyCardView/>
     </Grid>
-
 </Window>

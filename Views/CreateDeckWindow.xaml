@@ -9,7 +9,9 @@
         Title="Create Deck" Height="150" Width="400"
         ResizeMode="NoResize"  
         WindowStartupLocation="CenterScreen"
-        Background="#2c2c2c">
+        Icon="/Resources/Anki-icon.ico"
+        Background="#2c2c2c"
+        >
     <Grid>
         <Border>
             <Grid>
