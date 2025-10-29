@@ -11,8 +11,8 @@
             <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter"/>
             <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
 
-            <BitmapImage x:Key="AppIcon" UriSource="/Resources/Anki-icon.ico"/>
 
+            <BitmapImage x:Key="AppIcon" UriSource="/Resources/Anki-icon.ico"/>
             <Style TargetType="{x:Type Window}">
                 <Setter Property="Icon" Value="{StaticResource AppIcon}" />
             </Style>

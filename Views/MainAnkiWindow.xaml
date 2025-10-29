@@ -39,7 +39,7 @@
             <MenuItem Header="_File">
                 <MenuItem Header="_Switch Profile" Cursor="Hand" InputGestureText="Ctrl+Shift+P" Foreground="Black"/>
                 <Separator/>
-                <MenuItem Header="_Import" Cursor="Hand" InputGestureText="Ctrl+Shift+I" Foreground="Black"/>
+                <MenuItem Header="_Import" Cursor="Hand" InputGestureText="Ctrl+Shift+I" Foreground="Black" Command ="{Binding ImportFileCommand}"/>
                 <MenuItem Header="_Export" Cursor="Hand" InputGestureText="Ctrl+E" Foreground="Black"/>
                 <Separator/>
                 <MenuItem Header="Create _Backup" Cursor="Hand" Foreground="Black"/>
@@ -189,7 +189,7 @@
                 <Button Content="Create Deck" Command="{Binding CreateDeckCommand }" Style="{StaticResource NavButtonStyle}" />
             </Border>
             <Border Background="#434343" CornerRadius="15" Padding="5,2" Margin="8,0">
-                <Button Content="Import File" Command ="{Binding ImportFileCommand}" Style="{StaticResource NavButtonStyle}" Click="ImportFileWindowOpen"/>
+                <Button Content="Import File" Command ="{Binding ImportFileCommand}" Style="{StaticResource NavButtonStyle}"/>
             </Border>
         </StackPanel>
     </Grid>
