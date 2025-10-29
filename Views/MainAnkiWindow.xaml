@@ -39,7 +39,7 @@
             <MenuItem Header="_File">
                 <MenuItem Header="_Switch Profile" Cursor="Hand" InputGestureText="Ctrl+Shift+P" Foreground="Black"/>
                 <Separator/>
-                <MenuItem Header="_Import" Cursor="Hand" InputGestureText="Ctrl+Shift+I" Foreground="Black" Command ="{Binding ImportFileCommand}"/>
+                <MenuItem Header="_Import" Cursor="Hand" InputGestureText="Ctrl+Shift+I" Foreground="Black"/>
                 <MenuItem Header="_Export" Cursor="Hand" InputGestureText="Ctrl+E" Foreground="Black"/>
                 <Separator/>
                 <MenuItem Header="Create _Backup" Cursor="Hand" Foreground="Black"/>
@@ -94,7 +94,7 @@
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Button Content="Decks" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
-                <Button Content="Add" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
+                <Button Content="Add" Style="{StaticResource NavButtonStyle}" Margin="10,0" Command ="{Binding AddCardCommand}" />
                 <Button Content="Browse" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
                 <Button Content="Stats" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
                 <Button Content="Sync" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>

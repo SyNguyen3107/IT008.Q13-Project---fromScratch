@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using IT008.Q13_Project___fromScratch.Interfaces;
 using IT008.Q13_Project___fromScratch.Models;
 using IT008.Q13_Project___fromScratch.Services;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -18,7 +17,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
     public partial class MainAnkiViewModel : ObservableObject
     {
         private readonly IDeckRepository _deckRepository;
-        private readonly INavigationService _navigationService;
+        private readonly INavigationService _navigationService; //Đối tượng nắm chức năng điều hướng, mở các cửa sổ của ứng dụng
 
         //ĐỊNH NGHĨA THUỘC TÍNH "Decks"
         public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>(); //Bất kỳ thay đổi nào (thêm/xóa) trong ObservableCollection sẽ tự động cập nhật lên ListView trong giao diện.
@@ -37,14 +36,15 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         }
 
         [RelayCommand]
-        private void CreateDeck()
+        private void CreateDeck() //Command để mở cửa sổ CreateDeckWindow (thông qua NavigationService)
         {
             _navigationService.ShowCreateDeckWindow();
         }
         [RelayCommand]
+        //Lý do định nghĩa hàm mở cửa sổ Import File ở đây thay vì trong lớp NavigationService và gọi thông qua đối tượng _naviagtionService (Giống với tính năng CreateDeck ở trên):
+        //Đây không phải là "điều hướng" (navigation) đến một cửa sổ khác của ứng dụng. Nó là một hành động "hỏi" hệ điều hành để lấy một thông tin.
         private void ImportFile()
         {
-            // Đây là code bạn đã viết trong code-behind
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Title = "Import";
             openFileDialog.Filter = "All supported formats (*.apkg, *.txt, *.zip)|*.apkg;*.txt;*.zip" +
@@ -65,6 +65,11 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             {
                 // Người dùng đã nhấn "Cancel"
             }
+        }
+        [RelayCommand]
+        private void AddCard()
+        {
+            _navigationService.ShowAddCardWindow();
         }
         public async Task LoadDecksAsync() // async giúp ứng dụng không bị "đơ" khi đang tải dữ liệu từ CSDL.
         {

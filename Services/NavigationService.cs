@@ -20,15 +20,14 @@ namespace IT008.Q13_Project___fromScratch.Services
 
         public void ShowAddCardWindow()
         {
-            //Thêm lệnh mở cửa sổ ShowAddCardWindow
+            var window = _serviceProvider.GetRequiredService<AddCardWindow>();
+            window.ShowDialog();
         }
 
         public void ShowCardWindow()
         {
             //Thêm lệnh mở cửa sổ ShowCardWindow
         }
-
-        // Thực thi việc mở cửa sổ Create Deck
         public void ShowCreateDeckWindow()
         {
             // Yêu cầu "thợ điện" tạo một cửa sổ mới

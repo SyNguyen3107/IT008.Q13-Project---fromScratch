@@ -52,11 +52,13 @@ namespace IT008.Q13_Project___fromScratch
             services.AddTransient<MainAnkiViewModel>();
             services.AddTransient<StudyViewModel>();
             services.AddTransient<CreateDeckViewModel>(); // (Bạn sẽ tạo file này)
+            services.AddTransient<AddCardViewModel>();
 
             // === ĐĂNG KÝ CÁC CỬA SỔ (VIEWS) ===
             services.AddTransient<MainAnkiWindow>();
             services.AddTransient<StudyWindow>();
             services.AddTransient<CreateDeckWindow>();
+            services.AddTransient<AddCardWindow>();
         }
         protected override void OnStartup(StartupEventArgs e)
         {
