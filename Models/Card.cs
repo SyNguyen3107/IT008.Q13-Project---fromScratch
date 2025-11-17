@@ -21,16 +21,11 @@ namespace IT008.Q13_Project___fromScratch.Models
         public string BackText { get; set; }
         public string? BackImagePath { get; set; } = null;
         public string? BackAudioPath { get; set; } = null;
-
-        //Thông tin ôn tập (giữ nguyên)
-        public DateTime DueDate { get; set; }
-        public double Interval { get; set; }
-        public double EaseFactor { get; set; }
-
-        //Mỗi card chỉ nằm trong 1 Deck thui
+        
+        //Mỗi card chỉ nằm trong 1 Deck
         public Deck Deck { get; set; }
 
 
-
+        public CardProgress Progress { get; set; }
     }
 }

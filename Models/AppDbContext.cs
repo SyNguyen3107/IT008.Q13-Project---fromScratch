@@ -10,6 +10,8 @@ namespace IT008.Q13_Project___fromScratch.Models
     {
         public DbSet<Deck> Decks { get; set; }
         public DbSet<Card> Cards { get; set; }
+        public DbSet<CardProgress> CardProgresses { get; set; }
+
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -21,8 +23,7 @@ namespace IT008.Q13_Project___fromScratch.Models
                 e.HasKey(d => d.ID);
                 e.Property(d => d.Name).IsRequired().HasMaxLength(200);
                 e.Property(d => d.Description).HasMaxLength(1000);
-            }
-            );
+            });
 
             // Card
             modelBuilder.Entity<Card>(e =>
@@ -38,16 +39,21 @@ namespace IT008.Q13_Project___fromScratch.Models
                 e.Property(c => c.BackImagePath).HasMaxLength(512);
                 e.Property(c => c.BackAudioPath).HasMaxLength(512);
 
-                e.Property(c => c.DueDate).IsRequired();
-                e.Property(c => c.Interval).HasPrecision(18, 6);
-                e.Property(c => c.EaseFactor).HasPrecision(18, 6);
-
                 e.HasOne(c => c.Deck)
                  .WithMany(d => d.Cards)
                  .HasForeignKey(c => c.DeckId)
                  .OnDelete(DeleteBehavior.Cascade);
+            });
+            modelBuilder.Entity<CardProgress>(e =>
+            {
+                e.ToTable("CardProgresses");// Tên bảng mới
+                e.HasKey(p => p.ID);
 
-                e.HasIndex(c => new { c.DeckId, c.DueDate });
+                e.Property(p => p.DueDate).IsRequired();
+                e.Property(p => p.Interval).HasPrecision(18, 6);
+                e.Property(p => p.EaseFactor).HasPrecision(18, 6);
+                
+                e.HasIndex(p=>p.DueDate);
             });
 
         }

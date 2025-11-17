@@ -17,17 +17,12 @@ namespace IT008.Q13_Project___fromScratch
             _viewModel = viewModel;
             DataContext = _viewModel;
             //Gọi hàm LoadDecksAsync khi cửa sổ được tải
-            Loaded += async (s, e) => await _viewModel.LoadDecksAsync();
+            this.Loaded += MainAnkiWindowLoaded;
 
         }      
         private async void MainAnkiWindowLoaded(object sender, RoutedEventArgs e)
         {
-            // 1. Lấy "bộ não" (ViewModel) từ DataContext
-            if (DataContext is MainAnkiViewModel viewModel)
-            {
-                // 2. Ra lệnh cho nó tải dữ liệu
-                await viewModel.LoadDecksAsync();
-            }
+            await _viewModel.LoadDecksAsync();
         }
     }
 }

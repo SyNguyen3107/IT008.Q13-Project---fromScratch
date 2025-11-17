@@ -1,29 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using IT008.Q13_Project___fromScratch.ViewModels; // Thêm 'using' này
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using IT008.Q13_Project___fromScratch.ViewModels;
 
-namespace IT008.Q13_Project___fromScratch
+namespace IT008.Q13_Project___fromScratch.Views
 {
-    /// <summary>
-    /// Interaction logic for Add.xaml
-    /// </summary>
     public partial class AddCardWindow : Window
     {
-        public AddCardWindow(AddCardViewModel viewModel)
+        private readonly AddCardViewModel _viewModel; // Thêm dòng này
+
+        public AddCardWindow(AddCardViewModel viewModel) // Constructor nhận ViewModel
         {
             InitializeComponent();
-            DataContext = viewModel;
+            _viewModel = viewModel; // Thêm dòng này
+            DataContext = _viewModel; // Thêm dòng này
+
+            // Thêm 2 dòng này để tải danh sách Deck
+            this.Loaded += AddCardWindow_Loaded;
+        }
+
+        private async void AddCardWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Ra lệnh cho ViewModel tải Decks
+            await _viewModel.LoadDecksAsync();
         }
     }
 }

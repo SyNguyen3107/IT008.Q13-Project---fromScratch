@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IT008.Q13_Project___fromScratch.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251022075307_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251117142342_CreateDatabase")]
+    partial class CreateDatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -41,13 +41,6 @@ namespace IT008.Q13_Project___fromScratch.Migrations
                     b.Property<int>("DeckId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("DueDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<double>("EaseFactor")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("REAL");
-
                     b.Property<string>("FrontAudioPath")
                         .HasMaxLength(512)
                         .HasColumnType("TEXT");
@@ -60,15 +53,41 @@ namespace IT008.Q13_Project___fromScratch.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.HasKey("ID");
+
+                    b.HasIndex("DeckId");
+
+                    b.ToTable("Cards", (string)null);
+                });
+
+            modelBuilder.Entity("IT008.Q13_Project___fromScratch.Models.CardProgress", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CardId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("EaseFactor")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("REAL");
+
                     b.Property<double>("Interval")
                         .HasPrecision(18, 6)
                         .HasColumnType("REAL");
 
                     b.HasKey("ID");
 
-                    b.HasIndex("DeckId", "DueDate");
+                    b.HasIndex("CardId")
+                        .IsUnique();
 
-                    b.ToTable("Cards", (string)null);
+                    b.HasIndex("DueDate");
+
+                    b.ToTable("CardProgresses", (string)null);
                 });
 
             modelBuilder.Entity("IT008.Q13_Project___fromScratch.Models.Deck", b =>
@@ -101,6 +120,23 @@ namespace IT008.Q13_Project___fromScratch.Migrations
                         .IsRequired();
 
                     b.Navigation("Deck");
+                });
+
+            modelBuilder.Entity("IT008.Q13_Project___fromScratch.Models.CardProgress", b =>
+                {
+                    b.HasOne("IT008.Q13_Project___fromScratch.Models.Card", "Card")
+                        .WithOne("Progress")
+                        .HasForeignKey("IT008.Q13_Project___fromScratch.Models.CardProgress", "CardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Card");
+                });
+
+            modelBuilder.Entity("IT008.Q13_Project___fromScratch.Models.Card", b =>
+                {
+                    b.Navigation("Progress")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IT008.Q13_Project___fromScratch.Models.Deck", b =>

@@ -4,62 +4,72 @@ using System.Windows.Input;
 using System.Threading.Tasks;
 using IT008.Q13_Project___fromScratch.Models;
 using IT008.Q13_Project___fromScratch.Interfaces;
+using CommunityToolkit.Mvvm.Messaging;
+using IT008.Q13_Project___fromScratch.Messages;
+using CommunityToolkit.Mvvm.ComponentModel; // Cần cho ObservableObject, [ObservableProperty]
+using CommunityToolkit.Mvvm.Input; // Cần cho [RelayCommand]
 
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
-    public class CreateDeckViewModel  : BaseViewModel
+    // --- SỬA LỖI KẾ THỪA Ở ĐÂY ---
+    // Kế thừa trực tiếp từ ObservableObject thay vì BaseViewModel
+    public partial class CreateDeckViewModel : ObservableObject
     {
         private readonly IDeckRepository _deckRepository;
-        // Thuộc tính Name (binding từ TextBox)
-        private string _name;
-        public string Name
-        {
-            get => _name;
-            set
-            {
-                _name = value;
-                OnPropertyChanged(nameof(Name));
-            }
-        }
-        // Thuộc tính Description (binding từ TextBox)
-        private string _description;
-        public string Description
-        {
-            get => _description;
-            set
-            {
-                _description = value;
-                OnPropertyChanged(nameof(Description));
-            }
-        }
-        // Command cho nút OK và Cancel
-        public ICommand SaveCommand { get; }
-        public ICommand CancelCommand { get; }
-        // Constructor 
-        public CreateDeckViewModel(IDeckRepository deckRepository)
+        private readonly IMessenger _messenger;
+
+        // --- SỬA LỖI NOT NULL (DATABASE) ---
+        // Gán giá trị mặc định là string.Empty, không phải null
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+        private string _name = string.Empty;
+
+        [ObservableProperty]
+        private string _description = string.Empty;
+        // ---------------------------------
+
+        // Constructor
+        public CreateDeckViewModel(IDeckRepository deckRepository, IMessenger messenger)
         {
             _deckRepository = deckRepository;
+            _messenger = messenger;
+        }
 
-            SaveCommand = new RelayCommand(async (param) =>
-            {
-                // (1) Tạo đối tượng Deck mới
-                var newDeck = new Deck
-                {
-                    Name = this.Name,
-                    Cards = new System.Collections.Generic.List<Card>()
-                };
-                // (2) Gọi repository để lưu deck
-                await _deckRepository.AddAsync(newDeck);
-                // (3) Đóng cửa sổ (nếu CommandParameter là Window)
-                if (param is Window window)
-                    window.Close();
-            }, (param) => !string.IsNullOrWhiteSpace(Name)); // Chỉ khi có Name mới cho bấm Save
+        // --- Các Command ---
 
-            CancelCommand = new RelayCommand((param) =>
+        // [RelayCommand] sẽ tự động tạo một thuộc tính ICommand tên là "SaveCommand"
+        [RelayCommand(CanExecute = nameof(CanSave))]
+        private async Task Save(object? param) // object? param là cửa sổ được truyền vào
+        {
+            var newDeck = new Deck
             {
-                if (param is Window window)
-                    window.Close();
-            });
+                Name = this.Name, // 'Name' bây
+                Description = this.Description // 'Description' cũng sẽ được tạo
+            };
+
+            await _deckRepository.AddAsync(newDeck);
+
+            // Gửi tin nhắn báo cho MainAnkiViewModel cập nhật
+            _messenger.Send(new DeckAddedMessage(newDeck));
+
+            // Đóng cửa sổ
+            if (param is Window window)
+                window.Close();
+        }
+
+        // Hàm kiểm tra điều kiện cho SaveCommand
+        private bool CanSave()
+        {
+            // 'Name' là thuộc tính được [ObservableProperty] tự động tạo ra
+            return !string.IsNullOrWhiteSpace(Name);
+        }
+
+        // [RelayCommand] sẽ tự động tạo một thuộc tính ICommand tên là "CancelCommand"
+        [RelayCommand]
+        private void Cancel(object? param)
+        {
+            if (param is Window window)
+                window.Close();
         }
     }
 }

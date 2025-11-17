@@ -11,7 +11,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
     public partial class StudyViewModel : ObservableObject
     {
         private readonly StudyService _studyService;
-        private int _currentDeckId; // 👈 Biến để lưu Deck ID
+        private int _currentDeckId; // Biến để lưu Deck ID
         private Card? _currentCard; // Thẻ hiện tại đang hiển thị
 
         // Thuộc tính binding cho giao diện (sử dụng source-generator của CommunityToolkit)

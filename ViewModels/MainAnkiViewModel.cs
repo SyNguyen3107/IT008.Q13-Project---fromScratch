@@ -5,7 +5,8 @@ using IT008.Q13_Project___fromScratch.Models;
 using IT008.Q13_Project___fromScratch.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-
+using CommunityToolkit.Mvvm.Messaging;
+using IT008.Q13_Project___fromScratch.Messages;
 using Microsoft.Win32; // Dùng cho OpenFileDialog
 using System;             // Dùng cho Environment
 using System.Diagnostics; // Dùng cho Debug.WriteLine
@@ -14,18 +15,30 @@ using System.Threading.Tasks;
 
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
-    public partial class MainAnkiViewModel : ObservableObject
+    public partial class MainAnkiViewModel : ObservableObject, IRecipient<DeckAddedMessage>
     {
         private readonly IDeckRepository _deckRepository;
-        private readonly INavigationService _navigationService; //Đối tượng nắm chức năng điều hướng, mở các cửa sổ của ứng dụng
-
-        //ĐỊNH NGHĨA THUỘC TÍNH "Decks"
-        public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>(); //Bất kỳ thay đổi nào (thêm/xóa) trong ObservableCollection sẽ tự động cập nhật lên ListView trong giao diện.
-
-        public MainAnkiViewModel(IDeckRepository deckRepository, INavigationService navigationService)
+        private readonly INavigationService _navigationService;
+        private readonly IMessenger _messenger;
+        public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>();
+        public MainAnkiViewModel(IDeckRepository deckRepository, INavigationService navigationService, IMessenger messenger)
         {
             _deckRepository = deckRepository;
             _navigationService = navigationService; //tạo đối tượng navigationService để gọi gián tiếp các View
+            _messenger = messenger;
+
+            // Đăng ký nhận tất cả tin nhắn mà ViewModel này quan tâm
+            _messenger.RegisterAll(this);
+        }
+        public void Receive(DeckAddedMessage message)
+        {
+            // message.Value chính là "newDeck" được gửi từ CreateDeckViewModel
+            var newDeck = message.Value;
+
+            // Thêm Deck mới vào danh sách.
+            // Vì Decks là ObservableCollection, UI sẽ tự động cập nhật!
+            // Chúng ta không cần gọi lại LoadDecksAsync()
+            Decks.Add(newDeck);
         }
 
         [RelayCommand]
@@ -45,26 +58,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         //Đây không phải là "điều hướng" (navigation) đến một cửa sổ khác của ứng dụng. Nó là một hành động "hỏi" hệ điều hành để lấy một thông tin.
         private void ImportFile()
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Title = "Import";
-            openFileDialog.Filter = "All supported formats (*.apkg, *.txt, *.zip)|*.apkg;*.txt;*.zip" +
-                                    "|Anki Deck Package (*.apkg)|*.apkg" +
-                                    "|Text file (*.txt)|*.txt" +
-                                    "|Zip file (*.zip)|*.zip";
-            openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
-            bool? result = openFileDialog.ShowDialog();
-
-            if (result == true)
-            {
-                string selectedFilePath = openFileDialog.FileName;
-                Debug.WriteLine($"File to import: {selectedFilePath}");
-                // TODO: Gọi service để xử lý file (ví dụ: _importService.Import(selectedFilePath))
-            }
-            else
-            {
-                // Người dùng đã nhấn "Cancel"
-            }
+            _navigationService.ImportFileWindow();
         }
         [RelayCommand]
         private void AddCard()
