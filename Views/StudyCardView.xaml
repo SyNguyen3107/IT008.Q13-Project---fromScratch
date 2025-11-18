@@ -46,19 +46,19 @@
                 Visibility="{Binding IsAnswerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
 
                 <Button Content="Again" 
-                Command="{Binding ReviewCommand}" 
+                Command="{Binding AgainCommand}"
                 CommandParameter="Again" 
                 Style="{StaticResource ReviewButtonStyle}" />
                 <Button Content="Hard" 
-                Command="{Binding ReviewCommand}" 
+                Command="{Binding HardCommand}" 
                 CommandParameter="Hard" 
                 Style="{StaticResource ReviewButtonStyle}" />
                 <Button Content="Good" 
-                Command="{Binding ReviewCommand}" 
+                Command="{Binding GoodCommand}" 
                 CommandParameter="Good" 
                 Style="{StaticResource ReviewButtonStyle}" />
                 <Button Content="Easy" 
-                Command="{Binding ReviewCommand}" 
+                Command="{Binding EasyCommand}" 
                 CommandParameter="Easy" 
                 Style="{StaticResource ReviewButtonStyle}" />
             </StackPanel>

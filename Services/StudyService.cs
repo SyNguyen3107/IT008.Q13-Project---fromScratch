@@ -18,14 +18,15 @@ public enum ReviewOutcome
 public class StudyService
 {
     private readonly ICardRepository _cardRepository;
+    private readonly IDeckRepository _deckRepository;
 
     // Constructor của bạn (để DI tiêm vào)
-    public StudyService(ICardRepository cardRepository)
+    public StudyService(ICardRepository cardRepository, IDeckRepository deckRepository)
     {
         _cardRepository = cardRepository;
+        _deckRepository = deckRepository;
     }
-
-    // === PHƯƠNG THỨC ĐÃ SỬA LỖI ===
+    // --- 1. LOGIC LẤY THẺ CẦN HỌC ---
     public async Task<Card?> GetNextCardToReviewAsync(int deckId)
     {
         // 1. Lấy tất cả thẻ của Deck
@@ -35,69 +36,93 @@ public class StudyService
 
         // 2. Tìm thẻ cần học (có DueDate đã qua)
         var dueCard = allCards
-            // THAY ĐỔI: Truy cập qua c.Progress
-            .Where(c => c.Progress != null && c.Progress.DueDate <= DateTime.Today)
-            // THAY ĐỔI: Truy cập qua c.Progress
-            .OrderBy(c => c.Progress.DueDate)
-            .FirstOrDefault(); // Lấy thẻ đầu tiên
+            .Where(c => c.Progress == null || c.Progress.DueDate <= DateTime.Now) //chưa học hoặc đã đến hạn
+                .OrderBy(c => c.Progress == null ? DateTime.MinValue : c.Progress.DueDate) // Ưu tiên thẻ chưa học hoặc thẻ cũ nhất
+                .FirstOrDefault(); // Lấy thẻ đầu tiên (nếu có)
 
         return dueCard; // Trả về thẻ (hoặc null nếu không còn thẻ nào)
     }
-
-    // === PHƯƠNG THỨC ĐÃ SỬA LỖI ===
-    public async Task<Card> ProcessReviewAsync(Card card, ReviewOutcome outcome)
+    public async Task<DeckStats> GetDeckStatsAsync(int deckId)
     {
-        if (card == null) throw new ArgumentException(nameof(card));
+        var deck = await _deckRepository.GetByIdAsync(deckId);
+        var cards = await _cardRepository.GetCardsByDeckIdAsync(deckId);
+        var now = DateTime.Now;
 
-        // Rất quan trọng: phải có đối tượng Progress
-        if (card.Progress == null)
+        var stats = new DeckStats
         {
-            // Nếu vì lý do gì đó mà thẻ chưa có progress, tạo mới
-            card.Progress = new CardProgress();
-        }
+            DeckName = deck?.Name ?? "Unknown Deck",
+            // New: Thẻ chưa có Progress hoặc Interval = 0 (chưa học hoặc vừa quên)
+            NewCount = cards.Count(c => c.Progress == null || c.Progress.Interval == 0),
 
-        // THAY ĐỔI: Mọi truy cập đều qua card.Progress
+            // Learning: Thẻ đã đến hạn VÀ đang trong giai đoạn học ngắn hạn (0 < Interval < 1 ngày)
+            LearningCount = cards.Count(c => c.Progress != null && c.Progress.DueDate <= now && c.Progress.Interval < 1 && c.Progress.Interval > 0),
+
+            // Review: Thẻ đã đến hạn VÀ là thẻ ôn tập dài hạn (Interval >= 1 ngày)
+            ReviewCount = cards.Count(c => c.Progress != null && c.Progress.DueDate <= now && c.Progress.Interval >= 1)
+        };
+        return stats;
+    }
+    // --- 3. THUẬT TOÁN SM-2 (LOGIC CỐT LÕI) ---
+    public async Task ProcessReviewAsync(Card card, ReviewOutcome outcome)
+    {
+        if (card == null) return;
+
+        if (card.Progress == null) card.Progress = new CardProgress();
         var progress = card.Progress;
 
-        // Thiết lập mặc định nếu các trường chưa có giá trị hợp lý
-        if (progress.EaseFactor <= 0) progress.EaseFactor = 2.5;
-        if (progress.Interval <= 0) progress.Interval = 1; // Bắt đầu với 1 ngày
+        // Rất quan trọng: phải có đối tượng Progress
 
         // Điều chỉnh Interval và EaseFactor theo outcome
         switch (outcome)
         {
             case ReviewOutcome.Again:
-                // Lỗi, học lại gần ngay
+                // Quên: Reset về đầu
                 progress.Interval = 0; // Đặt về 0 để học lại ngay trong hôm nay (hoặc 1 nếu muốn học vào ngày mai)
                 progress.EaseFactor = Math.Max(1.3, progress.EaseFactor - 0.2);
                 break;
             case ReviewOutcome.Hard:
                 // Khó: tăng nhẹ interval
-                progress.Interval = Math.Max(1, Math.Round(progress.Interval * 1.2));
+                // Nếu đang học (Interval=0), lên 1 ngày
+                if (progress.Interval == 0) progress.Interval = 1;
+                else progress.Interval = progress.Interval * 1.2;
+
                 progress.EaseFactor = Math.Max(1.3, progress.EaseFactor - 0.15);
                 break;
             case ReviewOutcome.Good:
-                // Tốt: nhân interval theo EaseFactor
-                progress.Interval = Math.Max(1, Math.Round(progress.Interval * progress.EaseFactor));
+                // Tốt: Tăng theo EaseFactor (SM-2 chuẩn)
+                if (progress.Interval == 0) progress.Interval = 1;
+                else if (progress.Interval == 1) progress.Interval = 6;
+                else progress.Interval = progress.Interval * progress.EaseFactor;
                 break;
             case ReviewOutcome.Easy:
-                // Dễ: tăng hơn nữa
-                progress.Interval = Math.Max(1, Math.Round(progress.Interval * progress.EaseFactor * 1.3));
-                progress.EaseFactor = Math.Max(1.3, progress.EaseFactor + 0.15);
-                break;
+                // Dễ: Tăng nhanh (Bonus)
+                if (progress.Interval == 0) progress.Interval = 4;
+                else if (progress.Interval == 1) progress.Interval = 15; // Nhảy cóc
+                else progress.Interval = progress.Interval * progress.EaseFactor * 1.3;
 
-            default:
+                progress.EaseFactor += 0.15;
                 break;
         }
 
-        // Cập nhật ngày đến hạn tiếp theo
-        progress.DueDate = DateTime.Today.AddDays(progress.Interval);
+        // Xử lý logic làm tròn và giới hạn Interval
+        if (progress.Interval < 1 && progress.Interval > 0)
+        {
+            // Learning steps -> làm tròn lên 1 ngày để đơn giản hóa
+            progress.Interval = 1;
+        }
 
-        // Lưu thay đổi vào repository (CSDl)
-        // Bạn chỉ cần Update(card). EF Core đủ thông minh để biết
-        // đối tượng "Progress" liên quan đã bị thay đổi và tự lưu lại.
+        // Cập nhật DueDate
+        if (progress.Interval == 0)
+        {
+            // Nếu Again: DueDate là ngay bây giờ
+            progress.DueDate = DateTime.Now;
+        }
+        else
+        {
+            progress.DueDate = DateTime.Now.AddDays(progress.Interval);
+        }
+
+        // Lưu thay đổi vào CSDL
         await _cardRepository.UpdateAsync(card);
-
-        return card;
     }
 }
