@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using IT008.Q13_Project___fromScratch.Models;
-using IT008.Q13_Project___fromScratch.Repositories;
+using IT008.Q13_Project___fromScratch.Interfaces;
 
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
@@ -19,6 +19,17 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             {
                 _name = value;
                 OnPropertyChanged(nameof(Name));
+            }
+        }
+        // Thuộc tính Description (binding từ TextBox)
+        private string _description;
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                _description = value;
+                OnPropertyChanged(nameof(Description));
             }
         }
         // Command cho nút OK và Cancel

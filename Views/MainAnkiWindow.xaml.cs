@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using IT008.Q13_Project___fromScratch.ViewModels;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -60,10 +61,18 @@ namespace IT008.Q13_Project___fromScratch
                 // Người dùng đã nhấn "Cancel"
             }
         }
-
-        private void CreateDeckWindowWindowOpen(object sender, RoutedEventArgs e)
+        private void CreateDeckWindowOpen(object sender, RoutedEventArgs e)
         {
             CreateDeckWindow a = new CreateDeckWindow();
+        }
+        private async void MainAnkiWindowLoaded(object sender, RoutedEventArgs e)
+        {
+            // 1. Lấy "bộ não" (ViewModel) từ DataContext
+            if (DataContext is MainAnkiViewModel viewModel)
+            {
+                // 2. Ra lệnh cho nó tải dữ liệu
+                await viewModel.LoadDecksAsync();
+            }
         }
     }
 }

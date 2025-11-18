@@ -14,52 +14,52 @@
         </Grid.RowDefinitions>
         <Grid Grid.Row="0" Margin="20">
             <StackPanel x:Name ="FrontCardView"
-            VerticalAlignment="Center"
-            Visibility="{Binding isAnswerVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
-            HorizontalAlignment="Center">
+        VerticalAlignment="Center"
+        Visibility="{Binding isAnswerVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
+        HorizontalAlignment="Center">
                 <TextBlock Text="{Binding QuestionText}"  />
                 <TextBox Text="{Binding UserInputText}"
-         Visibility="{Binding IsInputRequired, Converter={StaticResource BooleanToVisibilityConverter}}"  />
+     Visibility="{Binding IsInputRequired, Converter={StaticResource BooleanToVisibilityConverter}}"  />
                 <Image Source="{Binding FrontImagePath}"
-       Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"  />
+   Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"  />
             </StackPanel>
             <StackPanel x:Name="BackCardView" VerticalAlignment="Center"
-        Visibility="{Binding IsAnswerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+    Visibility="{Binding IsAnswerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
 
                 <TextBlock Text="{Binding AnswerText}"  />
                 <Button Command="{Binding PlayAudioCommand}"
-        Visibility="{Binding AudioPath, Converter={StaticResource NullToCollapsedConverter}}" />
+    Visibility="{Binding AudioPath, Converter={StaticResource NullToCollapsedConverter}}" />
                 <TextBlock Text="{Binding ExplanationText}"  />
                 <Image Source="{Binding BackImagePath}"
-       Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}" />
+   Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}" />
             </StackPanel>
         </Grid>
         <Grid Grid.Row="1" Margin="10">
 
             <Button x:Name="ShowAnswerButton" Content="Show Answer"
-                Command="{Binding ShowAnswerCommand}"
-                Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
-                HorizontalAlignment="Center" />
+            Command="{Binding ShowAnswerCommand}"
+            Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
+            HorizontalAlignment="Center" />
 
             <StackPanel x:Name="ReviewButtonsPanel" Orientation="Horizontal" HorizontalAlignment="Center"
-                    Visibility="{Binding IsAnswerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                Visibility="{Binding IsAnswerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
 
                 <Button Content="Again" 
-                    Command="{Binding ReviewCommand}" 
-                    CommandParameter="Again" 
-                    Style="{StaticResource ReviewButtonStyle}" />
+                Command="{Binding ReviewCommand}" 
+                CommandParameter="Again" 
+                Style="{StaticResource ReviewButtonStyle}" />
                 <Button Content="Hard" 
-                    Command="{Binding ReviewCommand}" 
-                    CommandParameter="Hard" 
-                    Style="{StaticResource ReviewButtonStyle}" />
+                Command="{Binding ReviewCommand}" 
+                CommandParameter="Hard" 
+                Style="{StaticResource ReviewButtonStyle}" />
                 <Button Content="Good" 
-                    Command="{Binding ReviewCommand}" 
-                    CommandParameter="Good" 
-                    Style="{StaticResource ReviewButtonStyle}" />
+                Command="{Binding ReviewCommand}" 
+                CommandParameter="Good" 
+                Style="{StaticResource ReviewButtonStyle}" />
                 <Button Content="Easy" 
-                    Command="{Binding ReviewCommand}" 
-                    CommandParameter="Easy" 
-                    Style="{StaticResource ReviewButtonStyle}" />
+                Command="{Binding ReviewCommand}" 
+                CommandParameter="Easy" 
+                Style="{StaticResource ReviewButtonStyle}" />
             </StackPanel>
         </Grid>
     </Grid>

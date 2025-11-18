@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using IT008.Q13_Project___fromScratch.Interfaces;
+using IT008.Q13_Project___fromScratch.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using IT008.Q13_Project___fromScratch.Models;
@@ -7,38 +10,51 @@ namespace IT008.Q13_Project___fromScratch.Repositories
 {
     public class CardRepository : ICardRepository
     {
-        private readonly List<Card> _cards = new();
+        private readonly AppDbContext _context;
+
+        // Nhận AppDbContext thông qua Dependency Injection
+        public CardRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // --- Triển khai các phương thức ---
+
         public async Task AddAsync(Card card)
         {
-            await Task.Delay(50); // Bộ nhớ tạm trong RAM 
-            _cards.Add(card); // Thêm thẻ vào DS card
+            await _context.Cards.AddAsync(card);
+            await _context.SaveChangesAsync();
         }
-        public async Task UpdateAsync(Card card)
-        {
-            await Task.Delay(50);
-            var existing = _cards.FirstOrDefault(c => c.ID == card.ID); // Tìm thẻ có ID trùng với thẻ gửi lên
-            if (existing != null) // nếu thấy, cập nhật Front & Back
-            {
-                existing.FrontText = card.FrontText;
-                existing.BackText  = card.BackText;
-            }
-        }
+
         public async Task DeleteAsync(int id)
         {
-            await Task.Delay(50);
-            _cards.RemoveAll(c => c.ID == id); // Tìm thẻ có ID trùng với tham số id để xóa chúng
+            var card = await _context.Cards.FindAsync(id);
+            if (card != null)
+            {
+                _context.Cards.Remove(card);
+                await _context.SaveChangesAsync();
+            }
         }
 
-        public async Task<Card> GetByIdAsync(int id) // Tìm thẻ theo ID 
+        public async Task<Card> GetByIdAsync(int id)
         {
-            await Task.Delay(50);
-            return _cards.FirstOrDefault(c => c.ID == id);
+            // FindAsync là cách nhanh nhất để lấy bằng Khóa chính
+            return await _context.Cards.FindAsync(id);
         }
 
-        public async Task<IEnumerable<Card>> GetByDeckIdAsync(int deckID)
+        public async Task<List<Card>> GetCardsByDeckIdAsync(int deckId)
         {
-            await Task.Delay(50);
-            return _cards.Where(c => c.DeckId == deckID).ToList(); // Lọc tất cả các thẻ có DeckId trùng với deckID
+            // Dùng LINQ để lọc ra các thẻ có DeckId mong muốn
+            return await _context.Cards
+                .Where(c => c.DeckId == deckId)
+                .ToListAsync();
+        }
+
+        public async Task UpdateAsync(Card card)
+        {
+            // Đánh dấu thẻ này là đã bị thay đổi
+            _context.Entry(card).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
         }
     }
 }

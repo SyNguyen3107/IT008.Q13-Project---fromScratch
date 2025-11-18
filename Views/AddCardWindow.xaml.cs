@@ -19,9 +19,9 @@ namespace IT008.Q13_Project___fromScratch
     /// <summary>
     /// Interaction logic for Add.xaml
     /// </summary>
-    public partial class Add : Window
+    public partial class AddCardWindow : Window
     {
-        public Add()
+        public AddCardWindow()
         {
             InitializeComponent();
             // Tạo repository thật

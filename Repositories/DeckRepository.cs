@@ -1,14 +1,20 @@
 ﻿using System.Collections.Generic; // dùng cho List<T> và IEnumrable<T>
 using System.Threading.Tasks; // cho phép viết hàm bất đồng bộ (async)
+using IT008.Q13_Project___fromScratch.Interfaces;
 using IT008.Q13_Project___fromScratch.Models; // truy cập class Deck
 
 namespace IT008.Q13_Project___fromScratch.Repositories
 {
-    internal class DeckRepository : IDeckRepository
+    public class DeckRepository : IDeckRepository
     {
         private readonly List<Deck> _decks = new();
+        private readonly AppDbContext _context;
 
         // DS tạm thời để lưu tất cả các Deck, dùng RAM để mô phỏng (readonly: _decks chỉ được khởi tạo 1 lần)
+        public DeckRepository(AppDbContext context)
+        {
+            _context = context;
+        }
         public async Task AddAsync(Deck deck)
         {
             // Giả sử DB lưu trên bộ nhớ tạm
