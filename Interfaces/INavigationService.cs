@@ -16,6 +16,7 @@ namespace IT008.Q13_Project___fromScratch.Interfaces
         void ShowCardWindow();
         void ShowSyncWindow();
         void ShowAddCardWindow();
+        void ImportFileWindow();
 
     }
 }

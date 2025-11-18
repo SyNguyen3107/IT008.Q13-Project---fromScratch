@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:IT008.Q13_Project___fromScratch"
         mc:Ignorable="d"
-                Title="Sync" Height="290" Width="300" Background="#2c2c2c"
+        Title="Sync" Height="290" Width="300" Background="#2c2c2c"
+        Icon="/Resources/Anki-icon.ico"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen">
     <Grid>
@@ -52,7 +53,7 @@
                      Height="25"
                      Width="230"
                      Margin="0,2,0,1"
-                     BorderThickness="0" TextChanged="txbEmail_TextChanged"
+                     BorderThickness="0"
                      />
             </Border>
         </StackPanel>

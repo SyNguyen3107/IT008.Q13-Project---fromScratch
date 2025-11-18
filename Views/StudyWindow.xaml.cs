@@ -1,24 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using IT008.Q13_Project___fromScratch.ViewModels; // Thêm
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace IT008.Q13_Project___fromScratch.Views
 {
-    /// <summary>
-    /// Interaction logic for StudyWindow.xaml
-    /// </summary>
     public partial class StudyWindow : Window
     {
-        
+        // Giữ một tham chiếu (không bắt buộc nhưng nên có)
+        private readonly StudyViewModel _viewModel;
+
+        // Constructor nhận ViewModel từ DI
+        public StudyWindow(StudyViewModel viewModel)
+        {
+            InitializeComponent();
+            _viewModel = viewModel;
+            DataContext = _viewModel; // <-- DÒNG QUAN TRỌNG NHẤT
+        }
     }
 }

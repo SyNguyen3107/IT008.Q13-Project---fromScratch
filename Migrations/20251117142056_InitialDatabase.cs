@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace IT008.Q13_Project___fromScratch.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialDatabase : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -37,10 +37,7 @@ namespace IT008.Q13_Project___fromScratch.Migrations
                     FrontAudioPath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
                     BackText = table.Column<string>(type: "TEXT", nullable: false),
                     BackImagePath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
-                    BackAudioPath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
-                    DueDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Interval = table.Column<double>(type: "REAL", precision: 18, scale: 6, nullable: false),
-                    EaseFactor = table.Column<double>(type: "REAL", precision: 18, scale: 6, nullable: false)
+                    BackAudioPath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -53,15 +50,51 @@ namespace IT008.Q13_Project___fromScratch.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "CardProgresses",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    CardId = table.Column<int>(type: "INTEGER", nullable: false),
+                    DueDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Interval = table.Column<double>(type: "REAL", precision: 18, scale: 6, nullable: false),
+                    EaseFactor = table.Column<double>(type: "REAL", precision: 18, scale: 6, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CardProgresses", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_CardProgresses_Cards_CardId",
+                        column: x => x.CardId,
+                        principalTable: "Cards",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
-                name: "IX_Cards_DeckId_DueDate",
+                name: "IX_CardProgresses_CardId",
+                table: "CardProgresses",
+                column: "CardId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CardProgresses_DueDate",
+                table: "CardProgresses",
+                column: "DueDate");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Cards_DeckId",
                 table: "Cards",
-                columns: new[] { "DeckId", "DueDate" });
+                column: "DeckId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "CardProgresses");
+
             migrationBuilder.DropTable(
                 name: "Cards");
 

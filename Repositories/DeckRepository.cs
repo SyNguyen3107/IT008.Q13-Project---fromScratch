@@ -2,52 +2,60 @@
 using System.Threading.Tasks; // cho phép viết hàm bất đồng bộ (async)
 using IT008.Q13_Project___fromScratch.Interfaces;
 using IT008.Q13_Project___fromScratch.Models; // truy cập class Deck
+using Microsoft.EntityFrameworkCore; // Cần cho ToListAsync, FindAsync, ...
+using System.Linq; // Cần cho .Where, v.v.
 
 namespace IT008.Q13_Project___fromScratch.Repositories
 {
     public class DeckRepository : IDeckRepository
     {
-        private readonly List<Deck> _decks = new();
         private readonly AppDbContext _context;
 
-        // DS tạm thời để lưu tất cả các Deck, dùng RAM để mô phỏng (readonly: _decks chỉ được khởi tạo 1 lần)
         public DeckRepository(AppDbContext context)
         {
-            _context = context;
+            _context = context; // Constructor này là chính xác
         }
+
         public async Task AddAsync(Deck deck)
         {
-            // Giả sử DB lưu trên bộ nhớ tạm
-            await Task.Delay(50); // mô phỏng async I/O, nếu kết nối DB thật thay bằng await _context.Decks.AddAsync(deck);
-            _decks.Add(deck);
+            // Code đúng: Thêm vào DbContext và Lưu
+            await _context.Decks.AddAsync(deck);
+            await _context.SaveChangesAsync();
         }
+
         // Lấy toàn bộ danh sách Deck hiện có
-        public async Task<IEnumerable<Deck>> GetAllAsync() //IEnumberable<Deck> để có thể duyệt bằng foreach
+        public async Task<IEnumerable<Deck>> GetAllAsync()
         {
-            await Task.Delay(50);
-            return _decks;
+            return await _context.Decks.ToListAsync();
         }
+
         // Tìm Deck có ID cụ thể trong danh sách
         public async Task<Deck> GetByIdAsync(int id)
         {
-            await Task.Delay(50);
-            return _decks.Find(d => d.ID == id);
+            // Code đúng: Dùng FindAsync là cách nhanh nhất
+            return await _context.Decks.FindAsync(id);
         }
-        // Cập nhật Deck hiện có (đã tồn tại trong DS)
+
+        // Cập nhật Deck hiện có
         public async Task UpdateAsync(Deck deck)
         {
-            await Task.Delay(50);
-            var existing = _decks.Find(d => d.ID == deck.ID);
-            if (existing != null)
-            {
-                existing.Name = deck.Name;
-            }
+            // Code đúng: Báo cho EF Core biết đối tượng này đã thay đổi
+            _context.Entry(deck).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
         }
-        // Xóa Deck có ID tương ứng khỏi _decks
+
+        // Xóa Deck có ID tương ứng
         public async Task DeleteAsync(int id)
         {
-            await Task.Delay(50);
-            _decks.RemoveAll(d => d.ID == id);
+            // Code đúng: Tìm Deck và Xóa
+            var deck = await _context.Decks.FindAsync(id);
+            if (deck != null)
+            {
+                _context.Decks.Remove(deck);
+                await _context.SaveChangesAsync();
+                // (OnDelete(Cascade) đã được setup trong DbContext
+                // nên khi xóa Deck, CSDL sẽ tự xóa các Card liên quan)
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.IO;
 using System.Windows;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace IT008.Q13_Project___fromScratch
 {
@@ -27,47 +28,52 @@ namespace IT008.Q13_Project___fromScratch
         }
         private void ConfigureServices(IServiceCollection services)
         {
-            // === ĐĂNG KÝ CƠ SỞ DỮ LIỆU ===
-            // Dạy cách tạo AppDbContext
-            string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AnkiAppDB.db");
+            // === ĐĂNG KÝ CƠ SỞ DỮ LIỆU (ĐÃ SỬA LỖI) ===
+
+            // 1. Lấy thư mục chạy (ví dụ: .../bin/Debug/net6.0)
+            string exePath = AppDomain.CurrentDomain.BaseDirectory;
+
+            // 2. Đi lùi 3 cấp để tìm về thư mục gốc của dự án
+            //    (Lưu ý: số lượng '../' có thể cần điều chỉnh nếu cấu trúc dự án của bạn khác)
+            string projectRoot = Path.GetFullPath(Path.Combine(exePath, "../../../"));
+
+            // 3. Kết hợp để có đường dẫn tuyệt đối đến CSDL ở thư mục gốc
+            string dbPath = Path.Combine(projectRoot, "AnkiAppDB.db");
+
             services.AddDbContext<AppDbContext>(options =>
             {
+                // Sử dụng đường dẫn tuyệt đối dbPath
                 options.UseSqlite($"Data Source={dbPath}");
             });
 
             // === ĐĂNG KÝ REPOSITORIES ===
-            // Khi ai đó hỏi IDeckRepository, hãy đưa cho họ DeckRepository
             services.AddScoped<IDeckRepository, DeckRepository>();
             services.AddScoped<ICardRepository, CardRepository>();
 
             // === ĐĂNG KÝ SERVICES ===
-            // Khi ai đó hỏi StudyService, hãy tạo một StudyService
             services.AddScoped<StudyService>();
-            // "Khi ai đó hỏi INavigationService, hãy đưa cho họ NavigationService"
-            // Dùng Singleton để chỉ có 1 dịch vụ điều hướng duy nhất
             services.AddSingleton<INavigationService, NavigationService>();
 
             // === ĐĂNG KÝ VIEWMODELS ===
-            // ViewModel thường là Transient (tạo mới mỗi lần)
             services.AddTransient<MainAnkiViewModel>();
             services.AddTransient<StudyViewModel>();
-            services.AddTransient<CreateDeckViewModel>(); // (Bạn sẽ tạo file này)
+            services.AddTransient<CreateDeckViewModel>();
+            services.AddTransient<AddCardViewModel>();
 
             // === ĐĂNG KÝ CÁC CỬA SỔ (VIEWS) ===
             services.AddTransient<MainAnkiWindow>();
             services.AddTransient<StudyWindow>();
             services.AddTransient<CreateDeckWindow>();
+            services.AddTransient<AddCardWindow>();
+
+            // Đăng ký Messenger
+            services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         }
         protected override void OnStartup(StartupEventArgs e)
         {
-            // Tạo ra cửa sổ chính
             var mainWindow = ServiceProvider.GetRequiredService<MainAnkiWindow>();
-
-            // Hiển thị cửa sổ
             mainWindow.Show();
-
             base.OnStartup(e);
         }
     }
-
 }
