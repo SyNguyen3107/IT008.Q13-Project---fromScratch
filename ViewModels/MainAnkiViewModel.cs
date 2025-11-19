@@ -74,5 +74,14 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                 Decks.Add(deck);
             }
         }
+
+        [RelayCommand]
+        void ShowDeckChosenCommand(Deck selectedDeck)
+        {
+            if (selectedDeck != null)
+            {
+                _navigationService.ShowDeckChosenWindow(selectedDeck.ID);
+            }    
+        }
     }
 }

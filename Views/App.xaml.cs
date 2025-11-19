@@ -59,12 +59,18 @@ namespace IT008.Q13_Project___fromScratch
             services.AddTransient<StudyViewModel>();
             services.AddTransient<CreateDeckViewModel>();
             services.AddTransient<AddCardViewModel>();
+            services.AddTransient<DeckChosenViewModel>();
 
             // === ĐĂNG KÝ CÁC CỬA SỔ (VIEWS) ===
             services.AddTransient<MainAnkiWindow>();
             services.AddTransient<StudyWindow>();
             services.AddTransient<CreateDeckWindow>();
             services.AddTransient<AddCardWindow>();
+            services.AddTransient<DeckChosenWindow>();
+          
+
+
+          
 
             // Đăng ký Messenger
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);

@@ -24,6 +24,17 @@ namespace IT008.Q13_Project___fromScratch
         {
             await _viewModel.LoadDecksAsync();
         }
+
+        private void ListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            var listView = sender as System.Windows.Controls.ListView;
+            var selectedDeck = listView?.SelectedItem as Models.Deck;
+            if (selectedDeck != null)
+            {
+                _viewModel.ShowDeckChosenCommandCommand.Execute(selectedDeck);
+            }
+
+        }
     }
 }
 
