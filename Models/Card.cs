@@ -25,7 +25,7 @@ namespace IT008.Q13_Project___fromScratch.Models
         //Mỗi card chỉ nằm trong 1 Deck
         public Deck Deck { get; set; }
 
-
+        //lưu các thông tin về tiến trình học tập của thẻ
         public CardProgress Progress { get; set; }
     }
 }

@@ -29,7 +29,6 @@ namespace IT008.Q13_Project___fromScratch.Repositories
                 card.Progress = new CardProgress();
                 // (Constructor của CardProgress sẽ tự set giá trị mặc định)
             }
-            // -----------------------------
 
             await _context.Cards.AddAsync(card);
             await _context.SaveChangesAsync();
