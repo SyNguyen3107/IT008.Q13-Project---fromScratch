@@ -106,5 +106,17 @@ namespace IT008.Q13_Project___fromScratch.Services
         {
             throw new NotImplementedException();
         }
+
+        public void ShowDeckChosenWindow(int deckId)
+        {
+            var window = _serviceProvider.GetService<DeckChosenWindow>();
+            var viewModel = window.DataContext as DeckChosenViewModel;
+
+            if (viewModel != null)
+            {
+                viewModel.InitializeAsync(deckId);
+            }
+                window.Show();
+        }
     }
 }
