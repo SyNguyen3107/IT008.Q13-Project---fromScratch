@@ -116,7 +116,11 @@ namespace IT008.Q13_Project___fromScratch.Services
             {
                 viewModel.InitializeAsync(deckId);
             }
-                window.Show();
+            // Thiết lập cửa sổ cha và vị trí khởi động
+            window.Owner = Application.Current.MainWindow;
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            // Chặn toàn bộ thao tác với MainAnkiWindow
+            window.ShowDialog();
         }
     }
 }

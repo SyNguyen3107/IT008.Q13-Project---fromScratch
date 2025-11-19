@@ -17,6 +17,7 @@ namespace IT008.Q13_Project___fromScratch.Interfaces
         void ShowSyncWindow();
         void ShowAddCardWindow();
         void ImportFileWindow();
+        void ShowDeckChosenWindow(int deckId);
 
     }
 }
