@@ -1,7 +1,8 @@
 ﻿using IT008.Q13_Project___fromScratch.Interfaces;
 using IT008.Q13_Project___fromScratch.Services;
 using IT008.Q13_Project___fromScratch.ViewModels;
-using IT008.Q13_Project___fromScratch.Views; 
+using IT008.Q13_Project___fromScratch.Views;
+using IT008.Q13_Project___fromScratch.Models;
 using Microsoft.Extensions.DependencyInjection; 
 using Microsoft.Win32;
 using System;
@@ -38,6 +39,22 @@ namespace IT008.Q13_Project___fromScratch.Services
             var window = _serviceProvider.GetRequiredService<CreateDeckWindow>();
 
             // ShowDialog() để nó chặn cửa sổ chính, bắt người dùng phải tương tác
+            window.ShowDialog();
+        }
+        public void ShowDeckRenameWindow(Deck deck)
+        {
+            // 1. Lấy Window từ DI (Dependency Injection)
+            var window = _serviceProvider.GetRequiredService<DeckRenameWindow>();
+
+            // 2. Lấy ViewModel từ DataContext (đã được gán trong constructor của Window)
+            if (window.DataContext is DeckRenameViewModel viewModel)
+            {
+                // 3. Truyền Deck cần sửa vào ViewModel
+                // (Hàm Initialize này nằm trong DeckRenameViewModel mà chúng ta vừa tạo)
+                viewModel.Initialize(deck);
+            }
+
+            // 4. Hiển thị cửa sổ dạng Dialog (chặn cửa sổ chính)
             window.ShowDialog();
         }
 

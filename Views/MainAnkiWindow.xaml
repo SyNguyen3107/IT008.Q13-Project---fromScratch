@@ -165,15 +165,63 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-
-                        <GridViewColumn Header=""
-                            Width="40">
+                        <GridViewColumn Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="⚙" 
-                                Command="{Binding OptionsCommand}"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center"/>
+                                    <!-- Nút Bánh Răng -->
+                                    <!-- FIX 1: Bind Tag vào DataContext của Window (MainAnkiViewModel) -->
+                                    <Button Content="⚙"
+                                            FontSize="16"
+                                            Foreground="Gray"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Cursor="Hand"
+                                            Click="GearButton_Click"
+                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
+
+                                        <!-- MENU SỔ XUỐNG -->
+                                        <Button.ContextMenu>
+                                            <ContextMenu>
+                                                <!-- FIX 2: Bind Command thông qua PlacementTarget (cái nút) và Tag (ViewModel) -->
+                                                <!-- PlacementTarget.DataContext chính là Deck của dòng đó -->
+
+                                                <MenuItem Header="Rename" 
+                                                          Command="{Binding PlacementTarget.Tag.RenameDeckCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+
+                                                <MenuItem Header="Options" 
+                                                          Command="{Binding PlacementTarget.Tag.DeckOptionsCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+
+                                                <MenuItem Header="Export" 
+                                                          Command="{Binding PlacementTarget.Tag.ExportDeckCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+
+                                                <Separator/>
+
+                                                <MenuItem Header="Delete" 
+                                                          Command="{Binding PlacementTarget.Tag.DeleteDeckCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                          Foreground="Red"/>
+                                            </ContextMenu>
+                                        </Button.ContextMenu>
+
+                                        <!-- HIỆU ỨNG HIỆN KHI DI CHUỘT (HOVER) -->
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Visibility" Value="Hidden"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=IsMouseOver}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
