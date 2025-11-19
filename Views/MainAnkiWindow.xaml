@@ -26,6 +26,8 @@
     </Window.Resources>
 
     <Grid>
+
+
         <!-- Chia layout 4 hàng -->
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -193,5 +195,7 @@
                 <Button Content="Import File" Command ="{Binding ImportFileCommand}" Style="{StaticResource NavButtonStyle}"/>
             </Border>
         </StackPanel>
+        
     </Grid>
+  
 </Window>

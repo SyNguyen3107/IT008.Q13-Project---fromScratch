@@ -119,7 +119,7 @@ namespace IT008.Q13_Project___fromScratch.Services
             // Thiết lập cửa sổ cha và vị trí khởi động
             window.Owner = Application.Current.MainWindow;
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-           
+            //Chặn cửa sổ chính khi cửa sổ con đang mở
             window.ShowDialog();
         }
     }

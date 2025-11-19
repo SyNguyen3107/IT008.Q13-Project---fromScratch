@@ -22,6 +22,7 @@ namespace IT008.Q13_Project___fromScratch.Views
         public DeckChosenWindow()
         {
             InitializeComponent();
+
         }
     }
 }
