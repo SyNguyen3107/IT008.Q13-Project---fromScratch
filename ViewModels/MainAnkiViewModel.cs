@@ -21,6 +21,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         private readonly IDeckRepository _deckRepository;
         private readonly INavigationService _navigationService;
         private readonly IMessenger _messenger;
+        private readonly ImportService _importService;
         private readonly ExportService _exportService;
 
         public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>();
@@ -28,12 +29,14 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         public MainAnkiViewModel(IDeckRepository deckRepository,
                                  INavigationService navigationService,
                                  IMessenger messenger,
+                                 ImportService importService,
                                  ExportService exportService)
         {
             _deckRepository = deckRepository;
             _navigationService = navigationService;
             _messenger = messenger;
             _exportService = exportService;
+            _importService = importService;
 
             _messenger.RegisterAll(this);
         }
@@ -109,12 +112,6 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         }
 
         [RelayCommand]
-        private void ImportFile()
-        {
-            _navigationService.ImportFileWindow();
-        }
-
-        [RelayCommand]
         private void AddCard()
         {
             _navigationService.ShowAddCardWindow();
@@ -132,6 +129,37 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         {
             if (deck == null) return;
             MessageBox.Show($"Cài đặt cho deck '{deck.Name}'", "Options");
+        }
+        [RelayCommand]
+        private async Task ImportFile()
+        {
+            // 1. Mở hộp thoại chọn file
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Filter = "Anki JSON Files (.json)|*.json";
+            dlg.Title = "Import Deck";
+
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    // 2. Gọi Service để Import
+                    var newDeck = await _importService.ImportDeckFromJsonAsync(dlg.FileName);
+
+                    if (newDeck != null)
+                    {
+                        // 3. Gửi tin nhắn để cập nhật UI (hoặc thêm trực tiếp vào Decks)
+                        // Vì chúng ta đang ở MainViewModel, thêm trực tiếp vào Decks cũng được
+                        // Nhưng dùng Messenger cho nhất quán
+                        _messenger.Send(new DeckAddedMessage(newDeck));
+
+                        MessageBox.Show($"Đã nhập bộ thẻ '{newDeck.Name}' thành công!", "Thành công");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi nhập file: {ex.Message}", "Lỗi");
+                }
+            }
         }
 
         [RelayCommand]
@@ -154,17 +182,31 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         [RelayCommand]
         private async Task DeleteDeck(Deck deck)
         {
+            // 1. Kiểm tra null
             if (deck == null) return;
 
-            var result = MessageBox.Show($"Bạn có chắc muốn xóa bộ thẻ '{deck.Name}'?\nTất cả thẻ bên trong sẽ bị xóa vĩnh viễn.",
-                                         "Xác nhận xóa",
-                                         MessageBoxButton.YesNo,
-                                         MessageBoxImage.Warning);
+            // 2. Hiển thị hộp thoại xác nhận (Confirmation Dialog)
+            var result = MessageBox.Show(
+                $"Bạn có chắc chắn muốn xóa bộ thẻ '{deck.Name}' không?\n\nCẢNH BÁO: Tất cả {deck.NewCount + deck.LearnCount + deck.DueCount} thẻ bên trong sẽ bị xóa vĩnh viễn!",
+                "Xác nhận xóa",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
 
+            // 3. Nếu người dùng chọn Yes
             if (result == MessageBoxResult.Yes)
             {
+                // 3a. Xóa trong Database
                 await _deckRepository.DeleteAsync(deck.ID);
-                Decks.Remove(deck);
+
+                // 3b. Xóa trên Giao diện (UI)
+                // Chúng ta tìm đối tượng trong list hiện tại bằng ID để đảm bảo xóa đúng cái đang hiển thị
+                var deckToRemove = Decks.FirstOrDefault(d => d.ID == deck.ID);
+                if (deckToRemove != null)
+                {
+                    Decks.Remove(deckToRemove);
+                }
+
+                MessageBox.Show("Đã xóa thành công!", "Thông báo");
             }
         }
     }

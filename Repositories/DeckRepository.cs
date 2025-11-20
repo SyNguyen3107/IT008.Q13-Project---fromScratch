@@ -84,5 +84,10 @@ namespace IT008.Q13_Project___fromScratch.Repositories
                 // nên khi xóa Deck, CSDL sẽ tự xóa các Card liên quan)
             }
         }
+        public async Task<Deck?> GetByNameAsync(string name)
+        {
+            // Tìm deck đầu tiên có tên trùng khớp (không phân biệt hoa thường nếu muốn)
+            return await _context.Decks.FirstOrDefaultAsync(d => d.Name == name);
+        }
     }
 }

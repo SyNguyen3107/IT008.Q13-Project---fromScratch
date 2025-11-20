@@ -55,6 +55,7 @@ namespace IT008.Q13_Project___fromScratch
             services.AddScoped<StudyService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddTransient<ExportService>();
+            services.AddTransient<ImportService>();
 
             // === ĐĂNG KÝ VIEWMODELS ===
             services.AddTransient<MainAnkiViewModel>();

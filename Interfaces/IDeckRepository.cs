@@ -16,6 +16,8 @@ namespace IT008.Q13_Project___fromScratch.Interfaces
         Task UpdateAsync(Deck deck);
         // Xóa deck theo ID
         Task DeleteAsync(int id);
+        //Kiểm tra tên deck đã tồn tại chưa
+        Task<Deck?> GetByNameAsync(string name);
     }
 
 }
