@@ -4,8 +4,10 @@ using IT008.Q13_Project___fromScratch.Interfaces;
 using IT008.Q13_Project___fromScratch.Models;
 using Microsoft.Win32; // Dùng cho OpenFileDialog
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 using System.Threading.Tasks;
 using System.Windows; // Dùng cho MessageBox
+using IT008.Q13_Project___fromScratch.Views; // Cần cái này để gọi ChooseDeckWindow
 
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
@@ -109,12 +111,41 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         }
 
         // Command mẫu cho việc chọn file
+        // Command Đóng cửa sổ
         [RelayCommand]
-        private void PickFrontImage()
+        private void Cancel(Window window)
+        {
+            if (window != null)
+            {
+                window.Close();
+            }
+        }
+
+        // Command mở cửa sổ chọn deck
+        [RelayCommand]
+        private async Task ChooseDeck()
+        {
+            var chooseDeckWindow = new ChooseDeckWindow();
+            chooseDeckWindow.ShowDialog();
+            // Hiển thị tên deck đã chọn
+            if (chooseDeckWindow.SelectedDeck != null)
+                SelectedDeck = chooseDeckWindow.SelectedDeck;
+        }
+
+        // Command thêm Media vào Front
+        [RelayCommand]
+        private void PickFrontMedia()
         {
             OpenFileDialog dialog = new OpenFileDialog
             {
-                Filter = "Image files (*.png;*.jpg)|*.png;*.jpg;*.jpeg|All files (*.*)|*.*"
+                // Filter = "Image files (*.png;*.jpg)|*.png;*.jpg;*.jpeg|All files (*.*)|*.*"
+                Title = "Select media for FRONT",
+                Filter =
+                    "Media files (*.png;*.jpg;*.jpeg;*.gif;*.mp3;*.wav;*.mp4;*.avi)|*.png;*.jpg;*.jpeg;*.gif;*.mp3;*.wav;*.mp4;*.avi|" +
+                    "Images (*.png;*.jpg;*.jpeg;*.gif)|*.png;*.jpg;*.jpeg;*.gif|" +
+                    "Audio (*.mp3;*.wav)|*.mp3;*.wav|" +
+                    "Video (*.mp4;*.avi)|*.mp4;*.avi|" +
+                    "All files (*.*)|*.*"
             };
 
             if (dialog.ShowDialog() == true)
@@ -123,9 +154,29 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             }
         }
 
-        // Bạn có thể tạo thêm
-        // [RelayCommand] private void PickBackImage() { ... }
+        // Command thêm Media vào Back
+        [RelayCommand]
+        private void PickBackMedia()
+        {
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Title = "Select media for BACK",
+                Filter =
+                    "Media files (*.png;*.jpg;*.jpeg;*.gif;*.mp3;*.wav;*.mp4;*.avi)|*.png;*.jpg;*.jpeg;*.gif;*.mp3;*.wav;*.mp4;*.avi|" +
+                    "Images (*.png;*.jpg;*.jpeg;*.gif)|*.png;*.jpg;*.jpeg;*.gif|" +
+                    "Audio (*.mp3;*.wav)|*.mp3;*.wav|" +
+                    "Video (*.mp4;*.avi)|*.mp4;*.avi|" +
+                    "All files (*.*)|*.*"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                BackImagePath = dialog.FileName; 
+            }
+        }
         // [RelayCommand] private void PickFrontAudio() { ... }
         // [RelayCommand] private void PickBackAudio() { ... }
+
+        // ChooseDeck Command
     }
 }

@@ -11,17 +11,24 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using IT008.Q13_Project___fromScratch.Models;
+using IT008.Q13_Project___fromScratch.ViewModels;
 
 namespace IT008.Q13_Project___fromScratch
 {
     /// <summary>
-    /// Interaction logic for ChooseDeck_Add.xaml
+    /// Interaction logic for ChooseDeckWindow.xaml
     /// </summary>
-    public partial class ChooseDeck_Add : Window
+    public partial class ChooseDeckWindow : Window
     {
-        public ChooseDeck_Add()
+        public Deck SelectedDeck { get; set; }
+        public ChooseDeckWindow() : this(new List<Deck>()) { }
+        public ChooseDeckWindow(IEnumerable<Deck> deckList)
         {
             InitializeComponent();
+            var vm = new ChooseDeckViewModel();
+            vm.LoadDecks(deckList);
+            DataContext = vm;
         }
     }
 }

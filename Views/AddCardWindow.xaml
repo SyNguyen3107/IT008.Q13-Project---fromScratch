@@ -3,12 +3,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        xmlns:ei="http://schemas.microsoft.com/expression/2010/interactions"
         xmlns:local="clr-namespace:IT008.Q13_Project___fromScratch"
         xmlns:vm="clr-namespace:IT008.Q13_Project___fromScratch.ViewModels"
         mc:Ignorable="d"
         Title="Add" Height="450" Width="800"
         Icon="/Resources/Anki-icon.ico"
-        Background="#2c2c2c">
+        Background="#2c2c2c"
+        WindowStartupLocation="CenterScreen">
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -50,15 +53,13 @@
             <TextBlock Grid.Column="2" Text="Deck" FontSize="14" Foreground="White"
                        VerticalAlignment="Center" Margin="0,10,10,10"/>
 
-            <Border Grid.Column="3" CornerRadius="6" Background="#434343"
-                    Margin="0,10,0,10" Height="30">
+            <Border Grid.Column="3" CornerRadius="6" Background="#434343" Margin="0,10,0,10" Height="30">
                 <!-- Choose Deck -->
                 <Button Content="{Binding SelectedDeck.Name, TargetNullValue='Select Deck...'}"
                         FontSize="14" Foreground="White" Background="Transparent"
                         BorderThickness="0"
                         Cursor="Hand" Height="30" VerticalAlignment="Top"
-                        Command="{Binding ChooseDeckCommand}"
-                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
+                        Command="{Binding ChooseDeckCommand}"/>
             </Border>
         </Grid>
 
@@ -73,18 +74,33 @@
                        FontSize="18" Foreground="White"
                        VerticalAlignment="Top"
                        Margin="0,0,10,0"/>
-            <Border CornerRadius="6" Background="#2c2c2c" BorderBrush="#FF367FF4" BorderThickness="1" Height="50" Width="740">
+            <Border CornerRadius="6" Background="#2c2c2c" BorderBrush="#FF367FF4" BorderThickness="1" Height ="50" Width="740">
                 <TextBox 
                      Text="{Binding FrontText, UpdateSourceTrigger=PropertyChanged}"
                      Background="Transparent"
                      Foreground="White"
                      FontSize="16"
                      BorderThickness="0"
-                     Height="50"
-                     Width="740"
+                     Height ="50" Width="740"
                      AcceptsReturn="True"
-                     TextWrapping="Wrap"/>
+                     TextWrapping="Wrap">
+
+                </TextBox>
             </Border>
+            <!-- nút media riêng cho Front -->
+            <Button
+                        ToolTip="Attach pictures/audio"
+                        Content="📎"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="White"
+                        FontSize="18"
+                        Width="32"
+                        Height="32"
+                        Cursor ="Hand"
+                        VerticalAlignment="Top"
+                        Margin="708,4,0,0"
+                        Command="{Binding PickFrontMediaCommand}"/>
         </Grid>
         <!-- Back -->
         <Grid Grid.Row="2" Margin="0,20,0,0">
@@ -97,18 +113,31 @@
                     FontSize="18" Foreground="White"
                     VerticalAlignment="Top"
                     Margin="0,5,10,0"/>
-            <Border CornerRadius="6" Background="#2c2c2c" BorderBrush="#FF367FF4" BorderThickness="1" Height="50" Width="740">
+            <Border CornerRadius="6" Background="#2c2c2c" BorderBrush="#FF367FF4" BorderThickness="1" Height ="50" Width="740">
                 <TextBox 
                   Text="{Binding BackText, UpdateSourceTrigger=PropertyChanged}"
                   Background="Transparent"
                   Foreground="White"
                   FontSize="16"
                   BorderThickness="0"
-                  Height="50"
-                  Width="740"
+                  Height ="50" Width="740"
                   AcceptsReturn="True"
                   TextWrapping="Wrap"/>
             </Border>
+            <!-- nút media riêng cho Back-->
+            <Button
+                    ToolTip="Attach pictures/audio"
+                    Content="📎"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Foreground="White"
+                    FontSize="18"
+                    Width="32"
+                    Height="32"
+                    Cursor ="Hand"
+                    VerticalAlignment="Top"
+                    Margin="708,4,0,0"
+                    Command="{Binding PickBackMediaCommand}" RenderTransformOrigin="0.429,1.946"/>
         </Grid>
         <Grid Grid.Row="3">
             <StackPanel Orientation="Horizontal"
@@ -125,7 +154,7 @@
                     Foreground="White"
                     BorderThickness="0"
                     Cursor="Hand"
-                    Command="{Binding AddCommand}"/>
+                    Command="{Binding SaveCardCommand}"/>
                 </Border>
 
                 <!-- Nút History -->
@@ -149,7 +178,7 @@
                     Foreground="White"
                     BorderThickness="0"
                     Cursor="Hand"
-                    Command="{Binding CloseCommand}" 
+                    Command="{Binding CancelCommand}" 
                     CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
                 </Border>
 

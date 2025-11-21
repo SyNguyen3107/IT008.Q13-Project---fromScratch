@@ -22,5 +22,6 @@ namespace IT008.Q13_Project___fromScratch.Views
             // Ra lệnh cho ViewModel tải Decks
             await _viewModel.LoadDecksAsync();
         }
+
     }
 }

@@ -17,5 +17,10 @@ namespace IT008.Q13_Project___fromScratch
             // Gán "bộ não" (DI đã tự động tạo nó cho bạn)
             this.DataContext = viewModel;
         }
+        // Thêm constructor không tham số (overload)
+        public CreateDeckWindow()
+            : this(new CreateDeckViewModel()) 
+        {
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿<Window x:Class="IT008.Q13_Project___fromScratch.ChooseDeck_Add"
+﻿<Window x:Class="IT008.Q13_Project___fromScratch.ChooseDeckWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -33,20 +33,28 @@
                  SelectedItem="{Binding SelectedDeck}"
                  Background="#333"
                  Foreground="White"
-                 BorderBrush="#444"/>
+                 BorderBrush="#444">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Name}" FontSize="14" Padding="5"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
         <!-- Choose / Add / Cancel / Help -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
             <Border CornerRadius="6" Background="#434343" BorderBrush="#FF367FF4" Width="80" BorderThickness="1">
-                <Button Content="Choose" Command="{Binding ChooseCommand}" Width="80" 
-                        Background="Transparent" BorderThickness="0" Cursor="Hand" Foreground="White"/>
+                <Button Content="Choose" Command="{Binding ChooseCommand}" 
+                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                        Width="80" Background="Transparent" BorderThickness="0" Cursor="Hand" Foreground="White"/>
             </Border>
             <Border CornerRadius="6" Background="#434343" Width="80" BorderThickness="1" Margin="5,0">
                 <Button Content="Add" Command="{Binding AddCommand}" Width="80" 
                         Background="Transparent" BorderThickness="0" Cursor="Hand" Foreground="White"/>
             </Border>
             <Border CornerRadius="6" Background="#434343" Width="80" BorderThickness="1" Margin="5,0">
-                <Button Content="Cancel" Command="{Binding CancelCommand}" Width="80"
-                        Background="Transparent" BorderThickness="0" Cursor="Hand" Foreground="White"/>
+                <Button Content="Cancel" Command="{Binding CancelCommand}" 
+                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" 
+                        Width="80" Background="Transparent" BorderThickness="0" Cursor="Hand" Foreground="White"/>
             </Border>
             <Border CornerRadius="6" Background="#434343" Width="80" BorderThickness="1" Margin="5,0">
                 <Button Content="Help" Command="{Binding HelpCommand}" Width="80"

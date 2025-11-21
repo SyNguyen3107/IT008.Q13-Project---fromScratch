@@ -34,6 +34,12 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             _deckRepository = deckRepository;
             _messenger = messenger;
         }
+        // Constructor không tham số
+        public CreateDeckViewModel()
+        {
+            // Tự tạo messenger mặc định
+            _messenger = WeakReferenceMessenger.Default;
+        }
 
         // --- Các Command ---
 
