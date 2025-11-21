@@ -45,6 +45,7 @@ namespace IT008.Q13_Project___fromScratch
                 // Sử dụng đường dẫn tuyệt đối dbPath
                 options.UseSqlite($"Data Source={dbPath}");
             });
+            
 
             // === ĐĂNG KÝ REPOSITORIES ===
             services.AddScoped<IDeckRepository, DeckRepository>();
@@ -53,18 +54,28 @@ namespace IT008.Q13_Project___fromScratch
             // === ĐĂNG KÝ SERVICES ===
             services.AddScoped<StudyService>();
             services.AddSingleton<INavigationService, NavigationService>();
+            services.AddTransient<ExportService>();
+            services.AddTransient<ImportService>();
 
             // === ĐĂNG KÝ VIEWMODELS ===
             services.AddTransient<MainAnkiViewModel>();
             services.AddTransient<StudyViewModel>();
             services.AddTransient<CreateDeckViewModel>();
             services.AddTransient<AddCardViewModel>();
+            services.AddTransient<DeckChosenViewModel>();
+            services.AddTransient<DeckRenameViewModel>();
+            services.AddTransient<DeckRenameWindow>(); // Nếu chưa có
 
             // === ĐĂNG KÝ CÁC CỬA SỔ (VIEWS) ===
             services.AddTransient<MainAnkiWindow>();
             services.AddTransient<StudyWindow>();
             services.AddTransient<CreateDeckWindow>();
             services.AddTransient<AddCardWindow>();
+            services.AddTransient<DeckChosenWindow>();
+          
+
+
+          
 
             // Đăng ký Messenger
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
