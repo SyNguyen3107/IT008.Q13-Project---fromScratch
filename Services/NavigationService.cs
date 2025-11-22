@@ -126,17 +126,36 @@ namespace IT008.Q13_Project___fromScratch.Services
 
         public void ShowDeckChosenWindow(int deckId)
         {
-            var window = _serviceProvider.GetService<DeckChosenWindow>();
-            var viewModel = window.DataContext as DeckChosenViewModel;
+            // Dùng GetRequiredService để phát hiện lỗi cấu hình DI sớm nếu thiếu đăng ký
+            var window = _serviceProvider.GetRequiredService<DeckChosenWindow>();
 
-            if (viewModel != null)
+            // Lấy ViewModel đã được DI tiêm vào DataContext (DeckChosenWindow ctor phải gán DataContext = viewModel)
+            if (window.DataContext is DeckChosenViewModel viewModel)
             {
-                viewModel.InitializeAsync(deckId);
+                // Khởi tạo dữ liệu bất đồng bộ an toàn khi cửa sổ Loaded
+                window.Loaded += async (sender, e) =>
+                {
+                    try
+                    {
+                        await viewModel.InitializeAsync(deckId);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Lỗi khi tải thống kê deck: {ex.Message}");
+                        MessageBox.Show("Không thể tải thống kê bộ thẻ. Vui lòng thử lại.", "Lỗi");
+                        window.Close();
+                    }
+                };
             }
+            else
+            {
+                Debug.WriteLine("DeckChosenWindow.DataContext không phải là DeckChosenViewModel!");
+            }
+
             // Thiết lập cửa sổ cha và vị trí khởi động
             window.Owner = Application.Current.MainWindow;
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            //Chặn cửa sổ chính khi cửa sổ con đang mở
+            // Chặn cửa sổ chính khi cửa sổ con đang mở
             window.ShowDialog();
         }
     }
