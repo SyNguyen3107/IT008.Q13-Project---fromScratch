@@ -14,6 +14,7 @@ using IT008.Q13_Project___fromScratch.Messages;
 using System.IO; // Cần thêm để dùng Path.GetFileName
 using System.Diagnostics; // Cần thêm để dùng Process.Start
 
+
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
     public partial class AddCardViewModel : ObservableObject
@@ -143,7 +144,26 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             }
         }
 
-        // --- SỬA LỖI Ở ĐÂY ---
+        // --- MEDIA COMMANDS (HỖ TRỢ ONLINE LINK) ---
+
+        // Hàm xử lý chung cho việc chọn file
+        private void SetMedia(string path, ref string pathProperty, ref string nameProperty)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+
+            pathProperty = path;
+
+            // Nếu là link online (http/https)
+            if (path.StartsWith("http", System.StringComparison.OrdinalIgnoreCase))
+            {
+                nameProperty = "🌐 Online Link";
+            }
+            else // Nếu là file local
+            {
+                nameProperty = Path.GetFileName(path);
+            }
+        }
+
         [RelayCommand]
         private async Task ChooseDeck()
         {
@@ -158,38 +178,6 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             }
         }
 
-        // Command thêm Media vào Front
-        //[RelayCommand]
-        //private void PickFrontMedia()
-        //{
-        //    OpenFileDialog dialog = new OpenFileDialog
-        //    {
-        //        Title = "Select media for FRONT",
-        //        Filter = "All files (*.*)|*.*"
-        //    };
-
-        //    if (dialog.ShowDialog() == true)
-        //    {
-        //        FrontImagePath = dialog.FileName;
-        //    }
-        //}
-
-        //// Command thêm Media vào Back
-        //[RelayCommand]
-        //private void PickBackMedia()
-        //{
-        //    OpenFileDialog dialog = new OpenFileDialog
-        //    {
-        //        Title = "Select media for BACK",
-        //        Filter = "All files (*.*)|*.*"
-        //    };
-
-        //    if (dialog.ShowDialog() == true)
-        //    {
-        //        BackImagePath = dialog.FileName;
-        //    }
-        //}
-
         // Chọn Media
         [RelayCommand]
         private void PickFrontImage()
@@ -198,7 +186,10 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             if (path != null)
             {
                 FrontImagePath = path;
-                FrontImageName = Path.GetFileName(path);
+                SetMedia(path, ref _frontImagePath, ref _frontImageName);
+                // Cập nhật lại property để UI nhận biết thay đổi
+                OnPropertyChanged(nameof(FrontImagePath));
+                OnPropertyChanged(nameof(FrontImageName));
             }
         }
 
@@ -209,7 +200,9 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             if (path != null)
             {
                 FrontAudioPath = path;
-                FrontAudioName = Path.GetFileName(path);
+                SetMedia(path, ref _frontAudioPath, ref _frontAudioName);
+                OnPropertyChanged(nameof(FrontAudioPath));
+                OnPropertyChanged(nameof(FrontAudioName));
             }
         }
 
@@ -220,7 +213,9 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             if (path != null)
             {
                 BackImagePath = path;
-                BackImageName = Path.GetFileName(path);
+                SetMedia(path, ref _backImagePath, ref _backImageName);
+                OnPropertyChanged(nameof(BackImagePath));
+                OnPropertyChanged(nameof(BackImageName));
             }
         }
 
@@ -231,7 +226,9 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             if (path != null)
             {
                 BackAudioPath = path;
-                BackAudioName = Path.GetFileName(path);
+                SetMedia(path, ref _backAudioPath, ref _backAudioName);
+                OnPropertyChanged(nameof(BackAudioPath));
+                OnPropertyChanged(nameof(BackAudioName));
             }
         }
 
@@ -246,18 +243,75 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
 
             return dialog.ShowDialog() == true ? dialog.FileName : null;
         }
-        // --- LỆNH MỞ FILE EXPLORER ---
+
+        // --- LỆNH DÁN LINK (PASTE URL) ---
+        // Tham số "type" để biết đang dán vào đâu: "FrontImage", "FrontAudio", v.v.
+        [RelayCommand]
+        private void PasteLink(string type)
+        {
+            if (Clipboard.ContainsText())
+            {
+                var text = Clipboard.GetText().Trim();
+                // Kiểm tra sơ bộ có phải URL không
+                if (text.StartsWith("http", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    switch (type)
+                    {
+                        case "FrontImage":
+                            FrontImagePath = text;
+                            FrontImageName = "🌐 Online Image";
+                            break;
+                        case "FrontAudio":
+                            FrontAudioPath = text;
+                            FrontAudioName = "🌐 Online Audio";
+                            break;
+                        case "BackImage":
+                            BackImagePath = text;
+                            BackImageName = "🌐 Online Image";
+                            break;
+                        case "BackAudio":
+                            BackAudioPath = text;
+                            BackAudioName = "🌐 Online Audio";
+                            break;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Clipboard không chứa đường dẫn hợp lệ", "Lỗi");
+                }
+            }
+        }
+
+        // --- LỆNH MỞ FILE (LOCAL HOẶC ONLINE)---
         [RelayCommand]
         private void OpenFileLocation(string filePath)
         {
-            if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+            if (string.IsNullOrEmpty(filePath)) return;
+
+            try
             {
-                // Mở Explorer và highlight file đó (/select)
-                Process.Start("explorer.exe", $"/select, \"{filePath}\"");
+                // Trường hợp 1: Link Online (http/https) -> Mở trình duyệt
+                if (filePath.StartsWith("http", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = filePath,
+                        UseShellExecute = true
+                    });
+                }
+                // Trường hợp 2: File Local -> Mở File Explorer và chọn file
+                else if (File.Exists(filePath))
+                {
+                    Process.Start("explorer.exe", $"/select, \"{filePath}\"");
+                }
+                else
+                {
+                    MessageBox.Show("File không tồn tại hoặc đường dẫn không hợp lệ.", "Thông báo");
+                }
             }
-            else
+            catch (System.Exception ex)
             {
-                MessageBox.Show("File không tồn tại hoặc đường dẫn bị lỗi.", "Lỗi");
+                MessageBox.Show($"Không thể mở file: {ex.Message}", "Lỗi");
             }
         }
         // Các command phụ khác...

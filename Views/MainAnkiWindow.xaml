@@ -9,8 +9,7 @@
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
         Background="#2c2c2c"
-        Loaded="MainAnkiWindowLoaded"
-        Icon="/Resources/Anki-icon.ico">
+        Loaded="MainAnkiWindowLoaded">
 
     <Window.Resources>
         <!-- (Giữ nguyên Resources cũ) -->

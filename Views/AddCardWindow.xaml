@@ -57,71 +57,54 @@
             <!-- DockPanel giúp layout ổn định hơn Grid khi nội dung thay đổi -->
             <DockPanel Margin="5">
 
-                <!-- Phần BOTTOM: Ảnh và Nút Upload (Luôn nằm dưới cùng) -->
+                <!-- Bottom: Media Preview & Buttons -->
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical" Margin="0,5,0,0">
-                    <!-- NÚT HIỂN THỊ ẢNH (MỚI - CLICK ĐỂ MỞ FOLDER) -->
-                    <!-- Chỉ hiện khi FrontImagePath có dữ liệu -->
-                    <Button Command="{Binding OpenFileLocationCommand}" 
-                            CommandParameter="{Binding FrontImagePath}"
-                            HorizontalAlignment="Left"
-                            Background="Transparent" BorderThickness="0"
-                            Cursor="Hand"
-                            Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"
-                            Margin="0,0,0,5">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <!-- Ảnh Thumbnail -->
-                                <Image Source="{Binding FrontImagePath}" Height="60" Margin="0,0,10,0"/>
 
-                                <!-- Tên file ảnh -->
-                                <TextBlock VerticalAlignment="Center">
-                                    <Run Text="📷" Foreground="#3498DB"/>
-                                    <Run Text="{Binding FrontImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </Button.Content>
-                        <Button.ToolTip>
-                            <ToolTip Content="Click to open image location"/>
-                        </Button.ToolTip>
+                    <!-- Preview Ảnh (Click để mở link) -->
+                    <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding FrontImagePath}"
+                            HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}" Margin="0,0,0,5">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="{Binding FrontImagePath}" Height="60" Margin="0,0,10,0"/>
+                            <TextBlock VerticalAlignment="Center">
+                                <Run Text="📷" Foreground="#3498DB"/>
+                                <Run Text="{Binding FrontImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
+                            </TextBlock>
+                        </StackPanel>
                     </Button>
 
-                    <!-- Nút Hiển thị Audio (Đã cập nhật lệnh OpenFileLocationCommand) -->
-                    <Button Command="{Binding OpenFileLocationCommand}" 
-                            CommandParameter="{Binding FrontAudioPath}"
-                            HorizontalAlignment="Left"
-                            Background="Transparent" BorderThickness="0"
-                            Cursor="Hand"
-                            Visibility="{Binding FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
-                            Margin="0,0,0,5">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
-                                <TextBlock Text="{Binding FrontAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
-                            </StackPanel>
-                        </Button.Content>
-                        <Button.ToolTip>
-                            <ToolTip Content="Click to open audio location"/>
-                        </Button.ToolTip>
+                    <!-- Preview Audio -->
+                    <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding FrontAudioPath}"
+                            HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Visibility="{Binding FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}" Margin="0,0,0,5">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding FrontAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
+                        </StackPanel>
                     </Button>
-                    <!-- Nút Upload -->
+
+                    <!-- Toolbar Nút Bấm -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="0,0,5,0">
-                            <Button Content="📷 Image" Command="{Binding PickFrontImageCommand}" 
-                                    Background="Transparent" Foreground="White" BorderThickness="0" Padding="8,2" Cursor="Hand"/>
-                        </Border>
-                        <Border CornerRadius="6" Background="#434343" BorderThickness="1">
-                            <Button Content="🔊 Audio" Command="{Binding PickFrontAudioCommand}" 
-                                    Background="Transparent" Foreground="White" BorderThickness="0" Padding="8,2" Cursor="Hand"/>
-                        </Border>
+                        <!-- Image Controls -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                            <TextBlock Text="Image:" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <Button ToolTip="Upload Image" Command="{Binding PickFrontImageCommand}" Content="📂" Background="#434343" Foreground="White" Width="30" Margin="0,0,2,0"/>
+                            <Button ToolTip="Paste Image Link" Command="{Binding PasteLinkCommand}" CommandParameter="FrontImage" Content="📋" Background="#434343" Foreground="White" Width="30"/>
+                        </StackPanel>
+
+                        <!-- Audio Controls -->
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Audio:" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <Button ToolTip="Upload Audio" Command="{Binding PickFrontAudioCommand}" Content="📂" Background="#434343" Foreground="White" Width="30" Margin="0,0,2,0"/>
+                            <Button ToolTip="Paste Audio Link" Command="{Binding PasteLinkCommand}" CommandParameter="FrontAudio" Content="📋" Background="#434343" Foreground="White" Width="30"/>
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Phần FILL: TextBox (Tự động lấp đầy phần còn lại ở trên) -->
                 <TextBox Text="{Binding FrontText, UpdateSourceTrigger=PropertyChanged}"
                          AcceptsReturn="True" TextWrapping="Wrap"
                          Background="#333" Foreground="White" BorderThickness="0"
-                         FontSize="16" Padding="5"
-                         VerticalScrollBarVisibility="Auto"/>
+                         FontSize="16" Padding="5" VerticalScrollBarVisibility="Auto"/>
             </DockPanel>
         </GroupBox>
 
@@ -129,66 +112,52 @@
         <GroupBox Grid.Row="2" Header="Back" Foreground="White" BorderBrush="#555" Margin="0,0,0,10">
             <DockPanel Margin="5">
 
-                <!-- Phần BOTTOM -->
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical" Margin="0,5,0,0">
-                    <!-- NÚT HIỂN THỊ ẢNH BACK (MỚI) -->
-                    <Button Command="{Binding OpenFileLocationCommand}" 
-                            CommandParameter="{Binding BackImagePath}"
-                            HorizontalAlignment="Left"
-                            Background="Transparent" BorderThickness="0"
-                            Cursor="Hand"
-                            Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"
-                            Margin="0,0,0,5">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Image Source="{Binding BackImagePath}" Height="60" Margin="0,0,10,0"/>
-                                <TextBlock VerticalAlignment="Center">
-                                    <Run Text="📷" Foreground="#3498DB"/>
-                                    <Run Text="{Binding BackImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </Button.Content>
-                        <Button.ToolTip>
-                            <ToolTip Content="Click to open image location"/>
-                        </Button.ToolTip>
+
+                    <!-- Preview Back Image -->
+                    <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding BackImagePath}"
+                            HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}" Margin="0,0,0,5">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="{Binding BackImagePath}" Height="60" Margin="0,0,10,0"/>
+                            <TextBlock VerticalAlignment="Center">
+                                <Run Text="📷" Foreground="#3498DB"/>
+                                <Run Text="{Binding BackImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
+                            </TextBlock>
+                        </StackPanel>
                     </Button>
 
-                    <!-- Nút Hiển thị Audio Back -->
-                    <Button Command="{Binding OpenFileLocationCommand}" 
-                            CommandParameter="{Binding BackAudioPath}"
-                            HorizontalAlignment="Left"
-                            Background="Transparent" BorderThickness="0"
-                            Cursor="Hand"
-                            Visibility="{Binding BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
-                            Margin="0,0,0,5">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
-                                <TextBlock Text="{Binding BackAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
-                            </StackPanel>
-                        </Button.Content>
-                        <Button.ToolTip>
-                            <ToolTip Content="Click to open audio location"/>
-                        </Button.ToolTip>
+                    <!-- Preview Back Audio -->
+                    <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding BackAudioPath}"
+                            HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Visibility="{Binding BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}" Margin="0,0,0,5">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding BackAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
+                        </StackPanel>
                     </Button>
+
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="0,0,5,0">
-                            <Button Content="📷 Image" Command="{Binding PickBackImageCommand}" 
-                                    Background="Transparent" Foreground="White" BorderThickness="0" Padding="8,2" Cursor="Hand"/>
-                        </Border>
-                        <Border CornerRadius="6" Background="#434343" BorderThickness="1">
-                            <Button Content="🔊 Audio" Command="{Binding PickBackAudioCommand}" 
-                                    Background="Transparent" Foreground="White" BorderThickness="0" Padding="8,2" Cursor="Hand"/>
-                        </Border>
+                        <!-- Image Controls -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                            <TextBlock Text="Image:" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <Button ToolTip="Upload Image" Command="{Binding PickBackImageCommand}" Content="📂" Background="#434343" Foreground="White" Width="30" Margin="0,0,2,0"/>
+                            <Button ToolTip="Paste Image Link" Command="{Binding PasteLinkCommand}" CommandParameter="BackImage" Content="📋" Background="#434343" Foreground="White" Width="30"/>
+                        </StackPanel>
+
+                        <!-- Audio Controls -->
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Audio:" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <Button ToolTip="Upload Audio" Command="{Binding PickBackAudioCommand}" Content="📂" Background="#434343" Foreground="White" Width="30" Margin="0,0,2,0"/>
+                            <Button ToolTip="Paste Audio Link" Command="{Binding PasteLinkCommand}" CommandParameter="BackAudio" Content="📋" Background="#434343" Foreground="White" Width="30"/>
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Phần FILL -->
                 <TextBox Text="{Binding BackText, UpdateSourceTrigger=PropertyChanged}"
                          AcceptsReturn="True" TextWrapping="Wrap"
                          Background="#333" Foreground="White" BorderThickness="0"
-                         FontSize="16" Padding="5"
-                         VerticalScrollBarVisibility="Auto"/>
+                         FontSize="16" Padding="5" VerticalScrollBarVisibility="Auto"/>
             </DockPanel>
         </GroupBox>
         <!-- 3. ANSWER -->
