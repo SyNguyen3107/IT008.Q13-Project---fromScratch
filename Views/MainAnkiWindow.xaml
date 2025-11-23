@@ -24,6 +24,58 @@
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
+        <!-- Style cho Tiêu đề cột (Header) -->
+        <Style x:Key="DarkGridViewColumnHeader" TargetType="GridViewColumnHeader">
+            <Setter Property="Background" Value="#444"/>
+            <!-- Nền tối -->
+            <Setter Property="Foreground" Value="White"/>
+            <!-- Chữ trắng -->
+            <Setter Property="BorderBrush" Value="#555"/>
+            <!-- Viền xám -->
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <!-- Xử lý khi di chuột (Hover) -->
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#555"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <!-- Style tối giản cho ScrollBar -->
+        <Style x:Key="DarkScrollBarStyle" TargetType="{x:Type ScrollBar}">
+            <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
+            <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
+            <Setter Property="Background" Value="#2c2c2c"/>
+            <!-- Nền của thanh trượt -->
+            <Setter Property="Foreground" Value="#555"/>
+            <!-- Màu của cục trượt (Thumb) -->
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollBar}">
+                        <Grid x:Name="Bg" SnapsToDevicePixels="true">
+                            <Track x:Name="PART_Track" IsDirectionReversed="true">
+                                <Track.Thumb>
+                                    <Thumb Style="{DynamicResource ScrollThumbStyle}"/>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Style cho cục trượt (Thumb) -->
+        <Style x:Key="ScrollThumbStyle" TargetType="{x:Type Thumb}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Thumb}">
+                        <Border Background="#666" CornerRadius="4"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <!-- GÁN SỰ KIỆN CHO GRID CHÍNH ĐỂ PHẠM VI RỘNG NHẤT -->
@@ -81,7 +133,10 @@
                       BorderThickness="0" 
                       Margin="0, 0, 0, 0" 
                       Grid.RowSpan="2">
-
+                <ListView.Resources>
+                    <!-- Tự động áp dụng cho mọi ScrollBar trong ListView này -->
+                    <Style TargetType="ScrollBar" BasedOn="{StaticResource DarkScrollBarStyle}"/>
+                </ListView.Resources>
                 <!-- ... (Phần ItemContainerStyle và View giữ nguyên như cũ) ... -->
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
@@ -108,8 +163,8 @@
                 </ListView.ItemContainerStyle>
 
                 <ListView.View>
-                    <GridView>
-                        <GridViewColumn Header="Deck" Width="500">
+                    <GridView ColumnHeaderContainerStyle="{StaticResource DarkGridViewColumnHeader}">
+                        <GridViewColumn Header="Deck" Width="580">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Name}" VerticalAlignment="Center" Padding="5" Foreground="White"/>
@@ -125,7 +180,7 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
 
-                        <GridViewColumn Header="Learn" Width="80">
+                        <GridViewColumn Header="Learn" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding LearnCount}" TextAlignment="Right" Foreground="Red" VerticalAlignment="Center" Padding="5"/>
