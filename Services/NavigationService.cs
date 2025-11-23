@@ -8,6 +8,8 @@ using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Windows;
+using CommunityToolkit.Mvvm.Messaging; 
+using IT008.Q13_Project___fromScratch.Messages;
 
 namespace IT008.Q13_Project___fromScratch.Services
 {
@@ -15,11 +17,13 @@ namespace IT008.Q13_Project___fromScratch.Services
     {
         //DI chính sẽ được tiêm vào đây
         private readonly IServiceProvider _serviceProvider;
+        private readonly IMessenger _messenger;
 
         // Constructor: Nhận DI
-        public NavigationService(IServiceProvider serviceProvider)
+        public NavigationService(IServiceProvider serviceProvider, IMessenger messenger)
         {
             _serviceProvider = serviceProvider;
+            _messenger = messenger;
         }
 
         public void ShowAddCardWindow()
@@ -59,43 +63,38 @@ namespace IT008.Q13_Project___fromScratch.Services
         }
 
         // Thực thi việc mở cửa sổ Học
-        public void ShowStudyWindow(int deckId) // Bỏ 'async void'
+        public void ShowStudyWindow(int deckId)
         {
-            // 1. Yêu cầu DI tạo ra StudyWindow.
-            //    DI sẽ TỰ ĐỘNG tạo StudyViewModel VÀ tiêm nó vào constructor
-            //    của StudyWindow. (Chỉ tạo 1 ViewModel)
             var window = _serviceProvider.GetRequiredService<StudyWindow>();
 
-            // 2. Lấy ViewModel đã được tiêm vào từ DataContext của cửa sổ
-            //    (Điều này yêu cầu StudyWindow.xaml.cs phải có: DataContext = viewModel;)
             if (window.DataContext is not StudyViewModel viewModel)
             {
-                // Lỗi này không bao giờ nên xảy ra nếu DI setup đúng
                 Debug.WriteLine("LỖI NGHIÊM TRỌNG: StudyWindow không có StudyViewModel trong DataContext!");
                 return;
             }
 
-            // 3. Đăng ký sự kiện "Loaded" của cửa sổ.
-            //    Đây là nơi "async void" AN TOÀN và ĐÚNG CHỖ.
             window.Loaded += async (sender, e) =>
             {
                 try
                 {
-                    // 4. Ra lệnh cho ViewModel (đã tồn tại) tải dữ liệu
                     await viewModel.InitializeAsync(deckId);
                 }
                 catch (Exception ex)
                 {
-                    // 5. Bắt lỗi nếu tải CSDL thất bại (app không bị crash)
                     Debug.WriteLine($"Lỗi khi tải thẻ học: {ex.Message}");
                     MessageBox.Show("Không thể tải bộ thẻ. Vui lòng thử lại.", "Lỗi");
-                    window.Close(); // Đóng cửa sổ học
+                    window.Close();
                 }
             };
 
-            // 6. Hiển thị cửa sổ
-            window.Show();
+            // Thay vì window.Show(), dùng ShowDialog() để chờ cửa sổ đóng lại
+            window.ShowDialog();
+
+            // --- SAU KHI CỬA SỔ ĐÓNG ---
+            // Gửi tin nhắn báo hiệu đã học xong để MainViewModel cập nhật lại số liệu
+            _messenger.Send(new StudySessionCompletedMessage(deckId));
         }
+
         public void ImportFileWindow()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();

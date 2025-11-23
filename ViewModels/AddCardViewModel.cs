@@ -14,7 +14,6 @@ using IT008.Q13_Project___fromScratch.Messages;
 using System.IO; // Cần thêm để dùng Path.GetFileName
 using System.Diagnostics; // Cần thêm để dùng Process.Start
 
-
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
     public partial class AddCardViewModel : ObservableObject
@@ -121,6 +120,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                 };
 
                 await _cardRepository.AddAsync(newCard);
+                _messenger.Send(new CardAddedMessage(SelectedDeck.ID));
 
                 // Reset Form
                 FrontText = string.Empty; Answer = string.Empty; BackText = string.Empty;
@@ -129,7 +129,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             }
             catch (System.Exception ex)
             {
-                MessageBox.Show($"Lỗi: {ex.Message}");
+                MessageBox.Show($"Error: {ex.Message}");
             }
         }
 

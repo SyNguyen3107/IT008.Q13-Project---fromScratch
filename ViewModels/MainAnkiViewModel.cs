@@ -100,8 +100,20 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                     Decks.Insert(index, updatedDeck); // Chèn deck mới (tên mới) vào đúng vị trí đó
                 }
             });
+        }
+        //Xử lý khi học xong
+        public void Receive(StudySessionCompletedMessage message)
+        {
+            int deckId = message.Value;
 
+            // Khi học xong, số liệu New/Learn/Due chắc chắn thay đổi.
+            // Cách đơn giản nhất để cập nhật chính xác là tải lại danh sách Deck
+            // (hoặc tải lại đúng Deck đó từ DB nếu muốn tối ưu hơn, nhưng LoadDecksAsync đủ nhanh cho app nhỏ)
 
+            Application.Current.Dispatcher.Invoke(async () =>
+            {
+                await LoadDecksAsync();
+            });
         }
 
         public async Task LoadDecksAsync()

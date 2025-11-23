@@ -10,11 +10,13 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.IO;
 using System.Linq;
+
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
     public partial class StudyViewModel : ObservableObject
     {
         private readonly StudyService _studyService;
+        private readonly AudioService _audioService;
         private int _currentDeckId; //Deck đang học
         private Card? _currentCard; // Thẻ đang học
 
@@ -40,9 +42,10 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         // --- DANH SÁCH KẾT QUẢ SO SÁNH (Để binding lên View) ---
         public ObservableCollection<ComparisonChar> ComparisonResult { get; } = new ObservableCollection<ComparisonChar>();
         // Constructor nhận StudyService qua DI (không khởi tạo dữ liệu giả ở đây)
-        public StudyViewModel(StudyService studyService)
+        public StudyViewModel(StudyService studyService, AudioService audioService)
         {
             _studyService = studyService;
+            _audioService = audioService;
         }
 
         // Hàm khởi tạo ViewModel khi NavigationService gọi (hoặc khi ViewModel được tải)
@@ -168,16 +171,10 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         [RelayCommand]
         private void PlayAudio(string? path)
         {
-            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = path,
-                    UseShellExecute = true
-                });
-            }
-            catch { }
+            if (string.IsNullOrEmpty(path)) return;
+
+            // Gọi AudioService để phát nhạc ngay trong ứng dụng
+            _audioService.PlayAudio(path);
         }
 
         [RelayCommand]
@@ -208,6 +205,10 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             await _studyService.ProcessReviewAsync(_currentCard, outcome);
             await LoadNextCardAsync();
         }
+        public void StopAudio()
+        {
+            _audioService.StopAudio();
+        }
     }
     // Class phụ để lưu thông tin hiển thị từng ký tự
     public class ComparisonChar
@@ -216,4 +217,6 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         public string Color { get; set; } // Mã màu Hex (#RRGGBB)
         public string FontWeight { get; set; } = "Normal";
     }
+    // Hàm này sẽ được gọi từ Code-behind khi cửa sổ đóng
+
 }
