@@ -64,7 +64,8 @@ namespace IT008.Q13_Project___fromScratch
             services.AddTransient<AddCardViewModel>();
             services.AddTransient<DeckChosenViewModel>();
             services.AddTransient<DeckRenameViewModel>();
-            services.AddTransient<DeckRenameWindow>(); // Nếu chưa có
+            services.AddTransient<DeckRenameWindow>();
+            services.AddTransient<ChooseDeckViewModel>();
 
             // === ĐĂNG KÝ CÁC CỬA SỔ (VIEWS) ===
             services.AddTransient<MainAnkiWindow>();
@@ -72,10 +73,11 @@ namespace IT008.Q13_Project___fromScratch
             services.AddTransient<CreateDeckWindow>();
             services.AddTransient<AddCardWindow>();
             services.AddTransient<DeckChosenWindow>();
-          
+            services.AddTransient<ChooseDeckWindow>();
 
 
-          
+
+
 
             // Đăng ký Messenger
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);

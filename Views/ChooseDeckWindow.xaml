@@ -29,7 +29,7 @@
         </StackPanel>
         <!-- Danh sách Deck -->
         <ListBox Grid.Row="1"
-                 ItemsSource="{Binding FilteredDecks}"
+                 ItemsSource="{Binding Decks}"
                  SelectedItem="{Binding SelectedDeck}"
                  Background="#333"
                  Foreground="White"

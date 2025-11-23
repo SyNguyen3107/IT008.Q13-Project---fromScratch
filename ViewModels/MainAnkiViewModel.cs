@@ -16,7 +16,8 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
     // --- SỬA LỖI: Thêm IRecipient<DeckUpdatedMessage> ---
     public partial class MainAnkiViewModel : ObservableObject,
                                              IRecipient<DeckAddedMessage>,
-                                             IRecipient<DeckUpdatedMessage>
+                                             IRecipient<DeckUpdatedMessage>,
+                                             IRecipient<CardAddedMessage>
     {
         private readonly IDeckRepository _deckRepository;
         private readonly INavigationService _navigationService;
@@ -50,8 +51,32 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                 Decks.Add(newDeck);
             });
         }
+        // Xử lý khi thêm thẻ mới vào Deck (Card Added)
+        public void Receive(CardAddedMessage message)
+        {
+            int deckId = message.Value;
 
-        // --- HÀM MỚI: Xử lý khi Deck bị sửa đổi (Rename) ---
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                // Tìm Deck tương ứng trong danh sách
+                var targetDeck = Decks.FirstOrDefault(d => d.ID == deckId);
+
+                if (targetDeck != null)
+                {
+                    int index = Decks.IndexOf(targetDeck);
+
+                    // Cập nhật số lượng thẻ New
+                    // (Lưu ý: Vì Model Deck không có INotifyPropertyChanged, 
+                    // ta phải dùng kỹ thuật Remove/Insert để ép UI cập nhật số liệu)
+
+                    targetDeck.NewCount += 1;
+
+                    Decks.RemoveAt(index);
+                    Decks.Insert(index, targetDeck);
+                }
+            });
+        }
+        // Xử lý khi Deck bị sửa đổi (Rename)
         public void Receive(DeckUpdatedMessage message)
         {
             var updatedDeck = message.Value;

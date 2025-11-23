@@ -2,40 +2,45 @@
 using CommunityToolkit.Mvvm.Input;
 using IT008.Q13_Project___fromScratch.Interfaces;
 using IT008.Q13_Project___fromScratch.Models;
+using IT008.Q13_Project___fromScratch.Views; // Cần cái này để gọi ChooseDeckWindow
+using Microsoft.Extensions.DependencyInjection; // <-- CẦN THÊM: Để dùng GetRequiredService
 using Microsoft.Win32; // Dùng cho OpenFileDialog
 using System.Collections.ObjectModel;
-using System.Windows.Input;
 using System.Threading.Tasks;
 using System.Windows; // Dùng cho MessageBox
-using IT008.Q13_Project___fromScratch.Views; // Cần cái này để gọi ChooseDeckWindow
+using System.Windows.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using IT008.Q13_Project___fromScratch.Messages;
 
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
     public partial class AddCardViewModel : ObservableObject
     {
         private readonly ICardRepository _cardRepository;
-        private readonly IDeckRepository _deckRepository; // <-- Cần thêm repo này
+        private readonly IDeckRepository _deckRepository;
+
+        private readonly IMessenger _messenger;
 
         // --- Các thuộc tính bind với Giao diện (View) ---
 
-        // Danh sách Deck để chọn từ ComboBox
+        // Danh sách Deck để chọn từ ComboBox (Có thể không dùng nữa nếu dùng ChooseDeckWindow)
         public ObservableCollection<Deck> AllDecks { get; } = new ObservableCollection<Deck>();
 
-        // Deck đang được chọn trong ComboBox
+        // Deck đang được chọn
         [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(SaveCardCommand))] // Cập nhật trạng thái nút Save
+        [NotifyCanExecuteChangedFor(nameof(SaveCardCommand))]
         private Deck _selectedDeck;
 
         // Nội dung thẻ
         [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(SaveCardCommand))] // Cập nhật trạng thái nút Save
+        [NotifyCanExecuteChangedFor(nameof(SaveCardCommand))]
         private string _frontText;
 
         [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(SaveCardCommand))] // Cập nhật trạng thái nút Save
+        [NotifyCanExecuteChangedFor(nameof(SaveCardCommand))]
         private string _backText;
 
-        // Đường dẫn file (optional)
+        // Đường dẫn file
         [ObservableProperty]
         private string _frontImagePath;
 
@@ -50,19 +55,19 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
 
 
         // Constructor
-        public AddCardViewModel(ICardRepository cardRepository, IDeckRepository deckRepository)
+        public AddCardViewModel(ICardRepository cardRepository, IDeckRepository deckRepository,
+                                IMessenger messenger)
         {
             _cardRepository = cardRepository;
-            _deckRepository = deckRepository; // <-- Tiêm DeckRepository
+            _deckRepository = deckRepository;
+            _messenger = messenger;
         }
 
-        // --- Hàm tải dữ liệu ---
-
-        // Hàm này phải được gọi từ code-behind (AddCardWindow.xaml.cs)
+        // Hàm tải dữ liệu (Giữ nguyên nếu bạn vẫn dùng ComboBox ở đâu đó)
         public async Task LoadDecksAsync()
         {
             AllDecks.Clear();
-            var decks = await _deckRepository.GetAllAsync(); // Lấy tất cả deck từ CSDL
+            var decks = await _deckRepository.GetAllAsync();
             foreach (var deck in decks)
             {
                 AllDecks.Add(deck);
@@ -71,47 +76,39 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
 
         // --- Các Command (Nút bấm) ---
 
-        // Điều kiện để nút "Save" có thể được bấm
         private bool CanSaveCard()
         {
             return !string.IsNullOrWhiteSpace(FrontText) &&
                    !string.IsNullOrWhiteSpace(BackText) &&
-                   SelectedDeck != null; // Phải chọn Deck
+                   SelectedDeck != null;
         }
 
         [RelayCommand(CanExecute = nameof(CanSaveCard))]
         private async Task SaveCard()
         {
-            // 1. Tạo đối tượng Card mới
             var newCard = new Card
             {
-                DeckId = SelectedDeck.ID, // Quan trọng!
+                DeckId = SelectedDeck.ID,
                 FrontText = this.FrontText,
                 BackText = this.BackText,
                 FrontImagePath = this.FrontImagePath,
                 FrontAudioPath = this.FrontAudioPath,
                 BackImagePath = this.BackImagePath,
                 BackAudioPath = this.BackAudioPath,
-
                 // CardRepository sẽ tự động tạo CardProgress mặc định
             };
 
-            // 2. Lưu vào CSDL
             await _cardRepository.AddAsync(newCard);
-
-            // 3. Xóa các trường để chuẩn bị cho thẻ tiếp theo
+            _messenger.Send(new CardAddedMessage(SelectedDeck.ID));
+            // Reset Form
             FrontText = "";
             BackText = "";
             FrontImagePath = null;
             FrontAudioPath = null;
             BackImagePath = null;
             BackAudioPath = null;
-
-            // (Không cần đóng cửa sổ, để người dùng có thể thêm nhiều thẻ)
         }
 
-        // Command mẫu cho việc chọn file
-        // Command Đóng cửa sổ
         [RelayCommand]
         private void Cancel(Window window)
         {
@@ -121,15 +118,21 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             }
         }
 
-        // Command mở cửa sổ chọn deck
+        // --- SỬA LỖI Ở ĐÂY ---
         [RelayCommand]
         private async Task ChooseDeck()
         {
-            var chooseDeckWindow = new ChooseDeckWindow();
+            // Thay vì: var chooseDeckWindow = new ChooseDeckWindow(); (LỖI)
+            // Hãy dùng:
+            var chooseDeckWindow = App.ServiceProvider.GetRequiredService<ChooseDeckWindow>();
+
             chooseDeckWindow.ShowDialog();
+
             // Hiển thị tên deck đã chọn
             if (chooseDeckWindow.SelectedDeck != null)
+            {
                 SelectedDeck = chooseDeckWindow.SelectedDeck;
+            }
         }
 
         // Command thêm Media vào Front
@@ -138,19 +141,13 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         {
             OpenFileDialog dialog = new OpenFileDialog
             {
-                // Filter = "Image files (*.png;*.jpg)|*.png;*.jpg;*.jpeg|All files (*.*)|*.*"
                 Title = "Select media for FRONT",
-                Filter =
-                    "Media files (*.png;*.jpg;*.jpeg;*.gif;*.mp3;*.wav;*.mp4;*.avi)|*.png;*.jpg;*.jpeg;*.gif;*.mp3;*.wav;*.mp4;*.avi|" +
-                    "Images (*.png;*.jpg;*.jpeg;*.gif)|*.png;*.jpg;*.jpeg;*.gif|" +
-                    "Audio (*.mp3;*.wav)|*.mp3;*.wav|" +
-                    "Video (*.mp4;*.avi)|*.mp4;*.avi|" +
-                    "All files (*.*)|*.*"
+                Filter = "All files (*.*)|*.*"
             };
 
             if (dialog.ShowDialog() == true)
             {
-                FrontImagePath = dialog.FileName; // Cập nhật đường dẫn
+                FrontImagePath = dialog.FileName;
             }
         }
 
@@ -161,22 +158,15 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             OpenFileDialog dialog = new OpenFileDialog
             {
                 Title = "Select media for BACK",
-                Filter =
-                    "Media files (*.png;*.jpg;*.jpeg;*.gif;*.mp3;*.wav;*.mp4;*.avi)|*.png;*.jpg;*.jpeg;*.gif;*.mp3;*.wav;*.mp4;*.avi|" +
-                    "Images (*.png;*.jpg;*.jpeg;*.gif)|*.png;*.jpg;*.jpeg;*.gif|" +
-                    "Audio (*.mp3;*.wav)|*.mp3;*.wav|" +
-                    "Video (*.mp4;*.avi)|*.mp4;*.avi|" +
-                    "All files (*.*)|*.*"
+                Filter = "All files (*.*)|*.*"
             };
 
             if (dialog.ShowDialog() == true)
             {
-                BackImagePath = dialog.FileName; 
+                BackImagePath = dialog.FileName;
             }
         }
-        // [RelayCommand] private void PickFrontAudio() { ... }
-        // [RelayCommand] private void PickBackAudio() { ... }
 
-        // ChooseDeck Command
+        // Các command phụ khác...
     }
 }

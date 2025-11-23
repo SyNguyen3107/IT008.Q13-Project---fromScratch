@@ -1,18 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using IT008.Q13_Project___fromScratch.Models;
-using IT008.Q13_Project___fromScratch.ViewModels;
+﻿using System.Windows;
+using IT008.Q13_Project___fromScratch.ViewModels; // Import ViewModel
+using IT008.Q13_Project___fromScratch.Models;     // Import Model
 
 namespace IT008.Q13_Project___fromScratch
 {
@@ -21,14 +9,26 @@ namespace IT008.Q13_Project___fromScratch
     /// </summary>
     public partial class ChooseDeckWindow : Window
     {
-        public Deck SelectedDeck { get; set; }
-        public ChooseDeckWindow() : this(new List<Deck>()) { }
-        public ChooseDeckWindow(IEnumerable<Deck> deckList)
+        // Property để bên ngoài lấy kết quả sau khi chọn
+        public Deck SelectedDeck { get; private set; }
+
+        // Constructor nhận ViewModel từ DI
+        public ChooseDeckWindow(ChooseDeckViewModel viewModel)
         {
             InitializeComponent();
-            var vm = new ChooseDeckViewModel();
-            vm.LoadDecks(deckList);
-            DataContext = vm;
+
+            // Gán DataContext
+            this.DataContext = viewModel;
+
+            // Đăng ký sự kiện đóng cửa sổ để lấy kết quả từ ViewModel
+            // (ViewModel sẽ gán kết quả vào Window.Tag trước khi đóng)
+            this.Closing += (s, e) =>
+            {
+                if (this.DialogResult == true && this.Tag is Deck deck)
+                {
+                    SelectedDeck = deck;
+                }
+            };
         }
     }
 }
