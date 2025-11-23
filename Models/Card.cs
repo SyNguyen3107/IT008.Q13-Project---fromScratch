@@ -11,6 +11,9 @@ namespace IT008.Q13_Project___fromScratch.Models
         public int ID { get; private set; }
         public int DeckId { get; set; }
 
+        //Câu trả lời cho card này
+        public string Answer { get; set; } = string.Empty;
+
         //Nội dung mặt trước
         public string FrontText { get; set; }
         public string? FrontImagePath { get; set; } = null;

@@ -3,30 +3,34 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
-        xmlns:ei="http://schemas.microsoft.com/expression/2010/interactions"
-        xmlns:local="clr-namespace:IT008.Q13_Project___fromScratch"
-        xmlns:vm="clr-namespace:IT008.Q13_Project___fromScratch.ViewModels"
+        xmlns:converters="clr-namespace:IT008.Q13_Project___fromScratch.Converters"
         mc:Ignorable="d"
-        Title="Add" Height="450" Width="800"
+        Title="Add Card" Height="650" Width="800" 
         Icon="/Resources/Anki-icon.ico"
         Background="#2c2c2c"
         WindowStartupLocation="CenterScreen">
 
+    <Window.Resources>
+        <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
+    </Window.Resources>
+
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Type/Deck -->
+            <!-- Deck -->
             <RowDefinition Height="*"/>
             <!-- Front -->
             <RowDefinition Height="*"/>
             <!-- Back -->
             <RowDefinition Height="Auto"/>
-            <!-- Có thể thêm Back sau này -->
+            <!-- Answer -->
+            <RowDefinition Height="Auto"/>
+            <!-- Buttons -->
+
         </Grid.RowDefinitions>
 
-        <!-- Hàng đầu: Type / Deck -->
-        <Grid Grid.Row="0">
+        <!-- 1. Hàng đầu: Type / Deck -->
+        <Grid Grid.Row="0" Margin="0,0,0,15">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="1*"/>
@@ -34,167 +38,182 @@
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Type -->
-            <TextBlock Grid.Column="0" Text="Type" FontSize="14" Foreground="White"
-                       VerticalAlignment="Center" Margin="0,10,10,10"/>
-
-            <Border Grid.Column="1" CornerRadius="6" Background="#434343"
-                    Margin="0,10,20,10" Height="30">
-                <Button Content="Basic"
-                        FontSize="14"
-                        Foreground="White"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        HorizontalAlignment="Stretch"
-                        Cursor="Hand"/>
+            <TextBlock Grid.Column="0" Text="Type" FontSize="14" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <Border Grid.Column="1" CornerRadius="6" Background="#434343" Height="30" Margin="0,0,20,0">
+                <Button Content="Basic" FontSize="14" Foreground="White" Background="Transparent" BorderThickness="0" Cursor="Hand"/>
             </Border>
 
-            <!-- Deck -->
-            <TextBlock Grid.Column="2" Text="Deck" FontSize="14" Foreground="White"
-                       VerticalAlignment="Center" Margin="0,10,10,10"/>
-
-            <Border Grid.Column="3" CornerRadius="6" Background="#434343" Margin="0,10,0,10" Height="30">
-                <!-- Choose Deck -->
-                <Button Content="{Binding SelectedDeck.Name, TargetNullValue='Select Deck...'}"
-                        FontSize="14" Foreground="White" Background="Transparent"
-                        BorderThickness="0"
-                        Cursor="Hand" Height="30" VerticalAlignment="Top"
+            <TextBlock Grid.Column="2" Text="Deck" FontSize="14" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <Border Grid.Column="3" CornerRadius="6" Background="#434343" Height="30">
+                <!-- Binding tên Deck -->
+                <Button Content="{Binding SelectedDeck.Name, TargetNullValue='Select Deck...'}" 
+                        FontSize="14" Foreground="White" Background="Transparent" BorderThickness="0" Cursor="Hand"
                         Command="{Binding ChooseDeckCommand}"/>
             </Border>
         </Grid>
 
-        <!-- Front -->
-        <Grid Grid.Row="1" Margin="0,20,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- 2. FRONT -->
+        <GroupBox Grid.Row="1" Header="Front" Foreground="White" BorderBrush="#555" Margin="0,0,0,10">
+            <!-- DockPanel giúp layout ổn định hơn Grid khi nội dung thay đổi -->
+            <DockPanel Margin="5">
 
-            <TextBlock Grid.Column="0" Text="Front"
-                       FontSize="18" Foreground="White"
-                       VerticalAlignment="Top"
-                       Margin="0,0,10,0"/>
-            <Border CornerRadius="6" Background="#2c2c2c" BorderBrush="#FF367FF4" BorderThickness="1" Height ="50" Width="740">
-                <TextBox 
-                     Text="{Binding FrontText, UpdateSourceTrigger=PropertyChanged}"
-                     Background="Transparent"
-                     Foreground="White"
-                     FontSize="16"
-                     BorderThickness="0"
-                     Height ="50" Width="740"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap">
+                <!-- Phần BOTTOM: Ảnh và Nút Upload (Luôn nằm dưới cùng) -->
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical" Margin="0,5,0,0">
+                    <!-- NÚT HIỂN THỊ ẢNH (MỚI - CLICK ĐỂ MỞ FOLDER) -->
+                    <!-- Chỉ hiện khi FrontImagePath có dữ liệu -->
+                    <Button Command="{Binding OpenFileLocationCommand}" 
+                            CommandParameter="{Binding FrontImagePath}"
+                            HorizontalAlignment="Left"
+                            Background="Transparent" BorderThickness="0"
+                            Cursor="Hand"
+                            Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"
+                            Margin="0,0,0,5">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <!-- Ảnh Thumbnail -->
+                                <Image Source="{Binding FrontImagePath}" Height="60" Margin="0,0,10,0"/>
 
-                </TextBox>
+                                <!-- Tên file ảnh -->
+                                <TextBlock VerticalAlignment="Center">
+                                    <Run Text="📷" Foreground="#3498DB"/>
+                                    <Run Text="{Binding FrontImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button.Content>
+                        <Button.ToolTip>
+                            <ToolTip Content="Click to open image location"/>
+                        </Button.ToolTip>
+                    </Button>
+
+                    <!-- Nút Hiển thị Audio (Đã cập nhật lệnh OpenFileLocationCommand) -->
+                    <Button Command="{Binding OpenFileLocationCommand}" 
+                            CommandParameter="{Binding FrontAudioPath}"
+                            HorizontalAlignment="Left"
+                            Background="Transparent" BorderThickness="0"
+                            Cursor="Hand"
+                            Visibility="{Binding FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
+                            Margin="0,0,0,5">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
+                                <TextBlock Text="{Binding FrontAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
+                            </StackPanel>
+                        </Button.Content>
+                        <Button.ToolTip>
+                            <ToolTip Content="Click to open audio location"/>
+                        </Button.ToolTip>
+                    </Button>
+                    <!-- Nút Upload -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="0,0,5,0">
+                            <Button Content="📷 Image" Command="{Binding PickFrontImageCommand}" 
+                                    Background="Transparent" Foreground="White" BorderThickness="0" Padding="8,2" Cursor="Hand"/>
+                        </Border>
+                        <Border CornerRadius="6" Background="#434343" BorderThickness="1">
+                            <Button Content="🔊 Audio" Command="{Binding PickFrontAudioCommand}" 
+                                    Background="Transparent" Foreground="White" BorderThickness="0" Padding="8,2" Cursor="Hand"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Phần FILL: TextBox (Tự động lấp đầy phần còn lại ở trên) -->
+                <TextBox Text="{Binding FrontText, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         Background="#333" Foreground="White" BorderThickness="0"
+                         FontSize="16" Padding="5"
+                         VerticalScrollBarVisibility="Auto"/>
+            </DockPanel>
+        </GroupBox>
+
+        <!-- 3. BACK  -->
+        <GroupBox Grid.Row="2" Header="Back" Foreground="White" BorderBrush="#555" Margin="0,0,0,10">
+            <DockPanel Margin="5">
+
+                <!-- Phần BOTTOM -->
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical" Margin="0,5,0,0">
+                    <!-- NÚT HIỂN THỊ ẢNH BACK (MỚI) -->
+                    <Button Command="{Binding OpenFileLocationCommand}" 
+                            CommandParameter="{Binding BackImagePath}"
+                            HorizontalAlignment="Left"
+                            Background="Transparent" BorderThickness="0"
+                            Cursor="Hand"
+                            Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"
+                            Margin="0,0,0,5">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Image Source="{Binding BackImagePath}" Height="60" Margin="0,0,10,0"/>
+                                <TextBlock VerticalAlignment="Center">
+                                    <Run Text="📷" Foreground="#3498DB"/>
+                                    <Run Text="{Binding BackImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button.Content>
+                        <Button.ToolTip>
+                            <ToolTip Content="Click to open image location"/>
+                        </Button.ToolTip>
+                    </Button>
+
+                    <!-- Nút Hiển thị Audio Back -->
+                    <Button Command="{Binding OpenFileLocationCommand}" 
+                            CommandParameter="{Binding BackAudioPath}"
+                            HorizontalAlignment="Left"
+                            Background="Transparent" BorderThickness="0"
+                            Cursor="Hand"
+                            Visibility="{Binding BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
+                            Margin="0,0,0,5">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
+                                <TextBlock Text="{Binding BackAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
+                            </StackPanel>
+                        </Button.Content>
+                        <Button.ToolTip>
+                            <ToolTip Content="Click to open audio location"/>
+                        </Button.ToolTip>
+                    </Button>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="0,0,5,0">
+                            <Button Content="📷 Image" Command="{Binding PickBackImageCommand}" 
+                                    Background="Transparent" Foreground="White" BorderThickness="0" Padding="8,2" Cursor="Hand"/>
+                        </Border>
+                        <Border CornerRadius="6" Background="#434343" BorderThickness="1">
+                            <Button Content="🔊 Audio" Command="{Binding PickBackAudioCommand}" 
+                                    Background="Transparent" Foreground="White" BorderThickness="0" Padding="8,2" Cursor="Hand"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Phần FILL -->
+                <TextBox Text="{Binding BackText, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         Background="#333" Foreground="White" BorderThickness="0"
+                         FontSize="16" Padding="5"
+                         VerticalScrollBarVisibility="Auto"/>
+            </DockPanel>
+        </GroupBox>
+        <!-- 3. ANSWER -->
+        <GroupBox Grid.Row="3" Header="Answer (Keyword for typing)" Foreground="#81C784" BorderBrush="#555" Margin="0,0,0,10">
+            <TextBox Text="{Binding Answer, UpdateSourceTrigger=PropertyChanged}"
+                     Height="40"
+                     AcceptsReturn="False" 
+                     VerticalContentAlignment="Center"
+                     Background="#333" Foreground="White" BorderThickness="0"
+                     FontSize="16" Padding="5"/>
+        </GroupBox>
+        <!-- 4. CÁC NÚT CHỨC NĂNG -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <!-- Nút Add -->
+            <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="5,0">
+                <Button Content="Add" Command="{Binding SaveCardCommand}" Width="80" Height="25" 
+                        Background="Transparent" Foreground="White" BorderThickness="0" Cursor="Hand" IsDefault="True"/>
             </Border>
-            <!-- nút media riêng cho Front -->
-            <Button
-                        ToolTip="Attach pictures/audio"
-                        Content="📎"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Foreground="White"
-                        FontSize="18"
-                        Width="32"
-                        Height="32"
-                        Cursor ="Hand"
-                        VerticalAlignment="Top"
-                        Margin="708,4,0,0"
-                        Command="{Binding PickFrontMediaCommand}"/>
-        </Grid>
-        <!-- Back -->
-        <Grid Grid.Row="2" Margin="0,20,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="0" Text="Back"
-                    FontSize="18" Foreground="White"
-                    VerticalAlignment="Top"
-                    Margin="0,5,10,0"/>
-            <Border CornerRadius="6" Background="#2c2c2c" BorderBrush="#FF367FF4" BorderThickness="1" Height ="50" Width="740">
-                <TextBox 
-                  Text="{Binding BackText, UpdateSourceTrigger=PropertyChanged}"
-                  Background="Transparent"
-                  Foreground="White"
-                  FontSize="16"
-                  BorderThickness="0"
-                  Height ="50" Width="740"
-                  AcceptsReturn="True"
-                  TextWrapping="Wrap"/>
+            <!-- Nút Close -->
+            <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="5,0">
+                <Button Content="Close" Command="{Binding CancelCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                        Width="80" Height="25" Background="Transparent" Foreground="White" BorderThickness="0" Cursor="Hand" IsCancel="True"/>
             </Border>
-            <!-- nút media riêng cho Back-->
-            <Button
-                    ToolTip="Attach pictures/audio"
-                    Content="📎"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Foreground="White"
-                    FontSize="18"
-                    Width="32"
-                    Height="32"
-                    Cursor ="Hand"
-                    VerticalAlignment="Top"
-                    Margin="708,4,0,0"
-                    Command="{Binding PickBackMediaCommand}" RenderTransformOrigin="0.429,1.946"/>
-        </Grid>
-        <Grid Grid.Row="3">
-            <StackPanel Orientation="Horizontal"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Bottom"
-                Margin="0,10,10,10">
-
-                <!-- Nút Add -->
-                <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="5,0">
-                    <Button Content="Add"
-                    Width="100"
-                    Height="20"
-                    Background="Transparent"
-                    Foreground="White"
-                    BorderThickness="0"
-                    Cursor="Hand"
-                    Command="{Binding SaveCardCommand}"/>
-                </Border>
-
-                <!-- Nút History -->
-                <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="5,0">
-                    <Button Content="History"
-                    Width="100"
-                    Height="20"
-                    Background="Transparent"
-                    Foreground="White"
-                    BorderThickness="0"
-                    Cursor="Hand"
-                    Command="{Binding HistoryCommand}"/>
-                </Border>
-
-                <!-- Nút Close -->
-                <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="5,0">
-                    <Button Content="Close"
-                    Width="100"
-                    Height="20"
-                    Background="Transparent"
-                    Foreground="White"
-                    BorderThickness="0"
-                    Cursor="Hand"
-                    Command="{Binding CancelCommand}" 
-                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
-                </Border>
-
-                <!-- Nút Help -->
-                <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="5,0">
-                    <Button Content="Help"
-                    Width="100"
-                    Height="20"
-                    Background="Transparent"
-                    Foreground="White"
-                    BorderThickness="0"
-                    Cursor="Hand"
-                    Command="{Binding HelpCommand}"/>
-                </Border>
-            </StackPanel>
-        </Grid>
+        </StackPanel>
 
     </Grid>
 </Window>

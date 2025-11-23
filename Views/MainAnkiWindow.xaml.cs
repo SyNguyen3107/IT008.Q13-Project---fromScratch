@@ -3,7 +3,9 @@ using IT008.Q13_Project___fromScratch.ViewModels;
 using System.Windows;
 using IT008.Q13_Project___fromScratch.Models;
 using System.Windows.Controls;
-
+using System.Windows.Input; // Cần cho MouseButtonEventArgs
+using System.Windows.Media; // Cần cho VisualTreeHelper
+using System.Windows.Controls.Primitives; // <-- Thêm để dùng ScrollBar
 namespace IT008.Q13_Project___fromScratch
 {
     /// <summary>
@@ -50,6 +52,35 @@ namespace IT008.Q13_Project___fromScratch
                 // Ngăn sự kiện click lan ra ngoài (tránh chọn nhầm dòng ListView bên dưới)
                 e.Handled = true;
             }
+        }
+        // --- HÀM MỚI: XỬ LÝ BỎ CHỌN ---
+        // Hàm này đủ thông minh để áp dụng cho bất kỳ container nào (Grid, Border, Window)
+        private void ClearSelection_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // 1. Nếu click chuột phải -> Không làm gì (để menu chuột phải hoạt động)
+            if (e.ChangedButton != MouseButton.Left) return;
+
+            var dependencyObject = (DependencyObject)e.OriginalSource;
+
+            while (dependencyObject != null && dependencyObject != DeckListView)
+            {
+                // 2. Nếu click trúng Item trong list -> Để yên cho sự kiện chọn chạy
+                if (dependencyObject is ListViewItem) return;
+
+                // 3. Nếu click trúng Thanh cuộn (ScrollBar) -> Không bỏ chọn (để người dùng cuộn)
+                if (dependencyObject is ScrollBar) return;
+
+                // 4. Nếu click trúng Nút bấm, TextBox, v.v. -> Không bỏ chọn (để người dùng thao tác nút đó)
+                if (dependencyObject is Button || dependencyObject is TextBox || dependencyObject is Menu) return;
+
+                dependencyObject = VisualTreeHelper.GetParent(dependencyObject);
+            }
+
+            // Nếu chạy hết vòng lặp mà không trúng các thành phần trên -> Bỏ chọn
+            DeckListView.SelectedItem = null;
+
+            // (Tùy chọn) Làm mất focus khỏi ListView để giao diện sạch hơn
+            Keyboard.ClearFocus(); 
         }
     }
 }

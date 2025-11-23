@@ -62,6 +62,7 @@ namespace IT008.Q13_Project___fromScratch.Services
                         BackText = cardModel.BackText,
                         FrontImagePath = cardModel.FrontImagePath,
                         BackImagePath = cardModel.BackImagePath,
+                        Answer = cardModel.Answer ?? "",
                         // FrontAudioPath, BackAudioPath... (tùy bạn mở rộng)
 
                         // Quan trọng: Không set Progress, để Repository tự tạo mới (New)

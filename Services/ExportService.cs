@@ -35,6 +35,7 @@ namespace IT008.Q13_Project___fromScratch.Services
                 {
                     FrontText = c.FrontText,
                     BackText = c.BackText,
+                    Answer = c.Answer,
                     FrontImagePath = c.FrontImagePath,
                     BackImagePath = c.BackImagePath
                 }).ToList()
