@@ -11,18 +11,28 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
     public partial class StudyViewModel : ObservableObject
     {
         private readonly StudyService _studyService;
-        private int _currentDeckId; // Biến để lưu Deck ID
-        private Card? _currentCard; // Thẻ hiện tại đang hiển thị
+        private int _currentDeckId; //Deck đang học
+        private Card? _currentCard; // Thẻ đang học
 
-        // Thuộc tính binding cho giao diện (sử dụng source-generator của CommunityToolkit)
+        // --- Các thuộc tính hiển thị lên View ---
+
         [ObservableProperty]
         private string _questionText = string.Empty;
 
         [ObservableProperty]
         private string _answerText = string.Empty;
 
+        [ObservableProperty] // Đường dẫn ảnh/âm thanh (nếu có)
+        private string? _frontImagePath;
+
         [ObservableProperty]
+        private string? _backImagePath;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsInputRequired))] // Để ẩn hiện ô nhập liệu nếu cần
         private bool _isAnswerVisible = false;
+
+        public bool IsInputRequired => !IsAnswerVisible; // Ví dụ: Ẩn input khi đã hiện đáp án
 
         // Constructor nhận StudyService qua DI (không khởi tạo dữ liệu giả ở đây)
         public StudyViewModel(StudyService studyService)
