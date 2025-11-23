@@ -15,9 +15,16 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         // Lưu deckId để dùng khi người dùng nhấn Study Now
         private int _deckId;
 
+        private string _deckName = "Loading...";
+
         private int _newCount;
 
         /// Số thẻ mới
+        public String DeckName
+        {
+            get => _deckName;
+            set => SetProperty(ref _deckName, value);
+        }
         public int NewCount
         {
             get => _newCount;
@@ -54,11 +61,13 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         public async Task InitializeAsync(int deckId)
         {
             _deckId = deckId; // lưu lại deckId để dùng cho StudyNowCommand
+            
 
             // Gọi service để lấy thông tin thống kê (New/Learning/Review)
             var stats = await _studyService.GetDeckStatsAsync(deckId);
 
             // Cập nhật thuộc tính (UI sẽ tự động cập nhật nhờ SetProperty)
+            DeckName = stats.DeckName ?? "Unknown";
             NewCount = stats?.NewCount ?? 0;
             LearningCount = stats?.LearningCount ?? 0;
             ReviewCount = stats?.ReviewCount ?? 0;
