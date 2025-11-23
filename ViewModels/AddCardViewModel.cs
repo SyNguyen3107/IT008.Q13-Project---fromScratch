@@ -106,61 +106,39 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         [RelayCommand(CanExecute = nameof(CanSaveCard))]
         private async Task SaveCard()
         {
-            var newCard = new Card
+            try
             {
-                DeckId = SelectedDeck.ID,
-                FrontText = this.FrontText,
-                BackText = this.BackText,
-                Answer = this.Answer,
-                FrontImagePath = this.FrontImagePath,
-                FrontAudioPath = this.FrontAudioPath,
-                BackImagePath = this.BackImagePath,
-                BackAudioPath = this.BackAudioPath,
-                // CardRepository sẽ tự động tạo CardProgress mặc định
-            };
+                var newCard = new Card
+                {
+                    DeckId = SelectedDeck.ID,
+                    FrontText = this.FrontText,
+                    Answer = this.Answer,
+                    BackText = this.BackText ?? "",
+                    FrontImagePath = this.FrontImagePath,
+                    FrontAudioPath = this.FrontAudioPath,
+                    BackImagePath = this.BackImagePath,
+                    BackAudioPath = this.BackAudioPath,
+                };
 
-            await _cardRepository.AddAsync(newCard);
-            _messenger.Send(new CardAddedMessage(SelectedDeck.ID));
-            // Reset Form (Giữ lại Deck để nhập tiếp)
-            FrontText = "";
-            BackText = "";
-            Answer = string.Empty;
-            FrontImagePath = null;
-            FrontAudioPath = null;
-            BackImagePath = null;
-            BackAudioPath = null;
-            FrontAudioName = null;
-            BackAudioName = null;
-            FrontImageName = null;
-            BackImageName = null;
+                await _cardRepository.AddAsync(newCard);
+
+                // Reset Form
+                FrontText = string.Empty; Answer = string.Empty; BackText = string.Empty;
+                RemoveFrontImage(); RemoveFrontAudio();
+                RemoveBackImage(); RemoveBackAudio();
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show($"Lỗi: {ex.Message}");
+            }
         }
 
-        [RelayCommand]
+            [RelayCommand]
         private void Cancel(Window window)
         {
             if (window != null)
             {
                 window.Close();
-            }
-        }
-
-        // --- MEDIA COMMANDS (HỖ TRỢ ONLINE LINK) ---
-
-        // Hàm xử lý chung cho việc chọn file
-        private void SetMedia(string path, ref string pathProperty, ref string nameProperty)
-        {
-            if (string.IsNullOrWhiteSpace(path)) return;
-
-            pathProperty = path;
-
-            // Nếu là link online (http/https)
-            if (path.StartsWith("http", System.StringComparison.OrdinalIgnoreCase))
-            {
-                nameProperty = "🌐 Online Link";
-            }
-            else // Nếu là file local
-            {
-                nameProperty = Path.GetFileName(path);
             }
         }
 
@@ -178,6 +156,24 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             }
         }
 
+        // --- MEDIA COMMANDS (HỖ TRỢ ONLINE LINK) ---
+        // Hàm xử lý chung cho việc chọn file
+        private void SetMedia(string path, ref string pathProperty, ref string nameProperty)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+
+            pathProperty = path;
+
+            // Nếu là link online (http/https)
+            if (path.StartsWith("http", System.StringComparison.OrdinalIgnoreCase))
+            {
+                nameProperty = "🌐 Online Link";
+            }
+            else // Nếu là file local
+            {
+                nameProperty = Path.GetFileName(path);
+            }
+        }
         // Chọn Media
         [RelayCommand]
         private void PickFrontImage()
@@ -192,7 +188,6 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                 OnPropertyChanged(nameof(FrontImageName));
             }
         }
-
         [RelayCommand]
         private void PickFrontAudio()
         {
@@ -205,7 +200,6 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                 OnPropertyChanged(nameof(FrontAudioName));
             }
         }
-
         [RelayCommand]
         private void PickBackImage()
         {
@@ -218,7 +212,6 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                 OnPropertyChanged(nameof(BackImageName));
             }
         }
-
         [RelayCommand]
         private void PickBackAudio()
         {
@@ -252,33 +245,17 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             if (Clipboard.ContainsText())
             {
                 var text = Clipboard.GetText().Trim();
-                // Kiểm tra sơ bộ có phải URL không
                 if (text.StartsWith("http", System.StringComparison.OrdinalIgnoreCase))
                 {
                     switch (type)
                     {
-                        case "FrontImage":
-                            FrontImagePath = text;
-                            FrontImageName = "🌐 Online Image";
-                            break;
-                        case "FrontAudio":
-                            FrontAudioPath = text;
-                            FrontAudioName = "🌐 Online Audio";
-                            break;
-                        case "BackImage":
-                            BackImagePath = text;
-                            BackImageName = "🌐 Online Image";
-                            break;
-                        case "BackAudio":
-                            BackAudioPath = text;
-                            BackAudioName = "🌐 Online Audio";
-                            break;
+                        case "FrontImage": SetMedia(text, ref _frontImagePath, ref _frontImageName); OnPropertyChanged(nameof(FrontImagePath)); OnPropertyChanged(nameof(FrontImageName)); break;
+                        case "FrontAudio": SetMedia(text, ref _frontAudioPath, ref _frontAudioName); OnPropertyChanged(nameof(FrontAudioPath)); OnPropertyChanged(nameof(FrontAudioName)); break;
+                        case "BackImage": SetMedia(text, ref _backImagePath, ref _backImageName); OnPropertyChanged(nameof(BackImagePath)); OnPropertyChanged(nameof(BackImageName)); break;
+                        case "BackAudio": SetMedia(text, ref _backAudioPath, ref _backAudioName); OnPropertyChanged(nameof(BackAudioPath)); OnPropertyChanged(nameof(BackAudioName)); break;
                     }
                 }
-                else
-                {
-                    MessageBox.Show("Clipboard không chứa đường dẫn hợp lệ", "Lỗi");
-                }
+                else MessageBox.Show("Invalid URL.");
             }
         }
 
@@ -306,14 +283,42 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                 }
                 else
                 {
-                    MessageBox.Show("File không tồn tại hoặc đường dẫn không hợp lệ.", "Thông báo");
+                    MessageBox.Show("File does not exist or directory is not valid.", "Notice");
                 }
             }
             catch (System.Exception ex)
             {
-                MessageBox.Show($"Không thể mở file: {ex.Message}", "Lỗi");
+                MessageBox.Show($"Cannot open the following file: {ex.Message}", "Error");
             }
         }
-        // Các command phụ khác...
+        // --- NEW COMMANDS: XÓA MEDIA ---
+
+        [RelayCommand]
+        private void RemoveFrontImage()
+        {
+            FrontImagePath = null;
+            FrontImageName = null;
+        }
+
+        [RelayCommand]
+        private void RemoveFrontAudio()
+        {
+            FrontAudioPath = null;
+            FrontAudioName = null;
+        }
+
+        [RelayCommand]
+        private void RemoveBackImage()
+        {
+            BackImagePath = null;
+            BackImageName = null;
+        }
+
+        [RelayCommand]
+        private void RemoveBackAudio()
+        {
+            BackAudioPath = null;
+            BackAudioName = null;
+        }
     }
 }

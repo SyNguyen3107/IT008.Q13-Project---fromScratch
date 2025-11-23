@@ -200,7 +200,7 @@
                                 <DataTemplate>
                                     <Button Content="⚙"
                                             FontSize="16"
-                                            Foreground="Gray"
+                                            Foreground="White"
                                             Background="Transparent"
                                             BorderThickness="0"
                                             Cursor="Hand"

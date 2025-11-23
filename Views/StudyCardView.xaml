@@ -3,66 +3,133 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:IT008.Q13_Project___fromScratch"
              xmlns:converters="clr-namespace:IT008.Q13_Project___fromScratch.Converters"
              mc:Ignorable="d" 
-             
-             d:DesignHeight="800" d:DesignWidth="1200">
-    <Grid Background="#2c2c2c">
+             d:DesignHeight="600" d:DesignWidth="800"
+             Background="#2c2c2c">
+
+    <!-- Đã thêm 2 dòng xmlns:mc và xmlns:d ở trên để sửa lỗi -->
+
+    <UserControl.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+        <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBoolToVisConverter"/>
+        <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
+            <!-- Nội dung thẻ (chiếm phần lớn) -->
             <RowDefinition Height="Auto"/>
+            <!-- Ô nhập liệu -->
+            <RowDefinition Height="Auto"/>
+            <!-- Nút Show/Grade -->
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0" Margin="20">
-            <StackPanel x:Name ="FrontCardView"
-        VerticalAlignment="Center"
-        Visibility="{Binding isAnswerVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
-        HorizontalAlignment="Center">
-                <TextBlock Text="{Binding QuestionText}"  />
-                <TextBox Text="{Binding UserInputText}"
-     Visibility="{Binding IsInputRequired, Converter={StaticResource BooleanToVisibilityConverter}}"  />
-                <Image Source="{Binding FrontImagePath}"
-   Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"  />
-            </StackPanel>
-            <StackPanel x:Name="BackCardView" VerticalAlignment="Center"
-    Visibility="{Binding IsAnswerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
 
-                <TextBlock Text="{Binding AnswerText}"  />
-                <Button Command="{Binding PlayAudioCommand}"
-    Visibility="{Binding AudioPath, Converter={StaticResource NullToCollapsedConverter}}" />
-                <TextBlock Text="{Binding ExplanationText}"  />
-                <Image Source="{Binding BackImagePath}"
-   Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}" />
+        <!-- 1. NỘI DUNG THẺ -->
+        <Border Grid.Row="0" Background="#363636" CornerRadius="10" Padding="20">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+
+                    <!-- MẶT TRƯỚC -->
+                    <TextBlock Text="{Binding QuestionText}" Foreground="White" FontSize="28" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,10"/>
+
+                    <Image Source="{Binding FrontImagePath}" 
+                           MaxHeight="300" 
+                           MaxWidth="600"
+                           Stretch="Uniform"
+                           Margin="0,0,0,10"
+                           Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
+
+                    <Button Command="{Binding PlayAudioCommand}" CommandParameter="{Binding FrontAudioPath}"
+                            Visibility="{Binding FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
+                            Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,0,0,10">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔊" Foreground="#F1C40F" FontSize="16"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Separator Margin="0, 20" Background="#555" Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}"/>
+
+                    <!-- MẶT SAU (KẾT QUẢ & ĐÁP ÁN) -->
+                    <StackPanel Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}">
+
+                        <!-- Kết quả so sánh -->
+                        <ItemsControl ItemsSource="{Binding ComparisonResult}" HorizontalAlignment="Center" Margin="0,0,0,15">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Character}" 
+                                               Foreground="{Binding Color}" 
+                                               FontWeight="{Binding FontWeight}"
+                                               FontSize="24" Margin="1,0"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
+                            <TextBlock Text="Correct Answer: " Foreground="Gray" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CorrectAnswer}" Foreground="#81C784" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding AnswerText}" Foreground="White" FontSize="20" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,10"/>
+
+                        <Image Source="{Binding BackImagePath}" 
+                               MaxHeight="300" 
+                               MaxWidth="600"
+                               Stretch="Uniform"
+                               Margin="0,0,0,10"
+                               Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
+
+                        <Button Command="{Binding PlayAudioCommand}" CommandParameter="{Binding BackAudioPath}"
+                                Visibility="{Binding BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
+                                Background="Transparent" BorderThickness="0" Cursor="Hand">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock Text="🔊" Foreground="#F1C40F" FontSize="16"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- 2. Ô NHẬP LIỆU -->
+        <Grid Grid.Row="1" Margin="0,20,0,0" Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Type answer:" Foreground="LightGray" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="16"/>
+            <TextBox Grid.Column="1" 
+                     Text="{Binding UserInputText, UpdateSourceTrigger=PropertyChanged}"
+                     FontSize="18" Padding="5" Background="#444" Foreground="White" BorderThickness="0">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding ShowAnswerCommand}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+        </Grid>
+
+        <!-- 3. NÚT BẤM -->
+        <Grid Grid.Row="2" Margin="0,20,0,0">
+            <Button Content="Show Answer"
+                    FontSize="16" FontWeight="Bold" Height="45"
+                    Background="#0078D7" Foreground="White" BorderThickness="0"
+                    Command="{Binding ShowAnswerCommand}"
+                    Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                        Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}">
+                <Button Content="Again" Command="{Binding AgainCommand}" Width="90" Height="45" Margin="5" Background="#E74C3C" Foreground="White" FontWeight="Bold"/>
+                <Button Content="Hard" Command="{Binding HardCommand}" Width="90" Height="45" Margin="5" Background="#F39C12" Foreground="White" FontWeight="Bold"/>
+                <Button Content="Good" Command="{Binding GoodCommand}" Width="90" Height="45" Margin="5" Background="#2ECC71" Foreground="White" FontWeight="Bold"/>
+                <Button Content="Easy" Command="{Binding EasyCommand}" Width="90" Height="45" Margin="5" Background="#3498DB" Foreground="White" FontWeight="Bold"/>
             </StackPanel>
         </Grid>
-        <Grid Grid.Row="1" Margin="10">
 
-            <Button x:Name="ShowAnswerButton" Content="Show Answer"
-            Command="{Binding ShowAnswerCommand}"
-            Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
-            HorizontalAlignment="Center" />
-
-            <StackPanel x:Name="ReviewButtonsPanel" Orientation="Horizontal" HorizontalAlignment="Center"
-                Visibility="{Binding IsAnswerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
-
-                <Button Content="Again" 
-                Command="{Binding AgainCommand}"
-                CommandParameter="Again" 
-                Style="{StaticResource ReviewButtonStyle}" />
-                <Button Content="Hard" 
-                Command="{Binding HardCommand}" 
-                CommandParameter="Hard" 
-                Style="{StaticResource ReviewButtonStyle}" />
-                <Button Content="Good" 
-                Command="{Binding GoodCommand}" 
-                CommandParameter="Good" 
-                Style="{StaticResource ReviewButtonStyle}" />
-                <Button Content="Easy" 
-                Command="{Binding EasyCommand}" 
-                CommandParameter="Easy" 
-                Style="{StaticResource ReviewButtonStyle}" />
-            </StackPanel>
-        </Grid>
     </Grid>
-
 </UserControl>

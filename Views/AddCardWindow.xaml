@@ -12,6 +12,20 @@
 
     <Window.Resources>
         <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
+        <!-- Style cho nút Xóa nhỏ gọn -->
+        <Style x:Key="RemoveButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#E74C3C"/>
+            <!-- Màu đỏ -->
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="5,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="ToolTip" Value="Remove this file"/>
+            <Setter Property="Content" Value="✕"/>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="20">
@@ -60,28 +74,36 @@
                 <!-- Bottom: Media Preview & Buttons -->
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical" Margin="0,5,0,0">
 
-                    <!-- Preview Ảnh (Click để mở link) -->
-                    <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding FrontImagePath}"
-                            HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand"
-                            Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}" Margin="0,0,0,5">
-                        <StackPanel Orientation="Horizontal">
-                            <Image Source="{Binding FrontImagePath}" Height="60" Margin="0,0,10,0"/>
-                            <TextBlock VerticalAlignment="Center">
-                                <Run Text="📷" Foreground="#3498DB"/>
-                                <Run Text="{Binding FrontImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
-                            </TextBlock>
-                        </StackPanel>
-                    </Button>
+                    <!-- KHỐI HIỂN THỊ ẢNH FRONT (Gồm nút Xem và nút Xóa) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5" 
+                                Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}">
+                        <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding FrontImagePath}"
+                                HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Image Source="{Binding FrontImagePath}" Height="50" Margin="0,0,10,0"/>
+                                <TextBlock VerticalAlignment="Center">
+                                    <Run Text="📷" Foreground="#3498DB"/>
+                                    <Run Text="{Binding FrontImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+                        <!-- Nút Xóa -->
+                        <Button Style="{StaticResource RemoveButtonStyle}" Command="{Binding RemoveFrontImageCommand}"/>
+                    </StackPanel>
 
-                    <!-- Preview Audio -->
-                    <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding FrontAudioPath}"
-                            HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand"
-                            Visibility="{Binding FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}" Margin="0,0,0,5">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
-                            <TextBlock Text="{Binding FrontAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
-                        </StackPanel>
-                    </Button>
+                    <!-- KHỐI HIỂN THỊ AUDIO FRONT -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5"
+                                Visibility="{Binding FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}">
+                        <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding FrontAudioPath}"
+                                HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
+                                <TextBlock Text="{Binding FrontAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
+                            </StackPanel>
+                        </Button>
+                        <!-- Nút Xóa -->
+                        <Button Style="{StaticResource RemoveButtonStyle}" Command="{Binding RemoveFrontAudioCommand}"/>
+                    </StackPanel>
 
                     <!-- Toolbar Nút Bấm -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -114,28 +136,34 @@
 
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical" Margin="0,5,0,0">
 
-                    <!-- Preview Back Image -->
-                    <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding BackImagePath}"
-                            HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand"
-                            Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}" Margin="0,0,0,5">
-                        <StackPanel Orientation="Horizontal">
-                            <Image Source="{Binding BackImagePath}" Height="60" Margin="0,0,10,0"/>
-                            <TextBlock VerticalAlignment="Center">
-                                <Run Text="📷" Foreground="#3498DB"/>
-                                <Run Text="{Binding BackImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
-                            </TextBlock>
-                        </StackPanel>
-                    </Button>
+                    <!-- KHỐI HIỂN THỊ ẢNH BACK -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5"
+                                Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}">
+                        <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding BackImagePath}"
+                                HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Image Source="{Binding BackImagePath}" Height="50" Margin="0,0,10,0"/>
+                                <TextBlock VerticalAlignment="Center">
+                                    <Run Text="📷" Foreground="#3498DB"/>
+                                    <Run Text="{Binding BackImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource RemoveButtonStyle}" Command="{Binding RemoveBackImageCommand}"/>
+                    </StackPanel>
 
-                    <!-- Preview Back Audio -->
-                    <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding BackAudioPath}"
-                            HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand"
-                            Visibility="{Binding BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}" Margin="0,0,0,5">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
-                            <TextBlock Text="{Binding BackAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
-                        </StackPanel>
-                    </Button>
+                    <!-- KHỐI HIỂN THỊ AUDIO BACK -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5"
+                                Visibility="{Binding BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}">
+                        <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding BackAudioPath}"
+                                HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
+                                <TextBlock Text="{Binding BackAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource RemoveButtonStyle}" Command="{Binding RemoveBackAudioCommand}"/>
+                    </StackPanel>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <!-- Image Controls -->

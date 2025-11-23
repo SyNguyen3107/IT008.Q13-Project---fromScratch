@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using IT008.Q13_Project___fromScratch.Services;
 using IT008.Q13_Project___fromScratch.Interfaces;
+using IT008.Q13_Project___fromScratch.Services;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
@@ -77,8 +78,22 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         [RelayCommand]
         private void StudyNow()
         {
-            // Gọi NavigationService để mở StudyWindow cho deckId đã lưu
-            _navigationService.ShowStudyWindow(_deckId);
+            // 1. Kiểm tra xem có thẻ nào cần học không
+            int totalCardsToStudy = NewCount + LearningCount + ReviewCount;
+
+            if (totalCardsToStudy > 0)
+            {
+                // Có thẻ -> Mở cửa sổ học
+                _navigationService.ShowStudyWindow(_deckId);
+            }
+            else
+            {
+                // Không có thẻ -> Chỉ hiện thông báo
+                MessageBox.Show("You have already completed this deck!\nPlease comeback later.",
+                                "Completed",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+            }
         }
     }
 }
