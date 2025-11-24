@@ -195,13 +195,20 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             if (deck == null) return;
 
             SaveFileDialog dlg = new SaveFileDialog();
-            dlg.FileName = deck.Name;
-            dlg.DefaultExt = ".json";
-            dlg.Filter = "Anki JSON Files (.json)|*.json";
+            dlg.FileName = deck.Name;               // gợi ý tên file: TênDeck (không thêm .json)
+            dlg.DefaultExt = ".zip";                  // mặc định là .zip
+            dlg.Filter = "Deck Package (.zip)|*.zip"; // chỉ cho lưu file .zip
+            dlg.Title = "Export Deck";
+
 
             if (dlg.ShowDialog() == true)
             {
-                await _exportService.ExportDeckToJsonAsync(deck.ID, dlg.FileName);
+                // Nếu người dùng nhập "abc.json" → thành "abc.json.zip"
+                string zipPath = dlg.FileName.EndsWith(".zip")
+                    ? dlg.FileName
+                    : dlg.FileName + ".zip";
+
+                await _exportService.ExportDeckToZipAsync(deck.ID, zipPath);
                 MessageBox.Show("Export thành công!", "Thông báo");
             }
         }
