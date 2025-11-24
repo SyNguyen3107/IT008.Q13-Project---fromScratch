@@ -18,8 +18,8 @@ namespace IT008.Q13_Project___fromScratch.Models
         // Constructor để set giá trị mặc định khi thẻ mới được tạo
         public CardProgress()
         {
-            DueDate = DateTime.UtcNow; // Học ngay lập tức
-            Interval = 0;
+            DueDate = DateTime.Now; // Học ngay lập tức
+            Interval = 0; // Ban đầu = 0, sẽ được set khi chọn option lần đầu
             EaseFactor = 2.5; // Giá trị mặc định của Anki
         }
     }

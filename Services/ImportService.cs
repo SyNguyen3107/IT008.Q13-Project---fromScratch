@@ -44,13 +44,13 @@ namespace IT008.Q13_Project___fromScratch.Services
             {
                 Name = finalDeckName, // Dùng tên đã xử lý trùng
                 Description = exportData.Description ?? "",
-                // CardStats mặc định là 0, sẽ được tính lại sau
+                // NewCount, LearnCount, DueCount sẽ được tính lại khi reload từ DB
             };
 
             // Lưu Deck trước để có ID
             await _deckRepository.AddAsync(newDeck);
 
-            // 4. Tạo Cards (Tiến độ học Progress sẽ được tạo mặc định là New)
+            // 4. Tạo Cards (Tất cả cards mới import đều là New - không có Progress)
             if (exportData.Cards != null)
             {
                 foreach (var cardModel in exportData.Cards)
@@ -65,14 +65,18 @@ namespace IT008.Q13_Project___fromScratch.Services
                         Answer = cardModel.Answer ?? "",
                         // FrontAudioPath, BackAudioPath... (tùy bạn mở rộng)
 
-                        // Quan trọng: Không set Progress, để Repository tự tạo mới (New)
+                        // Quan trọng: Không set Progress, để thẻ ở trạng thái New
+                        Progress = null
                     };
                     await _cardRepository.AddAsync(newCard);
                 }
             }
 
-            // Trả về Deck hoàn chỉnh để ViewModel cập nhật UI
-            return newDeck;
+            // 5. Reload deck từ database để có thống kê chính xác (NewCount, LearnCount, DueCount)
+            var reloadedDeck = await _deckRepository.GetByIdAsync(newDeck.ID);
+            
+            // Nếu reload thành công thì trả về deck đã có thống kê, nếu không thì trả về deck gốc
+            return reloadedDeck ?? newDeck;
         }
     }
 }

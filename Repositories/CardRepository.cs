@@ -22,15 +22,10 @@ namespace IT008.Q13_Project___fromScratch.Repositories
 
         public async Task AddAsync(Card card)
         {
-            // --- THÊM LOGIC QUAN TRỌNG ---
-            // Đảm bảo rằng mọi thẻ MỚI khi được thêm vào
-            // đều có một CardProgress mặc định.
-            if (card.Progress == null)
-            {
-                card.Progress = new CardProgress();
-                // (Constructor của CardProgress sẽ tự set giá trị mặc định)
-            }
-
+            // KHÔNG tự động tạo Progress cho card mới
+            // Card mới phải có Progress = null để được tính vào NewCount
+            // Progress chỉ được tạo khi người dùng học card lần đầu tiên (trong StudyService.ProcessReviewAsync)
+            
             await _context.Cards.AddAsync(card);
             await _context.SaveChangesAsync();
         }
@@ -71,14 +66,22 @@ namespace IT008.Q13_Project___fromScratch.Repositories
 
         public async Task UpdateAsync(Card card)
         {
-            // Đánh dấu thẻ này là đã bị thay đổi
-            // EF Core sẽ tự động phát hiện thay đổi trên card.Progress
+            // Đánh dấu thẻ đã thay đổi
             _context.Entry(card).State = EntityState.Modified;
 
-            // Nếu bạn muốn chắc chắn hơn:
             if (card.Progress != null)
             {
-                _context.Entry(card.Progress).State = EntityState.Modified;
+                // Nếu Progress mới tạo (chưa có ID) -> thêm mới
+                if (card.Progress.ID == 0)
+                {
+                    // đảm bảo gắn khóa ngoại
+                    card.Progress.CardId = card.ID;
+                    _context.Entry(card.Progress).State = EntityState.Added; // thêm mới
+                }
+                else
+                {
+                    _context.Entry(card.Progress).State = EntityState.Modified; // cập nhật
+                }
             }
 
             await _context.SaveChangesAsync();

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.IO;
 using System.Linq;
+using System; // Thêm để sử dụng Exception
 
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
@@ -39,13 +40,27 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         [ObservableProperty]
         private string _userInputText = string.Empty;
 
+        // Kiểm tra xem còn thẻ để học không (để enable/disable các nút)
+        // Khởi tạo = true để các nút được enable ngay từ đầu
+        [ObservableProperty]
+        private bool _hasCards = true;
         // --- DANH SÁCH KẾT QUẢ SO SÁNH (Để binding lên View) ---
         public ObservableCollection<ComparisonChar> ComparisonResult { get; } = new ObservableCollection<ComparisonChar>();
+        // --- KHAI BÁO COMMAND CHO 4 NÚT (bổ sung) ---
+        public IAsyncRelayCommand AgainCommand { get; }
+        public IAsyncRelayCommand HardCommand { get; }
+        public IAsyncRelayCommand GoodCommand { get; }
+        public IAsyncRelayCommand EasyCommand { get; }
         // Constructor nhận StudyService qua DI (không khởi tạo dữ liệu giả ở đây)
         public StudyViewModel(StudyService studyService, AudioService audioService)
         {
             _studyService = studyService;
             _audioService = audioService;
+            // Khởi tạo command + điều kiện CanExecute dựa vào HasCards
+            AgainCommand = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Again), () => HasCards);
+            HardCommand  = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Hard),  () => HasCards);
+            GoodCommand  = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Good),  () => HasCards);
+            EasyCommand  = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Easy),  () => HasCards);
         }
 
         // Hàm khởi tạo ViewModel khi NavigationService gọi (hoặc khi ViewModel được tải)
@@ -57,49 +72,72 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
 
         private async Task LoadNextCardAsync()
         {
-            // Reset trạng thái
-            IsAnswerVisible = false;
-            UserInputText = string.Empty;
-            ComparisonResult.Clear(); // Xóa kết quả cũ
-
-            // Lấy thẻ
-            _currentCard = await _studyService.GetNextCardToReviewAsync(_currentDeckId);
-
-            if (_currentCard != null)
+            try
             {
-                QuestionText = _currentCard.FrontText ?? string.Empty;
-                AnswerText = _currentCard.BackText ?? string.Empty; // Mặt sau (Giải thích)
+                System.Diagnostics.Debug.WriteLine("[StudyViewModel] LoadNextCardAsync: Starting...");
+                
+                // Reset trạng thái
+                IsAnswerVisible = false;
+                UserInputText = string.Empty;
+                ComparisonResult.Clear(); // Xóa kết quả cũ
 
-                // Lấy đáp án chuẩn từ thuộc tính Answer mới thêm (nếu có), hoặc fallback về BackText
-                CorrectAnswer = _currentCard.Answer ?? "";
+                // Lấy thẻ
+                _currentCard = await _studyService.GetNextCardToReviewAsync(_currentDeckId);
+                
+                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: Got card = {(_currentCard != null ? _currentCard.ID.ToString() : "null")}");
+                
+                // Cập nhật HasCards dựa trên _currentCard
+                HasCards = _currentCard != null;
+                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: HasCards = {HasCards}");
 
-                FrontImagePath = _currentCard.FrontImagePath;
-                BackImagePath = _currentCard.BackImagePath;
-                FrontAudioPath = _currentCard.FrontAudioPath;
-                BackAudioPath = _currentCard.BackAudioPath;
-            }
-            else
-            {
-                // --- HẾT THẺ: THÔNG BÁO VÀ ĐÓNG CỬA SỔ ---
-                MessageBox.Show("Congratulation! You have completed this deck!",
-                                "Completed",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
-
-                // Tìm cửa sổ đang chứa ViewModel này và đóng nó
-                Application.Current.Dispatcher.Invoke(() =>
+                if (_currentCard != null)
                 {
-                    foreach (Window window in Application.Current.Windows)
-                    {
-                        if (window.DataContext == this)
-                        {
-                            window.Close();
-                            break;
-                        }
-                    }
-                });
-            }
+                    QuestionText = _currentCard.FrontText ?? string.Empty;
+                    AnswerText = _currentCard.BackText ?? string.Empty; // Mặt sau (Giải thích)
 
+                    // Lấy đáp án chuẩn từ thuộc tính Answer mới thêm (nếu có), hoặc fallback về BackText
+                    CorrectAnswer = _currentCard.Answer ?? "";
+
+                    FrontImagePath = _currentCard.FrontImagePath;
+                    BackImagePath = _currentCard.BackImagePath;
+                    FrontAudioPath = _currentCard.FrontAudioPath;
+                    BackAudioPath = _currentCard.BackAudioPath;
+                    
+                    System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: Card loaded successfully");
+                }
+                else
+                {
+                    // --- HẾT THẺ: HIỂN THỊ THÔNG BÁO ---
+                    System.Diagnostics.Debug.WriteLine("[StudyViewModel] LoadNextCardAsync: No more cards, showing completion message");
+                    
+                    // Không tự động đóng cửa sổ, chỉ hiển thị thông báo
+                    QuestionText = "🎉 Congratulations! 🎉";
+                    AnswerText = "You have completed all the cards in this deck for now!\n\nPlease close this window or press ESC to exit.";
+                    CorrectAnswer = "";
+                    
+                    // Xóa các đường dẫn media
+                    FrontImagePath = null;
+                    BackImagePath = null;
+                    FrontAudioPath = null;
+                    BackAudioPath = null;
+                    
+                    // Hiển thị phần answer để người dùng thấy thông báo
+                    IsAnswerVisible = true;
+                }
+
+                // Thông báo cho 4 command rằng CanExecute đã đổi -> UI sẽ enable/disable
+                AgainCommand.NotifyCanExecuteChanged();
+                HardCommand.NotifyCanExecuteChanged();
+                GoodCommand.NotifyCanExecuteChanged();
+                EasyCommand.NotifyCanExecuteChanged();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] ERROR in LoadNextCardAsync: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] Stack trace: {ex.StackTrace}");
+                
+                MessageBox.Show($"Error loading next card: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // Hiện đáp án (người dùng nhấn để xem mặt sau)
@@ -177,34 +215,21 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             _audioService.PlayAudio(path);
         }
 
-        [RelayCommand]
-        private async Task AgainAsync()
-        {
-            await ProcessReview(ReviewOutcome.Again);
-        }
-        [RelayCommand]
-        private async Task HardAsync()
-        {
-            await ProcessReview(ReviewOutcome.Hard);
-        }
-        [RelayCommand]
-        private async Task GoodAsync()
-        {
-            await ProcessReview(ReviewOutcome.Good);
-        }
-        [RelayCommand]
-        private async Task EasyAsync()
-        {
-            await ProcessReview(ReviewOutcome.Easy);
-        }
-
-        // Hàm helper xử lý outcome: gọi service cập nhật, sau đó tải thẻ tiếp theo
         private async Task ProcessReview(ReviewOutcome outcome)
         {
-            if (_currentCard == null) return;
-            await _studyService.ProcessReviewAsync(_currentCard, outcome);
-            await LoadNextCardAsync();
+            try
+            {
+                if (_currentCard == null) return; // Không có thẻ
+                await _studyService.ProcessReviewAsync(_currentCard, outcome); // Cập nhật tiến trình thẻ
+                await LoadNextCardAsync(); // Tải thẻ kế tiếp
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] ERROR ProcessReview: {ex.Message}");
+                MessageBox.Show("Có lỗi xảy ra khi xử lý đánh giá thẻ", "Lỗi");
+            }
         }
+
         public void StopAudio()
         {
             _audioService.StopAudio();

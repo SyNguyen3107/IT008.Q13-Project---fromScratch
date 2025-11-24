@@ -26,40 +26,41 @@ namespace IT008.Q13_Project___fromScratch.Services
             _deckRepository = deckRepository;
         }
 
-        // --- 1. LOGIC LẤY THẺ CẦN HỌC (ĐÃ SỬA LỖI TRIỆT ĐỂ) ---
+        // --- 1. LOGIC LẤY THẺ CẦN HỌC ---
         public async Task<Card?> GetNextCardToReviewAsync(int deckId)
         {
             var allCards = await _cardRepository.GetCardsByDeckIdAsync(deckId);
             var now = DateTime.Now;
 
-            // In log để kiểm tra (xem trong cửa sổ Output của Visual Studio)
             Debug.WriteLine($"[StudyService] Total cards in deck {deckId}: {allCards.Count}");
 
             var dueCard = allCards
                 .Where(c =>
                 {
-                    // CASE 1: Thẻ mới tinh (Chưa học lần nào) -> LẤY NGAY
+                    // CASE 1: Thẻ mới tinh (Chưa xem bao giờ, Progress = null) -> LẤY NGAY
                     if (c.Progress == null) return true;
 
-                    // CASE 2: Thẻ đang học hoặc bị quên (Interval ~ 0) -> LẤY NGAY
-                    // (Dùng < 0.01 để tránh lỗi làm tròn số thực)
-                    if (c.Progress.Interval < 0.01) return true;
+                    // CASE 2: Thẻ đang học (0 < Interval < 1) -> LẤY NGAY
+                    // Bao gồm thẻ Again (Interval = 0.01) và Hard (Interval < 1)
+                    if (c.Progress.Interval > 0 && c.Progress.Interval < 1) return true;
 
-                    // CASE 3: Thẻ ôn tập đã đến hạn (DueDate <= Now) -> LẤY
-                    // Thêm 1 phút dung sai để tránh lỗi lệch giây
-                    if (c.Progress.DueDate <= now.AddMinutes(1)) return true;
+                    // CASE 3: Thẻ ôn tập (Interval >= 1) đã đến hạn -> LẤY
+                    if (c.Progress.Interval >= 1 && c.Progress.DueDate <= now.AddMinutes(1)) return true;
 
                     return false;
                 })
                 // Sắp xếp ưu tiên:
-                // 1. Thẻ chưa có Progress (Mới nhất) -> Rank 0
-                // 2. Thẻ đang học/quên (Interval ~ 0) -> Rank 1
-                // 3. Thẻ Review (Interval > 0) -> Rank 2
-                .OrderBy(c => c.Progress == null ? 0 : (c.Progress.Interval < 0.01 ? 1 : 2))
-
+                // 1. Thẻ chưa có Progress (New) -> Rank 0
+                // 2. Thẻ Learn (0 < Interval < 1) -> Rank 1
+                // 3. Thẻ Review (Interval >= 1) -> Rank 2
+                .OrderBy(c => 
+                {
+                    if (c.Progress == null) return 0;
+                    if (c.Progress.Interval > 0 && c.Progress.Interval < 1) return 1;
+                    return 2;
+                })
                 // Nếu cùng nhóm ưu tiên, lấy thẻ có DueDate cũ nhất trước
                 .ThenBy(c => c.Progress == null ? DateTime.MinValue : c.Progress.DueDate)
-
                 .FirstOrDefault();
 
             if (dueCard != null)
@@ -74,22 +75,26 @@ namespace IT008.Q13_Project___fromScratch.Services
             return dueCard;
         }
 
-        // --- 2. LOGIC TÍNH TOÁN THỐNG KÊ (GIỮ NGUYÊN) ---
+        // --- 2. LOGIC TÍNH TOÁN THỐNG KÊ ---
         public async Task<DeckStats> GetDeckStatsAsync(int deckId)
         {
             var deck = await _deckRepository.GetByIdAsync(deckId);
             var cards = await _cardRepository.GetCardsByDeckIdAsync(deckId);
             var now = DateTime.Now;
 
-            var newCount = cards.Count(c => c.Progress == null || c.Progress.Interval < 0.01);
+            // Đếm số thẻ New (CHƯA CÓ PROGRESS - chưa xem bao giờ)
+            var newCount = cards.Count(c => c.Progress == null);
 
+            // Đếm số thẻ Learn (ĐÃ XEM nhưng chưa hoàn thành: 0 < Interval < 1)
+            // Chỉ đếm card có Interval > 0 (đã học) và < 1 (chưa hoàn thành)
             var learningCount = cards.Count(c => c.Progress != null &&
-                                                 c.Progress.DueDate <= now &&
-                                                 c.Progress.Interval >= 0.01 && c.Progress.Interval < 1);
+                                                 c.Progress.Interval > 0 &&
+                                                 c.Progress.Interval < 1);
 
+            // Đếm số thẻ Due/Review (Đã hoàn thành: Interval >= 1 VÀ đã đến hạn)
             var reviewCount = cards.Count(c => c.Progress != null &&
-                                               c.Progress.DueDate <= now &&
-                                               c.Progress.Interval >= 1);
+                                               c.Progress.Interval >= 1 &&
+                                               c.Progress.DueDate <= now);
 
             return new DeckStats
             {
@@ -100,54 +105,42 @@ namespace IT008.Q13_Project___fromScratch.Services
             };
         }
 
-        // --- 3. THUẬT TOÁN SM-2 (GIỮ NGUYÊN) ---
+        // --- 3. THUẬT TOÁN SM-2 ---
         public async Task ProcessReviewAsync(Card card, ReviewOutcome outcome)
         {
             if (card == null) return;
 
-            if (card.Progress == null) card.Progress = new CardProgress();
+            if (card.Progress == null)
+            {
+                card.Progress = new CardProgress();
+                card.Progress.CardId = card.ID; // gán khóa ngoại để EF khỏi lỗi
+            }
             var p = card.Progress;
 
             switch (outcome)
             {
                 case ReviewOutcome.Again:
-                    p.Interval = 0;
+                    p.Interval = 0.01;
                     p.EaseFactor = Math.Max(1.3, p.EaseFactor - 0.2);
+                    p.DueDate = DateTime.Now;
                     break;
-
                 case ReviewOutcome.Hard:
-                    if (p.Interval == 0) p.Interval = 1;
-                    else p.Interval = p.Interval * 1.2;
+                    if (p.Interval < 0.01) p.Interval = 0.01;
+                    else if (p.Interval < 1) p.Interval = Math.Min(p.Interval * 1.5, 0.9);
+                    else p.Interval = 0.5;
                     p.EaseFactor = Math.Max(1.3, p.EaseFactor - 0.15);
+                    p.DueDate = DateTime.Now.AddDays(p.Interval);
                     break;
-
                 case ReviewOutcome.Good:
-                    if (p.Interval == 0) p.Interval = 1;
-                    else if (p.Interval == 1) p.Interval = 6;
-                    else p.Interval = p.Interval * p.EaseFactor;
+                    if (p.Interval < 1) p.Interval = 1.0; else p.Interval = p.Interval * p.EaseFactor;
+                    p.DueDate = DateTime.Now.AddDays(p.Interval);
                     break;
-
                 case ReviewOutcome.Easy:
-                    if (p.Interval == 0) p.Interval = 4;
-                    else if (p.Interval == 1) p.Interval = 15;
-                    else p.Interval = p.Interval * p.EaseFactor * 1.3;
+                    if (p.Interval < 1) p.Interval = 4.0; else p.Interval = p.Interval * p.EaseFactor * 1.3;
                     p.EaseFactor += 0.15;
+                    p.DueDate = DateTime.Now.AddDays(p.Interval);
                     break;
             }
-
-            // Làm tròn tối thiểu
-            if (p.Interval < 1 && p.Interval > 0) p.Interval = 1;
-
-            // Cập nhật DueDate
-            if (p.Interval == 0)
-            {
-                p.DueDate = DateTime.Now; // Học lại ngay
-            }
-            else
-            {
-                p.DueDate = DateTime.Now.AddDays(p.Interval);
-            }
-
             await _cardRepository.UpdateAsync(card);
         }
     }

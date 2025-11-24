@@ -17,7 +17,8 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
     public partial class MainAnkiViewModel : ObservableObject,
                                              IRecipient<DeckAddedMessage>,
                                              IRecipient<DeckUpdatedMessage>,
-                                             IRecipient<CardAddedMessage>
+                                             IRecipient<CardAddedMessage>,
+                                             IRecipient<StudySessionCompletedMessage>
     {
         private readonly IDeckRepository _deckRepository;
         private readonly INavigationService _navigationService;
@@ -42,40 +43,29 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             _messenger.RegisterAll(this);
         }
 
-        // Xử lý khi có Deck mới (Add)
+        // Xử lý khi có Deck mới (Add hoặc Import)
         public void Receive(DeckAddedMessage message)
         {
             var newDeck = message.Value;
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.Invoke(async () =>
             {
-                Decks.Add(newDeck);
+                // Reload lại deck từ database để có thống kê chính xác
+                await LoadDecksAsync();
             });
         }
+
         // Xử lý khi thêm thẻ mới vào Deck (Card Added)
         public void Receive(CardAddedMessage message)
         {
             int deckId = message.Value;
 
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.Invoke(async () =>
             {
-                // Tìm Deck tương ứng trong danh sách
-                var targetDeck = Decks.FirstOrDefault(d => d.ID == deckId);
-
-                if (targetDeck != null)
-                {
-                    int index = Decks.IndexOf(targetDeck);
-
-                    // Cập nhật số lượng thẻ New
-                    // (Lưu ý: Vì Model Deck không có INotifyPropertyChanged, 
-                    // ta phải dùng kỹ thuật Remove/Insert để ép UI cập nhật số liệu)
-
-                    targetDeck.NewCount += 1;
-
-                    Decks.RemoveAt(index);
-                    Decks.Insert(index, targetDeck);
-                }
+                // Reload lại toàn bộ decks để cập nhật số lượng thẻ New chính xác
+                await LoadDecksAsync();
             });
         }
+
         // Xử lý khi Deck bị sửa đổi (Rename)
         public void Receive(DeckUpdatedMessage message)
         {
@@ -101,15 +91,14 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                 }
             });
         }
-        //Xử lý khi học xong
+
+        // Xử lý khi học xong
         public void Receive(StudySessionCompletedMessage message)
         {
             int deckId = message.Value;
 
             // Khi học xong, số liệu New/Learn/Due chắc chắn thay đổi.
-            // Cách đơn giản nhất để cập nhật chính xác là tải lại danh sách Deck
-            // (hoặc tải lại đúng Deck đó từ DB nếu muốn tối ưu hơn, nhưng LoadDecksAsync đủ nhanh cho app nhỏ)
-
+            // Reload lại toàn bộ danh sách Deck từ DB để cập nhật số liệu chính xác
             Application.Current.Dispatcher.Invoke(async () =>
             {
                 await LoadDecksAsync();

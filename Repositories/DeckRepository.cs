@@ -28,29 +28,29 @@ namespace IT008.Q13_Project___fromScratch.Repositories
         public async Task<IEnumerable<Deck>> GetAllAsync()
         {
             // 1. Lấy tất cả Deck kèm theo Cards và Progress của chúng
-            // Lưu ý: Nếu dữ liệu quá lớn, cách này có thể chậm, nhưng với đồ án thì OK.
             var decks = await _context.Decks
                 .Include(d => d.Cards)
                 .ThenInclude(c => c.Progress)
                 .ToListAsync();
+
             // 2. Tính toán thống kê cho từng Deck
             foreach (var deck in decks)
             {
                 var now = DateTime.Now;
 
-                // Đếm số thẻ New (Chưa có progress hoặc Interval = 0)
-                deck.NewCount = deck.Cards.Count(c => c.Progress == null || c.Progress.Interval == 0);
+                // Đếm số thẻ New (CHƯA CÓ PROGRESS - chưa xem bao giờ)
+                deck.NewCount = deck.Cards.Count(c => c.Progress == null);
 
-                // Đếm số thẻ Learn (Đang học dở: đến hạn VÀ interval nhỏ < 1 ngày)
+                // Đếm số thẻ Learn (ĐÃ XEM nhưng chưa hoàn thành: 0 < Interval < 1)
+                // Chỉ đếm card có Interval > 0 (đã học) và < 1 (chưa hoàn thành)
                 deck.LearnCount = deck.Cards.Count(c => c.Progress != null &&
-                                                    c.Progress.DueDate <= now &&
-                                                    c.Progress.Interval < 1 &&
-                                                    c.Progress.Interval > 0);
+                                                    c.Progress.Interval > 0 &&
+                                                    c.Progress.Interval < 1);
 
-                // Đếm số thẻ Due/Review (Đến hạn ôn tập: đến hạn VÀ interval >= 1 ngày)
+                // Đếm số thẻ Due/Review (Đã hoàn thành: Interval >= 1 VÀ đã đến hạn)
                 deck.DueCount = deck.Cards.Count(c => c.Progress != null &&
-                                                  c.Progress.DueDate <= now &&
-                                                  c.Progress.Interval >= 1);
+                                                  c.Progress.Interval >= 1 &&
+                                                  c.Progress.DueDate <= now);
             }
             return decks;
         }
@@ -59,8 +59,32 @@ namespace IT008.Q13_Project___fromScratch.Repositories
         // Tìm Deck có ID cụ thể trong danh sách
         public async Task<Deck> GetByIdAsync(int id)
         {
-            // Code đúng: Dùng FindAsync là cách nhanh nhất
-            return await _context.Decks.FindAsync(id);
+            // Lấy Deck kèm theo Cards và Progress
+            var deck = await _context.Decks
+                .Include(d => d.Cards)
+                .ThenInclude(c => c.Progress)
+                .FirstOrDefaultAsync(d => d.ID == id);
+
+            // Nếu tìm thấy deck thì tính toán thống kê
+            if (deck != null)
+            {
+                var now = DateTime.Now;
+
+                // Đếm số thẻ New (CHƯA CÓ PROGRESS - chưa xem bao giờ)
+                deck.NewCount = deck.Cards.Count(c => c.Progress == null);
+
+                // Đếm số thẻ Learn (ĐÃ XEM nhưng chưa hoàn thành: 0 < Interval < 1)
+                deck.LearnCount = deck.Cards.Count(c => c.Progress != null &&
+                                                    c.Progress.Interval > 0 &&
+                                                    c.Progress.Interval < 1);
+
+                // Đếm số thẻ Due/Review (Đã hoàn thành: Interval >= 1 VÀ đã đến hạn)
+                deck.DueCount = deck.Cards.Count(c => c.Progress != null &&
+                                                  c.Progress.Interval >= 1 &&
+                                                  c.Progress.DueDate <= now);
+            }
+
+            return deck;
         }
 
         // Cập nhật Deck hiện có
