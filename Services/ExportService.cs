@@ -2,6 +2,7 @@
 using IT008.Q13_Project___fromScratch.Models;
 using System.Text.Json; // Thư viện có sẵn cực mạnh của .NET
 using System.IO;
+using System.IO.Compression;
 using System.Threading.Tasks;
 using System.Linq;
 
@@ -36,6 +37,7 @@ namespace IT008.Q13_Project___fromScratch.Services
                     FrontText = c.FrontText,
                     BackText = c.BackText,
                     Answer = c.Answer,
+                    // Lấy tên file từ đường dẫn đầy đủ
                     FrontImageName = string.IsNullOrEmpty(c.FrontImagePath) ? null : Path.GetFileName(c.FrontImagePath),
                     BackImageName = string.IsNullOrEmpty(c.BackImagePath) ? null : Path.GetFileName(c.BackImagePath),
                     FrontAudioName = string.IsNullOrEmpty(c.FrontAudioPath) ? null : Path.GetFileName(c.FrontAudioPath),
@@ -81,6 +83,11 @@ namespace IT008.Q13_Project___fromScratch.Services
                 if (!string.IsNullOrEmpty(c.FrontAudioPath) && File.Exists(c.FrontAudioPath))
                     File.Copy(c.FrontAudioPath, Path.Combine(mediaFolder, Path.GetFileName(c.FrontAudioPath)), true);
             }
+
+            // 6. Nén thư mục exportFolder thành file .zip
+            string zipPath = filePath.EndsWith(".zip") ? filePath : filePath + ".zip";
+            if (File.Exists(zipPath)) File.Delete(zipPath); // tránh lỗi nếu file đã tồn tại
+            ZipFile.CreateFromDirectory(exportFolder, zipPath);
 
         }
     }

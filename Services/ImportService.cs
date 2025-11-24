@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+//Để giải nén file .zip
+using System.IO.Compression;
 
 namespace IT008.Q13_Project___fromScratch.Services
 {
@@ -62,8 +64,10 @@ namespace IT008.Q13_Project___fromScratch.Services
                         BackText = cardModel.BackText,
                         FrontImagePath = cardModel.FrontImageName,
                         BackImagePath = cardModel.BackImageName,
+                        FrontAudioPath = cardModel.FrontAudioName,
+                        BackAudioPath = cardModel.BackAudioName,
                         Answer = cardModel.Answer ?? "",
-                        // FrontAudioPath, BackAudioPath... (tùy bạn mở rộng)
+                       
 
                         // Quan trọng: Không set Progress, để thẻ ở trạng thái New
                         Progress = null
