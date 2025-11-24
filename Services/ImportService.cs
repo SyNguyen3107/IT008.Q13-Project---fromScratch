@@ -20,66 +20,63 @@ namespace IT008.Q13_Project___fromScratch.Services
             _cardRepository = cardRepository;
         }
 
-        public async Task<Deck?> ImportDeckFromJsonAsync(string filePath)
+        public async Task<Deck?> ImportDeckFromZipAsync(string zipPath)
         {
-            if (!File.Exists(filePath)) return null;
+            if (!File.Exists(zipPath)) return null;
 
-            // 1. Đọc và Deserialize JSON
-            string jsonString = await File.ReadAllTextAsync(filePath);
+            // 1. Giải nén file zip ra thư mục tạm
+            string extractPath = Path.Combine(Path.GetTempPath(), "DeckImport_" + Guid.NewGuid());
+            ZipFile.ExtractToDirectory(zipPath, extractPath);
+
+            // 2. Đọc file deck.json
+            string jsonPath = Path.Combine(extractPath, "deck.json");
+            if (!File.Exists(jsonPath)) return null;
+
+            string jsonString = await File.ReadAllTextAsync(jsonPath);
             var exportData = JsonSerializer.Deserialize<DeckExportModel>(jsonString);
 
             if (exportData == null) return null;
 
-            // 2. Xử lý TÊN DECK (Tránh trùng lặp)
+            // 3. Xử lý tên deck tránh trùng lặp
             string finalDeckName = exportData.DeckName;
             int count = 1;
-
-            // Vòng lặp kiểm tra: Nếu tên đã tồn tại -> Thêm số (1), (2)...
             while (await _deckRepository.GetByNameAsync(finalDeckName) != null)
             {
                 finalDeckName = $"{exportData.DeckName} ({count})";
                 count++;
             }
 
-            // 3. Tạo Deck Mới
             var newDeck = new Deck
             {
-                Name = finalDeckName, // Dùng tên đã xử lý trùng
-                Description = exportData.Description ?? "",
-                // NewCount, LearnCount, DueCount sẽ được tính lại khi reload từ DB
+                Name = finalDeckName,
+                Description = exportData.Description ?? ""
             };
 
-            // Lưu Deck trước để có ID
             await _deckRepository.AddAsync(newDeck);
 
-            // 4. Tạo Cards (Tất cả cards mới import đều là New - không có Progress)
+            // 4. Tạo cards và nối lại đường dẫn media
             if (exportData.Cards != null)
             {
                 foreach (var cardModel in exportData.Cards)
                 {
                     var newCard = new Card
                     {
-                        DeckId = newDeck.ID, // Link với Deck vừa tạo
+                        DeckId = newDeck.ID,
                         FrontText = cardModel.FrontText,
                         BackText = cardModel.BackText,
-                        FrontImagePath = cardModel.FrontImageName,
-                        BackImagePath = cardModel.BackImageName,
-                        FrontAudioPath = cardModel.FrontAudioName,
-                        BackAudioPath = cardModel.BackAudioName,
-                        Answer = cardModel.Answer ?? "",
-                       
-
-                        // Quan trọng: Không set Progress, để thẻ ở trạng thái New
+                        Answer = cardModel.Answer ?? "", // Đặt giá trị mặc định nếu null
+                        FrontImagePath = string.IsNullOrEmpty(cardModel.FrontImageName) ? null : Path.Combine(extractPath, "media", cardModel.FrontImageName),
+                        BackImagePath = string.IsNullOrEmpty(cardModel.BackImageName) ? null : Path.Combine(extractPath, "media", cardModel.BackImageName),
+                        FrontAudioPath = string.IsNullOrEmpty(cardModel.FrontAudioName) ? null : Path.Combine(extractPath, "media", cardModel.FrontAudioName),
+                        BackAudioPath = string.IsNullOrEmpty(cardModel.BackAudioName) ? null : Path.Combine(extractPath, "media", cardModel.BackAudioName),
                         Progress = null
                     };
                     await _cardRepository.AddAsync(newCard);
                 }
             }
 
-            // 5. Reload deck từ database để có thống kê chính xác (NewCount, LearnCount, DueCount)
+            // 5. Reload deck để có thống kê chính xác
             var reloadedDeck = await _deckRepository.GetByIdAsync(newDeck.ID);
-            
-            // Nếu reload thành công thì trả về deck đã có thống kê, nếu không thì trả về deck gốc
             return reloadedDeck ?? newDeck;
         }
     }

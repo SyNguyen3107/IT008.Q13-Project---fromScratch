@@ -161,15 +161,16 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         {
             // 1. Mở hộp thoại chọn file
             OpenFileDialog dlg = new OpenFileDialog();
-            dlg.Filter = "Anki JSON Files (.json)|*.json";
+            // Thiết lập bộ lọc để chỉ hiển thị các file .zip.json
+            dlg.Filter = "Deck Files (.zip)|*.zip";
             dlg.Title = "Import Deck";
 
             if (dlg.ShowDialog() == true)
             {
                 try
                 {
-                    // 2. Gọi Service để Import
-                    var newDeck = await _importService.ImportDeckFromJsonAsync(dlg.FileName);
+                    // 2. Gọi Service để Import ( đọc file zip)
+                    var newDeck = await _importService.ImportDeckFromZipAsync(dlg.FileName);
 
                     if (newDeck != null)
                     {
