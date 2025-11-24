@@ -36,8 +36,11 @@ namespace IT008.Q13_Project___fromScratch.Services
                     FrontText = c.FrontText,
                     BackText = c.BackText,
                     Answer = c.Answer,
-                    FrontImagePath = c.FrontImagePath,
-                    BackImagePath = c.BackImagePath
+                    FrontImageName = string.IsNullOrEmpty(c.FrontImagePath) ? null : Path.GetFileName(c.FrontImagePath),
+                    BackImageName = string.IsNullOrEmpty(c.BackImagePath) ? null : Path.GetFileName(c.BackImagePath),
+                    FrontAudioName = string.IsNullOrEmpty(c.FrontAudioPath) ? null : Path.GetFileName(c.FrontAudioPath),
+                    BackAudioName = string.IsNullOrEmpty(c.BackAudioPath) ? null : Path.GetFileName(c.BackAudioPath)
+
                 }).ToList()
             };
 
@@ -51,8 +54,34 @@ namespace IT008.Q13_Project___fromScratch.Services
             // 4. Chuyển object thành chuỗi JSON
             string jsonString = JsonSerializer.Serialize(exportData, options);
 
-            // 5. Ghi ra file
-            await File.WriteAllTextAsync(filePath, jsonString);
+
+
+            // 5. Tạo thư mục export kèm media
+            string exportFolder = Path.Combine(Path.GetDirectoryName(filePath), Path.GetFileNameWithoutExtension(filePath));
+            Directory.CreateDirectory(exportFolder);
+
+            string mediaFolder = Path.Combine(exportFolder, "media");
+            Directory.CreateDirectory(mediaFolder);
+
+            // Ghi deck.json vào exportFolder
+            string jsonPath = Path.Combine(exportFolder, "deck.json");
+            await File.WriteAllTextAsync(jsonPath, jsonString);
+
+            // Copy media vào mediaFolder
+            foreach (var c in cards)
+            {
+                // Copy hình ảnh nếu có
+                if (!string.IsNullOrEmpty(c.FrontImagePath) && File.Exists(c.FrontImagePath))
+                    File.Copy(c.FrontImagePath, Path.Combine(mediaFolder, Path.GetFileName(c.FrontImagePath)), true);
+                if (!string.IsNullOrEmpty(c.BackImagePath) && File.Exists(c.BackImagePath))
+                    File.Copy(c.BackImagePath, Path.Combine(mediaFolder, Path.GetFileName(c.BackImagePath)), true);
+                // Copy audio nếu có
+                if (!string.IsNullOrEmpty(c.BackAudioPath) && File.Exists(c.BackAudioPath))
+                    File.Copy(c.BackAudioPath, Path.Combine(mediaFolder, Path.GetFileName(c.BackAudioPath)), true);
+                if (!string.IsNullOrEmpty(c.FrontAudioPath) && File.Exists(c.FrontAudioPath))
+                    File.Copy(c.FrontAudioPath, Path.Combine(mediaFolder, Path.GetFileName(c.FrontAudioPath)), true);
+            }
+
         }
     }
 }

@@ -21,7 +21,11 @@ namespace IT008.Q13_Project___fromScratch.Models
         //update: TẠM THỜI dùng đường dẫn file từ internet thay vì đường dẫn local
         public string Answer { get; set; }
 
-        public string? FrontImagePath { get; set; }
-        public string? BackImagePath { get; set; }
+        public string? FrontImageName { get; set; }
+        public string? BackImageName { get; set; }
+        public string? FrontAudioName{ get; set; }
+        public string? BackAudioName { get; set; }
+
+
     }
 }

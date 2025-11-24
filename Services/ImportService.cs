@@ -60,8 +60,8 @@ namespace IT008.Q13_Project___fromScratch.Services
                         DeckId = newDeck.ID, // Link với Deck vừa tạo
                         FrontText = cardModel.FrontText,
                         BackText = cardModel.BackText,
-                        FrontImagePath = cardModel.FrontImagePath,
-                        BackImagePath = cardModel.BackImagePath,
+                        FrontImagePath = cardModel.FrontImageName,
+                        BackImagePath = cardModel.BackImageName,
                         Answer = cardModel.Answer ?? "",
                         // FrontAudioPath, BackAudioPath... (tùy bạn mở rộng)
 
