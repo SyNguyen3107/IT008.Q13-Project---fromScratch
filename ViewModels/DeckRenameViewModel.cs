@@ -50,7 +50,7 @@ namespace EasyFlips.ViewModels
             // 2. Lưu vào CSDL
             await _deckRepository.UpdateAsync(_targetDeck);
 
-            // 3. Gửi tin nhắn báo cho MainAnkiViewModel biết để cập nhật UI
+            // 3. Gửi tin nhắn báo cho MainViewModel biết để cập nhật UI
             _messenger.Send(new DeckUpdatedMessage(_targetDeck));
 
             // 4. Đóng cửa sổ

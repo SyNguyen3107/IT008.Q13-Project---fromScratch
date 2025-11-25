@@ -97,10 +97,7 @@ namespace EasyFlips.Services
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Title = "Import";
-            openFileDialog.Filter = "All supported formats (*.apkg, *.txt, *.zip)|*.apkg;*.txt;*.zip" +
-                                    "|Anki Deck Package (*.apkg)|*.apkg" +
-                                    "|Text file (*.txt)|*.txt" +
-                                    "|Zip file (*.zip)|*.zip";
+            openFileDialog.Filter = "Zip file (*.zip)|*.zip";
             openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
             bool? result = openFileDialog.ShowDialog();

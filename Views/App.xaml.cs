@@ -28,12 +28,34 @@ namespace EasyFlips
 
         private void ConfigureServices(IServiceCollection services)
         {
-            // 1. Cấu hình Database (SQLite)
-            string exePath = AppDomain.CurrentDomain.BaseDirectory;
-            // Đi lùi ra khỏi thư mục bin/Debug để lưu DB ở thư mục gốc dự án
-            string projectRoot = Path.GetFullPath(Path.Combine(exePath, "../../../"));
-            string dbPath = Path.Combine(projectRoot, "EasyFlipsAppDB.db");
+            // === 1. CẤU HÌNH ĐƯỜNG DẪN DATABASE THÔNG MINH ===
+            string dbPath;
 
+            // Lấy đường dẫn thư mục chứa file .exe đang chạy
+            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+            // Kiểm tra xem có đang chạy trong môi trường phát triển (Visual Studio) không?
+            // Cách đơn giản: Kiểm tra xem có thư mục con "bin" hay không, hoặc dùng chỉ thị tiền xử lý #if DEBUG
+
+#if DEBUG
+            // TRƯỜNG HỢP DEBUG: Database nằm ở thư mục gốc dự án (đi lùi 3 cấp)
+            // .../bin/Debug/net8.0-windows/ -> .../
+            string projectRoot = Path.GetFullPath(Path.Combine(baseDirectory, "../../../"));
+            dbPath = Path.Combine(projectRoot, "EasyFlipsAppDB.db");
+#else
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string appFolder = Path.Combine(appData, "EasyFlips");
+            if (!Directory.Exists(appFolder)) Directory.CreateDirectory(appFolder);
+            dbPath = Path.Combine(appFolder, "EasyFlipsAppDB.db");
+
+            // Tự động copy file DB mẫu nếu chưa có (lần chạy đầu tiên)
+            string sourceDb = Path.Combine(baseDirectory, "EasyFlipsAppDB.db");
+            if (!File.Exists(dbPath) && File.Exists(sourceDb))
+            {
+                File.Copy(sourceDb, dbPath);
+            }
+#endif
+            // Đăng ký DbContext
             services.AddDbContext<AppDbContext>(options =>
             {
                 options.UseSqlite($"Data Source={dbPath}");

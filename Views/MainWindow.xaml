@@ -105,7 +105,7 @@
                 <MenuItem Header="_Preferences" Cursor="Hand" InputGestureText="Ctrl+P" Foreground="Black"/>
             </MenuItem>-->
             <!--<MenuItem Header="_Help" Foreground="White">
-                <MenuItem Header="About Anki" Cursor="Hand" Foreground="Black"/>
+                <MenuItem Header="About" Cursor="Hand" Foreground="Black"/>
             </MenuItem>-->
         </Menu>
 

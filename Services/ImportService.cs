@@ -19,9 +19,9 @@ namespace EasyFlips.Services
             _deckRepository = deckRepository;
             _cardRepository = cardRepository;
 
-            // Tạo đường dẫn: C:\Users\[User]\AppData\Roaming\AnkiClone\Media
+            // Tạo đường dẫn: C:\Users\[User]\AppData\Roaming\EasyFlips\Media
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            _appMediaFolder = Path.Combine(appData, "AnkiClone", "Media");
+            _appMediaFolder = Path.Combine(appData, "EasyFlips", "Media");
 
             if (!Directory.Exists(_appMediaFolder))
             {

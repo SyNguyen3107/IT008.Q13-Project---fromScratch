@@ -52,7 +52,7 @@ namespace EasyFlips.ViewModels
 
             await _deckRepository.AddAsync(newDeck);
 
-            // Gửi tin nhắn báo cho MainAnkiViewModel cập nhật
+            // Gửi tin nhắn báo cho MainViewModel cập nhật
             _messenger.Send(new DeckAddedMessage(newDeck));
 
             // Đóng cửa sổ
