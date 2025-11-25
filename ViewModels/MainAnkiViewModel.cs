@@ -190,6 +190,13 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         }
 
         [RelayCommand]
+        private async Task Sync()
+        {
+            _navigationService.ShowSyncWindow();
+        }
+
+
+        [RelayCommand]
         private async Task ExportDeck(Deck deck)
         {
             if (deck == null) return;

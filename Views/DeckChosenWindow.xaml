@@ -58,7 +58,8 @@
                     FontWeight="Bold"
                     Background="#434343"
                     Foreground="White"
-                    Command="{Binding StudyNowCommand}"/>
+                    Command="{Binding StudyNowCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
         </StackPanel>
     </Grid>
 </Window>

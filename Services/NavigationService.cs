@@ -120,7 +120,8 @@ namespace IT008.Q13_Project___fromScratch.Services
         }
         public void ShowSyncWindow()
         {
-            throw new NotImplementedException();
+            var window = _serviceProvider.GetRequiredService<SyncWindow>();
+            window.ShowDialog();
         }
 
         public void ShowDeckChosenWindow(int deckId)

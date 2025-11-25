@@ -75,6 +75,7 @@ namespace IT008.Q13_Project___fromScratch
             services.AddTransient<AddCardWindow>();
             services.AddTransient<DeckChosenWindow>();
             services.AddTransient<ChooseDeckWindow>();
+            services.AddTransient<SyncWindow>();
 
 
 

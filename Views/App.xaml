@@ -10,12 +10,6 @@
             <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter"/>
             <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
-
-
-            <BitmapImage x:Key="AppIcon" UriSource="/Resources/Anki-icon.ico"/>
-            <Style TargetType="{x:Type Window}">
-                <Setter Property="Icon" Value="{StaticResource AppIcon}" />
-            </Style>
             <Style x:Key="ReviewButtonStyle" TargetType="Button">
                 <Setter Property="Width" Value="80"/>
                 <Setter Property="Height" Value="40"/>

@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:IT008.Q13_Project___fromScratch"
         mc:Ignorable="d"
-        Title="Anki" Height="800" Width="1200"
-        ResizeMode="NoResize"
+        Title="EasyFlips" Height="800" Width="1200"
+        
         WindowStartupLocation="CenterScreen"
         Background="#2c2c2c"
         Loaded="MainAnkiWindowLoaded">
@@ -94,30 +94,30 @@
             <!-- ... (Nội dung Menu cũ) ... -->
             <MenuItem Header="_File">
                 <MenuItem Header="_Import" Cursor="Hand" InputGestureText="Ctrl+Shift+I" Foreground="Black" Command="{Binding ImportFileCommand}" />
-                <MenuItem Header="_Export" Cursor="Hand" InputGestureText="Ctrl+E" Foreground="Black"/>
-                <Separator/>
+                <!--<MenuItem Header="_Export" Cursor="Hand" InputGestureText="Ctrl+E" Foreground="Black"/>
+                <Separator/>-->
                 <MenuItem Header="E_xit" Cursor="Hand" InputGestureText="Ctrl+Q" Foreground="Black"/>
             </MenuItem>
-            <MenuItem Header="_Edit" Foreground="White">
+            <!--<MenuItem Header="_Edit" Foreground="White">
                 <MenuItem Header="Undo" Cursor="Hand" InputGestureText="Ctrl+Z" Foreground="Gray"/>
-            </MenuItem>
-            <MenuItem Header="_Tools" Foreground="White">
+            </MenuItem>-->
+            <!--<MenuItem Header="_Tools" Foreground="White">
                 <MenuItem Header="_Preferences" Cursor="Hand" InputGestureText="Ctrl+P" Foreground="Black"/>
-            </MenuItem>
-            <MenuItem Header="_Help" Foreground="White">
+            </MenuItem>-->
+            <!--<MenuItem Header="_Help" Foreground="White">
                 <MenuItem Header="About Anki" Cursor="Hand" Foreground="Black"/>
-            </MenuItem>
+            </MenuItem>-->
         </Menu>
 
         <!-- Thanh Deck/Add/Browse/Stats/Sync (Giữ nguyên) -->
-        <Border Grid.Row="1" Background="#434343" CornerRadius="15" HorizontalAlignment="Left" VerticalAlignment="Top" BorderBrush="#444" BorderThickness="1" Padding="5,0" Margin="443,0,0,0" Height="34">
+        <Border Grid.Row="1" Background="#434343" CornerRadius="15" HorizontalAlignment="Center" VerticalAlignment="Top" BorderBrush="#444" BorderThickness="1" Padding="5,0" Margin="0,0,0,0" Height="34">
             <!-- ... (Nội dung thanh nút cũ) ... -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Button Content="Decks" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
                 <Button Content="Add" Style="{StaticResource NavButtonStyle}" Margin="10,0" Command="{Binding AddCardCommand}" />
-                <Button Content="Browse" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
+                <!--<Button Content="Browse" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>-->
                 <Button Content="Stats" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
-                <Button Content="Sync" Style="{StaticResource NavButtonStyle}" Margin="10,0" />
+                <Button Content="Sync" Style="{StaticResource NavButtonStyle}" Margin="10,0" Command="{Binding SyncCommand}" />
             </StackPanel>
         </Border>
 
@@ -252,9 +252,9 @@
         <!-- Thanh nút dưới (Giữ nguyên) -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20">
             <!-- ... (Nội dung thanh nút cũ) ... -->
-            <Border Background="#434343" CornerRadius="15" Padding="5,2" Margin="8,0">
+            <!--<Border Background="#434343" CornerRadius="15" Padding="5,2" Margin="8,0">
                 <Button Content="Get Shared" Command="{Binding GetSharedCommand}" Style="{StaticResource NavButtonStyle}"/>
-            </Border>
+            </Border>-->
             <Border Background="#434343" CornerRadius="15" Padding="5,2" Margin="8,0">
                 <Button Content="Create Deck" Command="{Binding CreateDeckCommand}" Style="{StaticResource NavButtonStyle}" />
             </Border>

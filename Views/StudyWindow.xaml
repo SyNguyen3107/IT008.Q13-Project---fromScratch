@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:IT008.Q13_Project___fromScratch.Views"
         xmlns:converters="clr-namespace:IT008.Q13_Project___fromScratch.Converters"
         mc:Ignorable="d"
-        Icon="/Resources/Anki-icon.ico"
-        Title="StudyWindow" Height="600" Width="800">
+        Title="StudyWindow" Height="600" Width="800"
+        WindowState="Maximized" >
     
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>

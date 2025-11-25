@@ -76,7 +76,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
 
         // Lệnh mở cửa sổ học cho deck hiện tại
         [RelayCommand]
-        private void StudyNow()
+        private void StudyNow(Window window)
         {
             // 1. Kiểm tra xem có thẻ nào cần học không
             int totalCardsToStudy = NewCount + LearningCount + ReviewCount;
@@ -85,6 +85,12 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             {
                 // Có thẻ -> Mở cửa sổ học
                 _navigationService.ShowStudyWindow(_deckId);
+
+                // --- TỰ ĐỘNG ĐÓNG CỬA SỔ HIỆN TẠI ---
+                if (window != null)
+                {
+                    window.Close();
+                }
             }
             else
             {

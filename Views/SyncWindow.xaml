@@ -6,7 +6,6 @@
         xmlns:local="clr-namespace:IT008.Q13_Project___fromScratch"
         mc:Ignorable="d"
         Title="Sync" Height="290" Width="300" Background="#2c2c2c"
-        Icon="/Resources/Anki-icon.ico"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen">
     <Grid>

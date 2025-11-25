@@ -6,7 +6,6 @@
         xmlns:converters="clr-namespace:IT008.Q13_Project___fromScratch.Converters"
         mc:Ignorable="d"
         Title="Add Card" Height="650" Width="800" 
-        Icon="/Resources/Anki-icon.ico"
         Background="#2c2c2c"
         WindowStartupLocation="CenterScreen">
 
