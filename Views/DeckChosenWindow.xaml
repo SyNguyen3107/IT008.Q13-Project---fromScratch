@@ -56,8 +56,9 @@
                     Height="36"
                     FontSize="14"
                     FontWeight="Bold"
-                    Background="#434343"
+                    Background="#FF367FF4"
                     Foreground="White"
+                    Cursor="Hand"
                     Command="{Binding StudyNowCommand}"
                     CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
         </StackPanel>

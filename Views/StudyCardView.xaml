@@ -124,10 +124,10 @@
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
                         Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}">
-                <Button Content="Again" Command="{Binding AgainCommand}" Width="90" Height="45" Margin="5" Background="#E74C3C" Foreground="White" FontWeight="Bold"/>
-                <Button Content="Hard" Command="{Binding HardCommand}" Width="90" Height="45" Margin="5" Background="#F39C12" Foreground="White" FontWeight="Bold"/>
-                <Button Content="Good" Command="{Binding GoodCommand}" Width="90" Height="45" Margin="5" Background="#2ECC71" Foreground="White" FontWeight="Bold"/>
-                <Button Content="Easy" Command="{Binding EasyCommand}" Width="90" Height="45" Margin="5" Background="#3498DB" Foreground="White" FontWeight="Bold"/>
+                <Button Content="Again" Command="{Binding AgainCommand}" Width="90" Height="45" Margin="5" Background="#E74C3C" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
+                <Button Content="Hard" Command="{Binding HardCommand}" Width="90" Height="45" Margin="5" Background="#F39C12" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
+                <Button Content="Good" Command="{Binding GoodCommand}" Width="90" Height="45" Margin="5" Background="#2ECC71" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
+                <Button Content="Easy" Command="{Binding EasyCommand}" Width="90" Height="45" Margin="5" Background="#3498DB" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
             </StackPanel>
         </Grid>
 
