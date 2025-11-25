@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
 using System.Linq;
+using System;
 
 namespace IT008.Q13_Project___fromScratch.Services
 {
@@ -25,7 +26,17 @@ namespace IT008.Q13_Project___fromScratch.Services
             var cards = await _cardRepository.GetCardsByDeckIdAsync(deckId);
             if (deck == null) return;
 
-            // Chuẩn bị dữ liệu export
+            // Hàm phụ trợ: Xử lý tên file để lưu vào JSON
+            // - Nếu là URL -> Giữ nguyên
+            // - Nếu là Local -> Chỉ lấy tên file
+            string? GetExportName(string? path)
+            {
+                if (string.IsNullOrEmpty(path)) return null;
+                if (path.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return path;
+                return Path.GetFileName(path);
+            }
+
+            // 1. Chuẩn bị dữ liệu JSON
             var exportData = new DeckExportModel
             {
                 DeckName = deck.Name,
@@ -35,10 +46,11 @@ namespace IT008.Q13_Project___fromScratch.Services
                     FrontText = c.FrontText,
                     BackText = c.BackText,
                     Answer = c.Answer,
-                    FrontImageName = string.IsNullOrEmpty(c.FrontImagePath) ? null : Path.GetFileName(c.FrontImagePath),
-                    BackImageName = string.IsNullOrEmpty(c.BackImagePath) ? null : Path.GetFileName(c.BackImagePath),
-                    FrontAudioName = string.IsNullOrEmpty(c.FrontAudioPath) ? null : Path.GetFileName(c.FrontAudioPath),
-                    BackAudioName = string.IsNullOrEmpty(c.BackAudioPath) ? null : Path.GetFileName(c.BackAudioPath)
+                    // SỬA LỖI: Dùng hàm GetExportName để không làm hỏng URL
+                    FrontImageName = GetExportName(c.FrontImagePath),
+                    BackImageName = GetExportName(c.BackImagePath),
+                    FrontAudioName = GetExportName(c.FrontAudioPath),
+                    BackAudioName = GetExportName(c.BackAudioPath)
                 }).ToList()
             };
 
@@ -49,29 +61,35 @@ namespace IT008.Q13_Project___fromScratch.Services
             };
             string jsonString = JsonSerializer.Serialize(exportData, options);
 
-            // Đảm bảo tên file zip
-            string zipPath = filePath.EndsWith(".zip") ? filePath : filePath + ".zip";
-            if (File.Exists(zipPath)) File.Delete(zipPath);
+            // 2. Tạo file Zip
+            if (File.Exists(filePath)) File.Delete(filePath);
 
-            // Tạo zip trực tiếp
-            using (var zipStream = new FileStream(zipPath, FileMode.Create))
+            using (var zipStream = new FileStream(filePath, FileMode.Create))
             using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create))
             {
-                // Ghi deck.json trực tiếp
+                // Ghi deck.json
                 var jsonEntry = archive.CreateEntry("deck.json");
                 using (var writer = new StreamWriter(jsonEntry.Open()))
                 {
                     await writer.WriteAsync(jsonString);
                 }
 
-                // Copy media trực tiếp vào zip
+                // 3. Copy media local vào zip
                 foreach (var c in cards)
                 {
                     void CopyIfExists(string? path)
                     {
-                        if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                        // Chỉ copy nếu là file local tồn tại (Bỏ qua URL)
+                        if (!string.IsNullOrEmpty(path)
+                            && !path.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                            && File.Exists(path))
                         {
-                            archive.CreateEntryFromFile(path, Path.Combine("media", Path.GetFileName(path)));
+                            // Tránh lỗi trùng tên file trong zip (nếu cần thiết có thể xử lý thêm)
+                            try
+                            {
+                                archive.CreateEntryFromFile(path, Path.Combine("media", Path.GetFileName(path)));
+                            }
+                            catch { /* Bỏ qua nếu file đã được thêm rồi */ }
                         }
                     }
 
