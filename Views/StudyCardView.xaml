@@ -118,7 +118,7 @@
         <Grid Grid.Row="2" Margin="0,20,0,0">
             <Button Content="Show Answer"
                     FontSize="16" FontWeight="Bold" Height="45"
-                    Background="#0078D7" Foreground="White" BorderThickness="0"
+                    Background="#0078D7" Foreground="White" BorderThickness="0" Cursor="Hand"
                     Command="{Binding ShowAnswerCommand}"
                     Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}"/>
 
