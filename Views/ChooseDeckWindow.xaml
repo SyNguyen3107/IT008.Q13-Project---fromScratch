@@ -16,7 +16,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <!-- Filter -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+        <!--<StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
             <TextBlock Text="Filter: " FontSize="16" Foreground="White" Margin="0,0,10,0"/>
             <Border CornerRadius="6" Background="#434343" BorderBrush="#FF367FF4" BorderThickness="1">
                 <TextBox Width="490" 
@@ -26,7 +26,7 @@
                      Foreground="White"
                      BorderThickness="0"/>
             </Border>
-        </StackPanel>
+        </StackPanel>-->
         <!-- Danh sách Deck -->
         <ListBox Grid.Row="1"
                  ItemsSource="{Binding Decks}"
@@ -55,10 +55,6 @@
                 <Button Content="Cancel" Command="{Binding CancelCommand}" 
                         CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" 
                         Width="80" Background="Transparent" BorderThickness="0" Cursor="Hand" Foreground="White"/>
-            </Border>
-            <Border CornerRadius="6" Background="#434343" Width="80" BorderThickness="1" Margin="5,0">
-                <Button Content="Help" Command="{Binding HelpCommand}" Width="80"
-                        Background="Transparent" BorderThickness="0" Cursor="Hand" Foreground="White"/>
             </Border>
         </StackPanel>
     </Grid>

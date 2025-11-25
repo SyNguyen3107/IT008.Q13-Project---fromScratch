@@ -8,12 +8,12 @@ using System.Windows;
 using System.Windows.Controls;
 using IT008.Q13_Project___fromScratch.Interfaces; // <-- Cần thêm để dùng IDeckRepository
 using System.Threading.Tasks;
-
 namespace IT008.Q13_Project___fromScratch.ViewModels
 {
     public partial class ChooseDeckViewModel : ObservableObject
     {
         private readonly IDeckRepository _deckRepository;
+        private readonly INavigationService _navigationService;
         // Danh sách các deck để hiển thị
         [ObservableProperty]
         private ObservableCollection<Deck> decks = new();
@@ -24,12 +24,13 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         private Deck? _selectedDeck;
 
         // Constructor: Nhận Repository từ DI
-        public ChooseDeckViewModel(IDeckRepository deckRepository)
+        public ChooseDeckViewModel(IDeckRepository deckRepository, INavigationService navigationService)
         {
             _deckRepository = deckRepository;
 
             // Gọi hàm tải dữ liệu. Dùng _ = để bỏ qua cảnh báo async trong constructor
             _ = LoadDecksAsync();
+            _navigationService = navigationService;
         }
 
         // Command Choose 
@@ -61,8 +62,8 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         [RelayCommand]
         private void Add()
         {
-            var win = new CreateDeckWindow();
-            win.ShowDialog();
+            _navigationService.ShowCreateDeckWindow();
+            LoadDecksAsync();
         }
         // Nạp danh sách Deck
         public void LoadDecks(IEnumerable<Deck> deckList)
