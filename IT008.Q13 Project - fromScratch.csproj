@@ -7,12 +7,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon>Resources\anki-icon.ico</ApplicationIcon>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="Resources\Anki-icon.ico" />
-  </ItemGroup>
 
   <ItemGroup>
     <Page Remove="Views\App.xaml" />
@@ -31,10 +26,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Resource Include="Resources\anki-icon.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -62,6 +53,10 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\" />
   </ItemGroup>
 
 </Project>

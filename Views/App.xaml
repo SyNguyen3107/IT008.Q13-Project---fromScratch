@@ -17,10 +17,6 @@
                 <Setter Property="Background" Value="#444"/>
                 <Setter Property="Foreground" Value="White"/>
             </Style>
-
-            <ResourceDictionary.MergedDictionaries>
-            </ResourceDictionary.MergedDictionaries>
-
         </ResourceDictionary>
     </Application.Resources>
 
