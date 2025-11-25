@@ -1,30 +1,29 @@
-﻿using CommunityToolkit.Mvvm.Input;
-using IT008.Q13_Project___fromScratch.ViewModels;
+﻿using EasyFlips.ViewModels;
 using System.Windows;
-using IT008.Q13_Project___fromScratch.Models;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives; // <-- Thêm để dùng ScrollBar
 using System.Windows.Input; // Cần cho MouseButtonEventArgs
 using System.Windows.Media; // Cần cho VisualTreeHelper
-using System.Windows.Controls.Primitives; // <-- Thêm để dùng ScrollBar
-namespace IT008.Q13_Project___fromScratch
+
+namespace EasyFlips
 {
     /// <summary>
-    /// Interaction logic for MainAnkiWindow.xaml
+    /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainAnkiWindow : Window
+    public partial class MainWindow : Window
     {
-        private readonly MainAnkiViewModel _viewModel;
+        private readonly MainViewModel _viewModel;
         // Hàm khởi tạo nhận vào ViewModel
-        public MainAnkiWindow( MainAnkiViewModel viewModel)
+        public MainWindow(MainViewModel viewModel)
         {
             InitializeComponent();
             _viewModel = viewModel;
             DataContext = _viewModel;
             //Gọi hàm LoadDecksAsync khi cửa sổ được tải
-            this.Loaded += MainAnkiWindowLoaded;
+            this.Loaded += MainWindowLoaded;
 
-        }      
-        private async void MainAnkiWindowLoaded(object sender, RoutedEventArgs e)
+        }
+        private async void MainWindowLoaded(object sender, RoutedEventArgs e)
         {
             await _viewModel.LoadDecksAsync();
         }
@@ -80,7 +79,7 @@ namespace IT008.Q13_Project___fromScratch
             DeckListView.SelectedItem = null;
 
             // (Tùy chọn) Làm mất focus khỏi ListView để giao diện sạch hơn
-            Keyboard.ClearFocus(); 
+            Keyboard.ClearFocus();
         }
     }
 }

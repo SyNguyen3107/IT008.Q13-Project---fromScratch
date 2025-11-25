@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace IT008.Q13_Project___fromScratch.Migrations
+namespace EasyFlips.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialDatabase : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,7 +18,10 @@ namespace IT008.Q13_Project___fromScratch.Migrations
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: false)
+                    Description = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: false),
+                    NewCount = table.Column<int>(type: "INTEGER", nullable: false),
+                    LearnCount = table.Column<int>(type: "INTEGER", nullable: false),
+                    DueCount = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -32,6 +35,7 @@ namespace IT008.Q13_Project___fromScratch.Migrations
                     ID = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     DeckId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Answer = table.Column<string>(type: "TEXT", nullable: false),
                     FrontText = table.Column<string>(type: "TEXT", nullable: false),
                     FrontImagePath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
                     FrontAudioPath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),

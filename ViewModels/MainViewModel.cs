@@ -1,20 +1,18 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using IT008.Q13_Project___fromScratch.Interfaces;
-using IT008.Q13_Project___fromScratch.Models;
-using IT008.Q13_Project___fromScratch.Services;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Linq; // <-- Cần thêm để dùng .FirstOrDefault()
 using CommunityToolkit.Mvvm.Messaging;
-using IT008.Q13_Project___fromScratch.Messages;
-using System.Windows;
+using EasyFlips.Interfaces;
+using EasyFlips.Messages;
+using EasyFlips.Models;
+using EasyFlips.Services;
 using Microsoft.Win32;
+using System.Collections.ObjectModel;
+using System.Windows;
 
-namespace IT008.Q13_Project___fromScratch.ViewModels
+namespace EasyFlips.ViewModels
 {
     // --- SỬA LỖI: Thêm IRecipient<DeckUpdatedMessage> ---
-    public partial class MainAnkiViewModel : ObservableObject,
+    public partial class MainViewModel : ObservableObject,
                                              IRecipient<DeckAddedMessage>,
                                              IRecipient<DeckUpdatedMessage>,
                                              IRecipient<CardAddedMessage>,
@@ -28,7 +26,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
 
         public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>();
 
-        public MainAnkiViewModel(IDeckRepository deckRepository,
+        public MainViewModel(IDeckRepository deckRepository,
                                  INavigationService navigationService,
                                  IMessenger messenger,
                                  ImportService importService,
@@ -82,7 +80,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                     int index = Decks.IndexOf(existingDeck);
 
                     // 2. ÉP GIAO DIỆN CẬP NHẬT (Force UI Update)
-                    // Thay vì gán đè (Decks[index] = ...), ta xóa đi và chèn lại.
+                    // Thay vì gán đè (Decks[index] = ..), ta xóa đi và chèn lại.
                     // Điều này gửi tín hiệu "CollectionChanged" mạnh mẽ tới ListView,
                     // buộc nó phải vẽ lại dòng này với tên mới ngay lập tức.
 
@@ -154,7 +152,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         private void DeckOptions(Deck deck)
         {
             if (deck == null) return;
-            MessageBox.Show($"Cài đặt cho deck '{deck.Name}'", "Options");
+            MessageBox.Show($"In development", "Options");
         }
         [RelayCommand]
         private async Task ImportFile()
@@ -179,12 +177,12 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                         // Nhưng dùng Messenger cho nhất quán
                         _messenger.Send(new DeckAddedMessage(newDeck));
 
-                        MessageBox.Show($"Đã nhập bộ thẻ '{newDeck.Name}' thành công!", "Thành công");
+                        MessageBox.Show($"'{newDeck.Name}' successfully Imported!", "Imported");
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Lỗi khi nhập file: {ex.Message}", "Lỗi");
+                    MessageBox.Show($"Error occurred: {ex.Message}", "Errors");
                 }
             }
         }
@@ -216,7 +214,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                     : dlg.FileName + ".zip";
 
                 await _exportService.ExportDeckToZipAsync(deck.ID, zipPath);
-                MessageBox.Show("Export thành công!", "Thông báo");
+                MessageBox.Show("Successfully Exported!", "Notice");
             }
         }
 
@@ -228,8 +226,8 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
 
             // 2. Hiển thị hộp thoại xác nhận (Confirmation Dialog)
             var result = MessageBox.Show(
-                $"Bạn có chắc chắn muốn xóa bộ thẻ '{deck.Name}' không?\n\nCẢNH BÁO: Tất cả {deck.NewCount + deck.LearnCount + deck.DueCount} thẻ bên trong sẽ bị xóa vĩnh viễn!",
-                "Xác nhận xóa",
+                $"Are you sure you want to permanently delete '{deck.Name}' ?\n\nWARNING: All {deck.NewCount + deck.LearnCount + deck.DueCount} card(s) inside will be permanently deleted too!",
+                "Confirm deletion",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
@@ -247,7 +245,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                     Decks.Remove(deckToRemove);
                 }
 
-                MessageBox.Show("Đã xóa thành công!", "Thông báo");
+                MessageBox.Show("Successfully deleted deck!", "Notice");
             }
         }
     }

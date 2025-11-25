@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace IT008.Q13_Project___fromScratch.Models
+﻿namespace EasyFlips.Models
 {
     // Class này đại diện cho cấu trúc file sẽ được lưu
     public class DeckExportModel
@@ -18,7 +16,7 @@ namespace IT008.Q13_Project___fromScratch.Models
 
         public string? FrontImageName { get; set; }
         public string? BackImageName { get; set; }
-        public string? FrontAudioName{ get; set; }
+        public string? FrontAudioName { get; set; }
         public string? BackAudioName { get; set; }
 
 

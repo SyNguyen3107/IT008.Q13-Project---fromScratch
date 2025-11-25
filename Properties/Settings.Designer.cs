@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace IT008.Q13_Project___fromScratch.Properties {
+namespace EasyFlips.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

@@ -1,14 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using IT008.Q13_Project___fromScratch.Models;
-using System.Collections.Generic;
+using EasyFlips.Interfaces; // <-- Cần thêm để dùng IDeckRepository
+using EasyFlips.Models;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
-using IT008.Q13_Project___fromScratch.Interfaces; // <-- Cần thêm để dùng IDeckRepository
-using System.Threading.Tasks;
-namespace IT008.Q13_Project___fromScratch.ViewModels
+namespace EasyFlips.ViewModels
 {
     public partial class ChooseDeckViewModel : ObservableObject
     {

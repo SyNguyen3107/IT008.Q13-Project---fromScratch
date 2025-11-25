@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel; // chứa interface INotifyPropertyChanged, giúp WPF biết khi dữ liệu trong ViewModel thay đổi
 using System.Runtime.CompilerServices; // cung cấp [CallerMemberName] - một attribute giúo tự động lấy tên thuộc tính đang gọi hàm
 
-namespace IT008.Q13_Project___fromScratch.ViewModels
+namespace EasyFlips.ViewModels
 {
     public class BaseViewModel : INotifyPropertyChanged //Kế thừa Interface INotifyPropertyChanged để đảm bảo nó phải triển khai sự kiện PropertyChanged
     {

@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using IT008.Q13_Project___fromScratch.Models;
+﻿using EasyFlips.Models;
 
-namespace IT008.Q13_Project___fromScratch.Interfaces
+namespace EasyFlips.Interfaces
 {
     public interface IDeckRepository
     {

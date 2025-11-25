@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using System.IO;
 
-namespace IT008.Q13_Project___fromScratch.Models
+namespace EasyFlips.Models
 {
     // Lớp này chỉ được dùng bởi các công cụ design-time (như Add-Migration)
     public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
@@ -12,8 +12,8 @@ namespace IT008.Q13_Project___fromScratch.Models
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
 
             // Đây là nơi bạn chỉ định CSDL sẽ dùng.
-            
-            string dbPath = Path.Combine(Directory.GetCurrentDirectory(), "AnkiAppDB.db");
+
+            string dbPath = Path.Combine(Directory.GetCurrentDirectory(), "EasyFlipsAppDB.db");
             optionsBuilder.UseSqlite($"Data Source={dbPath}");
 
             return new AppDbContext(optionsBuilder.Options);

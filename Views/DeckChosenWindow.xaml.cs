@@ -1,7 +1,7 @@
-﻿using IT008.Q13_Project___fromScratch.ViewModels;
+﻿using EasyFlips.ViewModels;
 using System.Windows;
 
-namespace IT008.Q13_Project___fromScratch.Views
+namespace EasyFlips.Views
 {
     /// <summary>
     /// Interaction logic for DeckChosenWindow.xaml

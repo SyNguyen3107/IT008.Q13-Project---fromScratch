@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Messaging.Messages;
 
-namespace IT008.Q13_Project___fromScratch.Messages
+namespace EasyFlips.Messages
 {
     // Tin nhắn báo hiệu một buổi học đã kết thúc (để cập nhật thống kê)
     public class StudySessionCompletedMessage : ValueChangedMessage<int>

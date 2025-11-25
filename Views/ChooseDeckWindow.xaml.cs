@@ -1,8 +1,8 @@
-﻿using System.Windows;
-using IT008.Q13_Project___fromScratch.ViewModels; // Import ViewModel
-using IT008.Q13_Project___fromScratch.Models;     // Import Model
+﻿using EasyFlips.Models;     // Import Model
+using EasyFlips.ViewModels; // Import ViewModel
+using System.Windows;
 
-namespace IT008.Q13_Project___fromScratch
+namespace EasyFlips
 {
     /// <summary>
     /// Interaction logic for ChooseDeckWindow.xaml

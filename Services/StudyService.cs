@@ -1,11 +1,8 @@
-﻿using IT008.Q13_Project___fromScratch.Interfaces;
-using IT008.Q13_Project___fromScratch.Models;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using EasyFlips.Interfaces;
+using EasyFlips.Models;
 using System.Diagnostics; // Để in log debug
 
-namespace IT008.Q13_Project___fromScratch.Services
+namespace EasyFlips.Services
 {
     public enum ReviewOutcome
     {
@@ -53,7 +50,7 @@ namespace IT008.Q13_Project___fromScratch.Services
                 // 1. Thẻ chưa có Progress (New) -> Rank 0
                 // 2. Thẻ Learn (0 < Interval < 1) -> Rank 1
                 // 3. Thẻ Review (Interval >= 1) -> Rank 2
-                .OrderBy(c => 
+                .OrderBy(c =>
                 {
                     if (c.Progress == null) return 0;
                     if (c.Progress.Interval > 0 && c.Progress.Interval < 1) return 1;

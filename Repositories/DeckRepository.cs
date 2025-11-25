@@ -1,12 +1,8 @@
-﻿using System.Collections.Generic; // dùng cho List<T> và IEnumrable<T>
-using System.Threading.Tasks; // cho phép viết hàm bất đồng bộ (async)
-using IT008.Q13_Project___fromScratch.Interfaces;
-using IT008.Q13_Project___fromScratch.Models; // truy cập class Deck
-using Microsoft.EntityFrameworkCore; // Cần cho ToListAsync, FindAsync, ...
-using System.Linq; // Cần cho .Where, v.v.
-using System;//Cần cho DateTime
+﻿using EasyFlips.Interfaces;
+using EasyFlips.Models; // truy cập class Deck
+using Microsoft.EntityFrameworkCore; // Cần cho ToListAsync, FindAsync, ..
 
-namespace IT008.Q13_Project___fromScratch.Repositories
+namespace EasyFlips.Repositories
 {
     public class DeckRepository : IDeckRepository
     {

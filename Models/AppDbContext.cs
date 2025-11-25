@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-namespace IT008.Q13_Project___fromScratch.Models
+﻿using Microsoft.EntityFrameworkCore;
+namespace EasyFlips.Models
 {
     public class AppDbContext : DbContext
     {
@@ -52,11 +47,11 @@ namespace IT008.Q13_Project___fromScratch.Models
                 e.Property(p => p.DueDate).IsRequired();
                 e.Property(p => p.Interval).HasPrecision(18, 6);
                 e.Property(p => p.EaseFactor).HasPrecision(18, 6);
-                
-                e.HasIndex(p=>p.DueDate);
+
+                e.HasIndex(p => p.DueDate);
             });
 
         }
     }
 }
-      
+

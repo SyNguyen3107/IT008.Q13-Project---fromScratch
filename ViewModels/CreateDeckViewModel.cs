@@ -1,15 +1,12 @@
-﻿using System;
-using System.Windows;
-using System.Windows.Input;
-using System.Threading.Tasks;
-using IT008.Q13_Project___fromScratch.Models;
-using IT008.Q13_Project___fromScratch.Interfaces;
-using CommunityToolkit.Mvvm.Messaging;
-using IT008.Q13_Project___fromScratch.Messages;
-using CommunityToolkit.Mvvm.ComponentModel; // Cần cho ObservableObject, [ObservableProperty]
+﻿using CommunityToolkit.Mvvm.ComponentModel; // Cần cho ObservableObject, [ObservableProperty]
 using CommunityToolkit.Mvvm.Input; // Cần cho [RelayCommand]
+using CommunityToolkit.Mvvm.Messaging;
+using EasyFlips.Interfaces;
+using EasyFlips.Messages;
+using EasyFlips.Models;
+using System.Windows;
 
-namespace IT008.Q13_Project___fromScratch.ViewModels
+namespace EasyFlips.ViewModels
 {
     // --- SỬA LỖI KẾ THỪA Ở ĐÂY ---
     // Kế thừa trực tiếp từ ObservableObject thay vì BaseViewModel

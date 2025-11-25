@@ -1,13 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using IT008.Q13_Project___fromScratch.Interfaces;
-using IT008.Q13_Project___fromScratch.Models;
 using CommunityToolkit.Mvvm.Messaging;
-using IT008.Q13_Project___fromScratch.Messages;
-using System.Threading.Tasks;
+using EasyFlips.Interfaces;
+using EasyFlips.Models;
 using System.Windows;
 
-namespace IT008.Q13_Project___fromScratch.ViewModels
+namespace EasyFlips.ViewModels
 {
     public partial class DeckRenameViewModel : ObservableObject
     {

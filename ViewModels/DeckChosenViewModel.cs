@@ -1,11 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using IT008.Q13_Project___fromScratch.Interfaces;
-using IT008.Q13_Project___fromScratch.Services;
-using System.Threading.Tasks;
+using EasyFlips.Interfaces;
+using EasyFlips.Services;
 using System.Windows;
 
-namespace IT008.Q13_Project___fromScratch.ViewModels
+namespace EasyFlips.ViewModels
 {
     // ViewModel cho cửa sổ DeckChosenWindow
     public partial class DeckChosenViewModel : ObservableObject
@@ -16,7 +15,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         // Lưu deckId để dùng khi người dùng nhấn Study Now
         private int _deckId;
 
-        private string _deckName = "Loading...";
+        private string _deckName = "Loading..";
 
         private int _newCount;
 
@@ -62,7 +61,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         public async Task InitializeAsync(int deckId)
         {
             _deckId = deckId; // lưu lại deckId để dùng cho StudyNowCommand
-            
+
 
             // Gọi service để lấy thông tin thống kê (New/Learning/Review)
             var stats = await _studyService.GetDeckStatsAsync(deckId);

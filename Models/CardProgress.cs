@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace IT008.Q13_Project___fromScratch.Models
+﻿namespace EasyFlips.Models
 {
     public class CardProgress
     {

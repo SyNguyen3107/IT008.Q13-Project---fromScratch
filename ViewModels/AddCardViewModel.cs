@@ -1,20 +1,17 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using IT008.Q13_Project___fromScratch.Interfaces;
-using IT008.Q13_Project___fromScratch.Models;
-using IT008.Q13_Project___fromScratch.Views; // Cần cái này để gọi ChooseDeckWindow
+using CommunityToolkit.Mvvm.Messaging;
+using EasyFlips.Interfaces;
+using EasyFlips.Messages;
+using EasyFlips.Models;
 using Microsoft.Extensions.DependencyInjection; // <-- CẦN THÊM: Để dùng GetRequiredService
 using Microsoft.Win32; // Dùng cho OpenFileDialog
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Windows; // Dùng cho MessageBox
-using System.Windows.Input;
-using CommunityToolkit.Mvvm.Messaging;
-using IT008.Q13_Project___fromScratch.Messages;
-using System.IO; // Cần thêm để dùng Path.GetFileName
 using System.Diagnostics; // Cần thêm để dùng Process.Start
+using System.IO; // Cần thêm để dùng Path.GetFileName
+using System.Windows; // Dùng cho MessageBox
 
-namespace IT008.Q13_Project___fromScratch.ViewModels
+namespace EasyFlips.ViewModels
 {
     public partial class AddCardViewModel : ObservableObject
     {
@@ -133,7 +130,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             }
         }
 
-            [RelayCommand]
+        [RelayCommand]
         private void Cancel(Window window)
         {
             if (window != null)

@@ -1,9 +1,8 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace IT008.Q13_Project___fromScratch.Converters
+namespace EasyFlips.Converters
 {
     public class InvertedBooleanToVisibilityConverter : IValueConverter
     {

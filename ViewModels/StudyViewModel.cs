@@ -1,18 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using IT008.Q13_Project___fromScratch.Models;
-using IT008.Q13_Project___fromScratch.Services;
+using EasyFlips.Models;
+using EasyFlips.Services;
 using System.Collections.ObjectModel; // Cần cho ObservableCollection
-using System.Security;
-using System.Threading.Tasks;
-using System.Windows.Input;
-using System.Threading.Tasks;
 using System.Windows;
-using System.IO;
-using System.Linq;
-using System; // Thêm để sử dụng Exception
 
-namespace IT008.Q13_Project___fromScratch.ViewModels
+namespace EasyFlips.ViewModels
 {
     public partial class StudyViewModel : ObservableObject
     {
@@ -58,9 +51,9 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             _audioService = audioService;
             // Khởi tạo command + điều kiện CanExecute dựa vào HasCards
             AgainCommand = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Again), () => HasCards);
-            HardCommand  = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Hard),  () => HasCards);
-            GoodCommand  = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Good),  () => HasCards);
-            EasyCommand  = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Easy),  () => HasCards);
+            HardCommand = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Hard), () => HasCards);
+            GoodCommand = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Good), () => HasCards);
+            EasyCommand = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Easy), () => HasCards);
         }
 
         // Hàm khởi tạo ViewModel khi NavigationService gọi (hoặc khi ViewModel được tải)
@@ -74,8 +67,8 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[StudyViewModel] LoadNextCardAsync: Starting...");
-                
+                System.Diagnostics.Debug.WriteLine("[StudyViewModel] LoadNextCardAsync: Starting..");
+
                 // Reset trạng thái
                 IsAnswerVisible = false;
                 UserInputText = string.Empty;
@@ -83,9 +76,9 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
 
                 // Lấy thẻ
                 _currentCard = await _studyService.GetNextCardToReviewAsync(_currentDeckId);
-                
+
                 System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: Got card = {(_currentCard != null ? _currentCard.ID.ToString() : "null")}");
-                
+
                 // Cập nhật HasCards dựa trên _currentCard
                 HasCards = _currentCard != null;
                 System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: HasCards = {HasCards}");
@@ -102,25 +95,23 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
                     BackImagePath = _currentCard.BackImagePath;
                     FrontAudioPath = _currentCard.FrontAudioPath;
                     BackAudioPath = _currentCard.BackAudioPath;
-                    
+
                     System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: Card loaded successfully");
                 }
                 else
                 {
                     // --- HẾT THẺ: HIỂN THỊ THÔNG BÁO ---
-                    System.Diagnostics.Debug.WriteLine("[StudyViewModel] LoadNextCardAsync: No more cards, showing completion message");
-                    
                     // Không tự động đóng cửa sổ, chỉ hiển thị thông báo
-                    QuestionText = "🎉 Congratulations! 🎉";
-                    AnswerText = "You have completed all the cards in this deck for now!\n\nPlease close this window or press ESC to exit.";
+                    QuestionText = "Congratulations!";
+                    AnswerText = "You have completed all the cards in this deck for now!\n\nPlease close this window.";
                     CorrectAnswer = "";
-                    
+
                     // Xóa các đường dẫn media
                     FrontImagePath = null;
                     BackImagePath = null;
                     FrontAudioPath = null;
                     BackAudioPath = null;
-                    
+
                     // Hiển thị phần answer để người dùng thấy thông báo
                     IsAnswerVisible = true;
                 }
@@ -135,7 +126,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"[StudyViewModel] ERROR in LoadNextCardAsync: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"[StudyViewModel] Stack trace: {ex.StackTrace}");
-                
+
                 MessageBox.Show($"Error loading next card: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -225,8 +216,7 @@ namespace IT008.Q13_Project___fromScratch.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] ERROR ProcessReview: {ex.Message}");
-                MessageBox.Show("Có lỗi xảy ra khi xử lý đánh giá thẻ", "Lỗi");
+                MessageBox.Show("Unidentified Error(s) occurred", "Error");
             }
         }
 

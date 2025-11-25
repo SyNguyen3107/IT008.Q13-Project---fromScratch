@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging.Messages;
-using IT008.Q13_Project___fromScratch.Models;
+using EasyFlips.Models;
 
-namespace IT008.Q13_Project___fromScratch.Messages
+namespace EasyFlips.Messages
 {
     // Một "bức thư" mang theo thông tin về Deck vừa được thêm
     public class DeckAddedMessage : ValueChangedMessage<Deck>

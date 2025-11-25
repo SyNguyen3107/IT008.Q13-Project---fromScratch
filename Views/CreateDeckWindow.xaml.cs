@@ -1,8 +1,7 @@
-﻿using System.Windows;
-using IT008.Q13_Project___fromScratch.Repositories;
-using IT008.Q13_Project___fromScratch.ViewModels;
+﻿using EasyFlips.ViewModels;
+using System.Windows;
 
-namespace IT008.Q13_Project___fromScratch
+namespace EasyFlips
 {
     /// <summary>
     /// Interaction logic for CreateDeckWindow.xaml
@@ -19,7 +18,7 @@ namespace IT008.Q13_Project___fromScratch
         }
         // Thêm constructor không tham số (overload)
         public CreateDeckWindow()
-            : this(new CreateDeckViewModel()) 
+            : this(new CreateDeckViewModel())
         {
         }
     }

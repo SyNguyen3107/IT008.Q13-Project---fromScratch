@@ -1,13 +1,10 @@
-﻿using IT008.Q13_Project___fromScratch.Interfaces;
-using IT008.Q13_Project___fromScratch.Models;
-using System.Text.Json;
+﻿using EasyFlips.Interfaces;
+using EasyFlips.Models;
 using System.IO;
 using System.IO.Compression;
-using System.Threading.Tasks;
-using System.Linq;
-using System;
+using System.Text.Json;
 
-namespace IT008.Q13_Project___fromScratch.Services
+namespace EasyFlips.Services
 {
     public class ExportService
     {

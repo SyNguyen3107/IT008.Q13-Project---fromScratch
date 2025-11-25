@@ -1,8 +1,7 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Windows.Media; // Cần tham chiếu đến PresentationCore và WindowsBase
 
-namespace IT008.Q13_Project___fromScratch.Services
+namespace EasyFlips.Services
 {
     public class AudioService
     {

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace IT008.Q13_Project___fromScratch.Models
+﻿namespace EasyFlips.Models
 {
     public class Card
     {
@@ -18,13 +12,13 @@ namespace IT008.Q13_Project___fromScratch.Models
         public string FrontText { get; set; }
         public string? FrontImagePath { get; set; } = null;
         public string? FrontAudioPath { get; set; } = null;
-         
+
         //Nội dung mặt sau
 
         public string BackText { get; set; }
         public string? BackImagePath { get; set; } = null;
         public string? BackAudioPath { get; set; } = null;
-        
+
         //Mỗi card chỉ nằm trong 1 Deck
         public Deck Deck { get; set; }
 

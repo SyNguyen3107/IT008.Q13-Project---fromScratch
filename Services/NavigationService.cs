@@ -1,17 +1,15 @@
-﻿using IT008.Q13_Project___fromScratch.Interfaces;
-using IT008.Q13_Project___fromScratch.Services;
-using IT008.Q13_Project___fromScratch.ViewModels;
-using IT008.Q13_Project___fromScratch.Views;
-using IT008.Q13_Project___fromScratch.Models;
-using Microsoft.Extensions.DependencyInjection; 
+﻿using CommunityToolkit.Mvvm.Messaging;
+using EasyFlips.Interfaces;
+using EasyFlips.Messages;
+using EasyFlips.Models;
+using EasyFlips.ViewModels;
+using EasyFlips.Views;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
-using System;
 using System.Diagnostics;
 using System.Windows;
-using CommunityToolkit.Mvvm.Messaging; 
-using IT008.Q13_Project___fromScratch.Messages;
 
-namespace IT008.Q13_Project___fromScratch.Services
+namespace EasyFlips.Services
 {
     public class NavigationService : INavigationService
     {

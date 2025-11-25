@@ -1,7 +1,7 @@
-﻿using IT008.Q13_Project___fromScratch.ViewModels; // Thêm
+﻿using EasyFlips.ViewModels; // Thêm
 using System.Windows;
 
-namespace IT008.Q13_Project___fromScratch.Views
+namespace EasyFlips.Views
 {
     public partial class StudyWindow : Window
     {

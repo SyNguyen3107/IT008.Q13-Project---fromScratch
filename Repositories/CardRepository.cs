@@ -1,12 +1,8 @@
-﻿using IT008.Q13_Project___fromScratch.Interfaces;
-using IT008.Q13_Project___fromScratch.Models;
+﻿using EasyFlips.Interfaces;
+using EasyFlips.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using IT008.Q13_Project___fromScratch.Models;
 
-namespace IT008.Q13_Project___fromScratch.Repositories
+namespace EasyFlips.Repositories
 {
     public class CardRepository : ICardRepository
     {
@@ -25,7 +21,7 @@ namespace IT008.Q13_Project___fromScratch.Repositories
             // KHÔNG tự động tạo Progress cho card mới
             // Card mới phải có Progress = null để được tính vào NewCount
             // Progress chỉ được tạo khi người dùng học card lần đầu tiên (trong StudyService.ProcessReviewAsync)
-            
+
             await _context.Cards.AddAsync(card);
             await _context.SaveChangesAsync();
         }

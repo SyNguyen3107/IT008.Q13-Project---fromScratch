@@ -1,7 +1,6 @@
-﻿using System;
-using System.Windows.Input; // chứa ICommand
+﻿using System.Windows.Input; // chứa ICommand
 
-namespace IT008.Q13_Project___fromScratch.ViewModels
+namespace EasyFlips.ViewModels
 {
     // Một class trung gian để bind các nút trong XAML với hàm trong ViewModel
     class RelayCommand : ICommand

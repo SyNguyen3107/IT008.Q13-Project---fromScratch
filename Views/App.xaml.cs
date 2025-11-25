@@ -1,92 +1,82 @@
-﻿using IT008.Q13_Project___fromScratch.Models;
-using IT008.Q13_Project___fromScratch.Repositories;
-using IT008.Q13_Project___fromScratch.Services;
-using IT008.Q13_Project___fromScratch.Interfaces;
-using IT008.Q13_Project___fromScratch.ViewModels;
-using IT008.Q13_Project___fromScratch.Views;
-
+﻿using EasyFlips.Interfaces;
+using EasyFlips.Models;
+using EasyFlips.Repositories;
+using EasyFlips.Services;
+using EasyFlips.ViewModels;
+using EasyFlips.Views;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.Messaging;
+using EasyFlips.Converters;
 
-namespace IT008.Q13_Project___fromScratch
+namespace EasyFlips
 {
     public partial class App : Application
     {
+        // --- QUAN TRỌNG: Biến này giúp các ViewModel truy cập DI ---
         public static IServiceProvider ServiceProvider { get; private set; }
+
         public App()
         {
-            var servicers = new ServiceCollection();
-
-            ConfigureServices(servicers);
-
-            ServiceProvider = servicers.BuildServiceProvider();
-
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            ServiceProvider = services.BuildServiceProvider();
         }
+
         private void ConfigureServices(IServiceCollection services)
         {
-            // === ĐĂNG KÝ CƠ SỞ DỮ LIỆU (ĐÃ SỬA LỖI) ===
-
-            // 1. Lấy thư mục chạy (ví dụ: .../bin/Debug/net6.0)
+            // 1. Cấu hình Database (SQLite)
             string exePath = AppDomain.CurrentDomain.BaseDirectory;
-
-            // 2. Đi lùi 3 cấp để tìm về thư mục gốc của dự án
-            //    (Lưu ý: số lượng '../' có thể cần điều chỉnh nếu cấu trúc dự án của bạn khác)
+            // Đi lùi ra khỏi thư mục bin/Debug để lưu DB ở thư mục gốc dự án
             string projectRoot = Path.GetFullPath(Path.Combine(exePath, "../../../"));
-
-            // 3. Kết hợp để có đường dẫn tuyệt đối đến CSDL ở thư mục gốc
-            string dbPath = Path.Combine(projectRoot, "AnkiAppDB.db");
+            string dbPath = Path.Combine(projectRoot, "EasyFlipsAppDB.db");
 
             services.AddDbContext<AppDbContext>(options =>
             {
-                // Sử dụng đường dẫn tuyệt đối dbPath
                 options.UseSqlite($"Data Source={dbPath}");
             });
-            
 
-            // === ĐĂNG KÝ REPOSITORIES ===
+            // 2. Đăng ký Repositories
             services.AddScoped<IDeckRepository, DeckRepository>();
             services.AddScoped<ICardRepository, CardRepository>();
 
-            // === ĐĂNG KÝ SERVICES ===
+            // 3. Đăng ký Services
             services.AddScoped<StudyService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddTransient<ExportService>();
             services.AddTransient<ImportService>();
             services.AddSingleton<AudioService>();
 
-            // === ĐĂNG KÝ VIEWMODELS ===
-            services.AddTransient<MainAnkiViewModel>();
+            // 4. Đăng ký ViewModels
+            services.AddTransient<MainViewModel>();
             services.AddTransient<StudyViewModel>();
             services.AddTransient<CreateDeckViewModel>();
             services.AddTransient<AddCardViewModel>();
             services.AddTransient<DeckChosenViewModel>();
             services.AddTransient<DeckRenameViewModel>();
-            services.AddTransient<DeckRenameWindow>();
             services.AddTransient<ChooseDeckViewModel>();
 
-            // === ĐĂNG KÝ CÁC CỬA SỔ (VIEWS) ===
-            services.AddTransient<MainAnkiWindow>();
+            // 5. Đăng ký Views (Cửa sổ)
+            services.AddTransient<MainWindow>();
             services.AddTransient<StudyWindow>();
             services.AddTransient<CreateDeckWindow>();
             services.AddTransient<AddCardWindow>();
             services.AddTransient<DeckChosenWindow>();
+            services.AddTransient<DeckRenameWindow>();
             services.AddTransient<ChooseDeckWindow>();
             services.AddTransient<SyncWindow>();
 
-
-
-
-
-            // Đăng ký Messenger
+            // 6. Messenger
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         }
+
         protected override void OnStartup(StartupEventArgs e)
         {
-            var mainWindow = ServiceProvider.GetRequiredService<MainAnkiWindow>();
+            // Mở cửa sổ chính khi khởi động
+            var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();
             base.OnStartup(e);
         }
