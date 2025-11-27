@@ -55,6 +55,7 @@ namespace EasyFlips.Views
             }
         }
 
+
         private void Email_LostFocus(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtEmail.Text))
@@ -64,5 +65,7 @@ namespace EasyFlips.Views
                 txtEmail.Foreground = Brushes.Gray;
             }
         }
+        
+        
     }
 }
