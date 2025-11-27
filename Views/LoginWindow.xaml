@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         Title="Login" Height="450" Width="350"
         WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
         Background ="#1E1E1E">
     <Grid Margin="20">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="280">
