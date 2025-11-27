@@ -21,7 +21,6 @@ namespace EasyFlips
             DataContext = _viewModel;
             //Gọi hàm LoadDecksAsync khi cửa sổ được tải
             this.Loaded += MainWindowLoaded;
-            
         }
         private async void MainWindowLoaded(object sender, RoutedEventArgs e)
         {
