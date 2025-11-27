@@ -22,6 +22,47 @@ namespace EasyFlips.Views
         public LoginWindow()
         {
             InitializeComponent();
+            txtPassword.Password = (string)txtPassword.Tag;
+        }
+
+        private void Password_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (txtPassword.Password == (string)txtPassword.Tag)
+            {
+                //Xóa placeholder khi textbox được focus
+                txtPassword.Password = string.Empty;
+                txtPassword.Foreground = Brushes.White;
+            }
+        }
+
+        private void Password_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtPassword.Password))
+            {
+                //Khôi phục placeholder khi textbox mất focus và không có nội dung
+                txtPassword.Password = (string)txtPassword.Tag;
+                txtPassword.Foreground = Brushes.Gray;
+            }
+        }
+        
+        private void Email_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (txtEmail.Text == "Enter Email")
+            {
+                //Xóa placeholder khi textbox được focus
+                txtEmail.Text = string.Empty;
+                txtEmail.Foreground = Brushes.White;
+            }
+        }
+
+        private void Email_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtEmail.Text))
+            {
+                //Khôi phục placeholder khi textbox mất focus và không có nội dung
+                txtEmail.Text = "Enter Email";
+                txtEmail.Foreground = Brushes.Gray;
+            }
         }
     }
 }
