@@ -19,7 +19,8 @@
             <TextBlock Text="Fill in your details below" FontSize="14" Foreground="Gray" HorizontalAlignment="Center" Margin="0,5,0,20"/>
 
             <!-- Email -->
-            <TextBox x:Name="txtEmail" Text="Enter Email" FontSize="14"
+            <TextBox x:Name="txtEmail" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" 
+                     FontSize="14"
                      GotFocus="Email_GotFocus" LostFocus="Email_LostFocus"
                      Margin="0,5" Height="35" Background="#40444B" Foreground="White"/>
             <!-- Password -->
@@ -28,14 +29,17 @@
                          Margin="0,5" Height="35" Background="#40444B" Foreground="White"/>
 
             <!-- Confirm Password -->
-            <PasswordBox x:Name="txtConfirmPassword" Tag="Confirm Password" FontSize="14"
+            <PasswordBox x:Name="txtConfirmPassword" 
+                         Tag="Confirm Password" FontSize="14"
                          GotFocus="ConfirmPassword_GotFocus" LostFocus="ConfirmPassword_LostFocus"
                          Margin="0,5" Height="35" Background="#40444B" Foreground="White"/>
 
             <!-- Register Button -->
             <Button x:Name="btnRegister" Content="Register"
+                    Command="{Binding RegisterCommand}"
+                    CommandParameter="{Binding ElementName=txtPassword}"
                     Margin="60,15" Height="35"
-                    Background="#7289DA" Foreground="White"/>
+                    Background="#E74C3C" Foreground="White"/>
 
            
         </StackPanel>
