@@ -18,6 +18,7 @@ namespace EasyFlips.Models
                 e.HasKey(d => d.ID);
                 e.Property(d => d.Name).IsRequired().HasMaxLength(200);
                 e.Property(d => d.Description).HasMaxLength(1000);
+                e.Property(d => d.UserId).IsRequired().HasMaxLength(128);
             });
 
             // Card

@@ -15,5 +15,7 @@
         ////Điều này có nghĩa là mỗi dòng(row) trong ListView đang bind tới một đối tượng Deck.
         //Kết nối: Để cột "New" hiển thị được, TextBlock trong GridViewColumn phải bind tới một
         //thuộc tính có sẵn trong đối tượng Deck của dòng đó.
+
+        public string UserId { get; set; }
     }
 }

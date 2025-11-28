@@ -7,14 +7,21 @@ namespace EasyFlips.Repositories
     public class DeckRepository : IDeckRepository
     {
         private readonly AppDbContext _context;
+        private readonly IAuthService _authService;
 
-        public DeckRepository(AppDbContext context)
+        public DeckRepository(AppDbContext context, IAuthService authService)
         {
             _context = context; // Constructor này là chính xác
+            _authService = authService;
         }
 
         public async Task AddAsync(Deck deck)
         {
+            // Gán UserId hiện tại cho deck mới nếu có
+            if (_authService?.IsLoggedIn == true)
+            {
+                deck.UserId = _authService.CurrentUserId;
+            }
             // Code đúng: Thêm vào DbContext và Lưu
             await _context.Decks.AddAsync(deck);
             await _context.SaveChangesAsync();
@@ -23,11 +30,19 @@ namespace EasyFlips.Repositories
         // Lấy toàn bộ danh sách Deck hiện có
         public async Task<IEnumerable<Deck>> GetAllAsync()
         {
-            // 1. Lấy tất cả Deck kèm theo Cards và Progress của chúng
-            var decks = await _context.Decks
+            var query = _context.Decks
                 .Include(d => d.Cards)
                 .ThenInclude(c => c.Progress)
-                .ToListAsync();
+                .AsQueryable();
+
+            // Chỉ lấy deck của user hiện tại nếu đã đăng nhập
+            if (_authService?.IsLoggedIn == true && !string.IsNullOrEmpty(_authService.CurrentUserId))
+            {
+                var uid = _authService.CurrentUserId;
+                query = query.Where(d => d.UserId == uid);
+            }
+
+            var decks = await query.ToListAsync();
 
             // 2. Tính toán thống kê cho từng Deck
             foreach (var deck in decks)
