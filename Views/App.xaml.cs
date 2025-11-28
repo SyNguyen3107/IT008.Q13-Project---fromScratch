@@ -71,6 +71,9 @@ namespace EasyFlips
             services.AddTransient<ExportService>();
             services.AddTransient<ImportService>();
             services.AddSingleton<AudioService>();
+            // Đăng ký FirebaseAuthService làm IAuthService
+            // Dùng Singleton vì chúng ta muốn giữ trạng thái đăng nhập trong suốt vòng đời ứng dụng
+            services.AddSingleton<IAuthService, FirebaseAuthService>();
 
             // 4. Đăng ký ViewModels
             services.AddTransient<MainViewModel>();
@@ -95,12 +98,12 @@ namespace EasyFlips
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         }
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
-            // Mở cửa sổ chính khi khởi động
             var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();
             base.OnStartup(e);
+
         }
     }
 }
