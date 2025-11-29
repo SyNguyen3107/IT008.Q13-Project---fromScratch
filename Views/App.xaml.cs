@@ -93,6 +93,9 @@ namespace EasyFlips
             services.AddTransient<DeckRenameWindow>();
             services.AddTransient<ChooseDeckWindow>();
             services.AddTransient<SyncWindow>();
+            services.AddTransient<LoginWindow>();
+            services.AddTransient<RegisterWindow>();
+            services.AddTransient<MainWindow>();
 
             // 6. Messenger
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
@@ -101,8 +104,9 @@ namespace EasyFlips
         protected override async void OnStartup(StartupEventArgs e)
         {
             var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
-            mainWindow.Show();
-            base.OnStartup(e);
+            // MỞ LOGIN WINDOW ĐẦU TIÊN
+            var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
+            loginWindow.Show();
 
         }
     }

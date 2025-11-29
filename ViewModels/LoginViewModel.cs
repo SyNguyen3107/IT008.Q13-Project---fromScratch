@@ -1,17 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using CommunityToolkit.Mvvm.ComponentModel; // ObservableObject
+using CommunityToolkit.Mvvm.Input; // Relay Command
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using CommunityToolkit.Mvvm.ComponentModel; // Cần cho ObservableObject, [ObservableProperty]
-using CommunityToolkit.Mvvm.Input; // Cần cho [RelayCommand]
+using EasyFlips.Services;
+using EasyFlips.Views;
+using EasyFlips.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EasyFlips.ViewModels
 {
     public partial class LoginViewModel : ObservableObject
     {
+        private readonly IAuthService _authService;
+
         // Thuộc tính Email - Tự động sinh ra public property Email
         [ObservableProperty]
         private string email;
@@ -20,22 +22,44 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private string password;
 
-        public LoginViewModel()
+        // Inject AuthService
+        public LoginViewModel(IAuthService authService)
         {
-            // Constructor
+            _authService = authService;
         }
 
         // Command Login 
         [RelayCommand]
         private async Task LoginAsync(object parameter)
         {
-            // Xử lý lấy Password từ PasswordBox vì PasswordBox không cho phép binding trực tiếp vì lý do bảo mật
-            if (parameter is PasswordBox passwordBox)
+            if (parameter is PasswordBox pwBox)
+                Password = pwBox.Password;
+
+            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
-                string password = passwordBox.Password;
-                MessageBox.Show($"Login with:\nEmail: {Email}\nPassword Length: {password.Length}", "Login Info");
+                MessageBox.Show("Email và mật khẩu không được để trống!");
+                return;
             }
-            await Task.CompletedTask;
+
+            try
+            {
+                string userId = await _authService.LoginAsync(Email, Password);
+
+                // LẤY MainWindow từ DI
+                var main = App.ServiceProvider.GetRequiredService<MainWindow>();
+                main.Show();
+
+                // Đóng cửa sổ login hiện tại
+                var loginWindow = Application.Current.Windows
+                    .OfType<Window>()
+                    .FirstOrDefault(w => w.DataContext == this);
+
+                loginWindow?.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Đăng nhập thất bại");
+            }
         }
     }
 }

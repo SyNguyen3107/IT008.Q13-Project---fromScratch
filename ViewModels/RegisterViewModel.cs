@@ -1,17 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using CommunityToolkit.Mvvm.ComponentModel; // ObservableObject
+using CommunityToolkit.Mvvm.Input; // Relay Command
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using CommunityToolkit.Mvvm.ComponentModel; // Cần cho ObservableObject, [ObservableProperty]
-using CommunityToolkit.Mvvm.Input; // Cần cho [RelayCommand]
+using EasyFlips.Services;
+using EasyFlips.Views;
+using EasyFlips.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EasyFlips.ViewModels
 {
     public partial class RegisterViewModel : ObservableObject
     {
+        private readonly IAuthService _authService;
         // Thuộc tính Email - Tự động sinh ra public property Email
         [ObservableProperty]
         private string email;
@@ -24,28 +25,65 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private string confirmPassword;
 
-        public RegisterViewModel()
+        [ObservableProperty]
+        private string errorMessage;
+
+        public RegisterViewModel(IAuthService authService)
         {
-            // Constructor
+            _authService = authService;
         }
 
-        // Command
         [RelayCommand]
-        private async Task RegisterAsync(object parameter)
+        private async Task RegisterAsync()
         {
-            if (parameter is PasswordBox passwordBox)
+            ErrorMessage = string.Empty;
+
+            // 1. Kiểm tra nhập đủ
+            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password) || string.IsNullOrWhiteSpace(ConfirmPassword))
             {
-                string password = passwordBox.Password;
-                // Việc so sánh ConfirmPassword nên được xử lý ở View hoặc truyền thêm tham số.
-                // Để đơn giản, ViewModel này nhận mật khẩu chính để xử lý đăng ký.
-                if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(password))
-                {
-                    MessageBox.Show("Please fill all fields", "Error");
-                    return;
-                }
-                MessageBox.Show($"Register Request:\nEmail: {Email}", "Success");
+                ErrorMessage = "Please fill in all fields.";
+                return;
             }
-            await Task.CompletedTask;
+
+            // 2. Kiểm tra password trùng khớp
+            if (Password != ConfirmPassword)
+            {
+                ErrorMessage = "Passwords do not match.";
+                return;
+            }
+
+            try
+            {
+                // 3. Gọi Firebase đăng ký
+                var userId = await _authService.RegisterAsync(Email, Password);
+
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    // 4. Sau khi đăng ký xong → Quay lại LoginWindow
+                    var loginWindow = App.ServiceProvider.GetService<LoginWindow>();
+                    loginWindow.Show();
+
+                    // Đóng RegisterWindow hiện tại
+                    var registerWindow = Application.Current.Windows.OfType<RegisterWindow>().FirstOrDefault();
+                    registerWindow?.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
+        [RelayCommand]
+        private void BackToLogin()
+        {
+            // Chuyển sang LoginWindow
+            var loginWindow = App.ServiceProvider.GetService<LoginWindow>();
+            loginWindow.Show();
+
+            // Đóng RegisterWindow hiện tại
+            var registerWindow = Application.Current.Windows.OfType<RegisterWindow>().FirstOrDefault();
+            registerWindow?.Close();
         }
     }
 }

@@ -36,7 +36,7 @@
 
             <!-- Register Button -->
             <Button x:Name="btnRegister" Content="Register"
-                    Command="{Binding RegisterCommand}"
+                    Command="{Binding RegisterAsyncCommand}"
                     CommandParameter="{Binding ElementName=txtPassword}"
                     Margin="60,15" Height="35"
                     Background="#E74C3C" Foreground="White"/>
