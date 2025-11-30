@@ -23,7 +23,12 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private string password;
 
-        public LoginViewModel(IAuthService authService, INavigationService navigationService)
+        // Thuộc tính hiển thị lỗi
+        [ObservableProperty]
+        private string errorMessage; // Rỗng nếu không có lỗi
+
+        // Inject AuthService
+        public LoginViewModel(IAuthService authService)
         {
             _authService = authService;
             _navigationService = navigationService;
@@ -41,9 +46,11 @@ namespace EasyFlips.ViewModels
                 if (Password == "Enter Password") Password = "";
             }
 
-            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password) || Email == "Enter Email")
+            ErrorMessage = string.Empty; // Reset lỗi trước mỗi lần đăng nhập
+
+            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
-                MessageBox.Show("Vui lòng nhập Email và Mật khẩu!", "Cảnh báo");
+                ErrorMessage = "Email và mật khẩu không được để trống";
                 return;
             }
 
@@ -60,17 +67,8 @@ namespace EasyFlips.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi Đăng Nhập", MessageBoxButton.OK, MessageBoxImage.Error);
+                ErrorMessage = ex.Message; // Hiển thị lỗi lên UI thay vì MessageBox
             }
-        }
-
-        [RelayCommand] // -> Tự sinh ra: OpenRegisterCommand
-        private void OpenRegister()
-        {
-            _navigationService.ShowRegisterWindow();
-
-            var window = Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.DataContext == this);
-            window?.Close();
         }
     }
 }
