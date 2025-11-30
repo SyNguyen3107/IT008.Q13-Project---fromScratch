@@ -83,6 +83,7 @@ namespace EasyFlips
             services.AddTransient<DeckChosenViewModel>();
             services.AddTransient<DeckRenameViewModel>();
             services.AddTransient<ChooseDeckViewModel>();
+            services.AddTransient<LoginViewModel>();
 
             // 5. Đăng ký Views (Cửa sổ)
             services.AddTransient<MainWindow>();
@@ -101,13 +102,11 @@ namespace EasyFlips
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         }
 
-        protected override async void OnStartup(StartupEventArgs e)
+        protected override void OnStartup(StartupEventArgs e)
         {
-            var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
-            // MỞ LOGIN WINDOW ĐẦU TIÊN
+            // Chỉ mở LoginWindow làm cửa sổ khởi động
             var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
             loginWindow.Show();
-
         }
     }
 }

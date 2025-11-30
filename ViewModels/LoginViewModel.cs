@@ -22,6 +22,10 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private string password;
 
+        // Thuộc tính hiển thị lỗi
+        [ObservableProperty]
+        private string errorMessage; // Rỗng nếu không có lỗi
+
         // Inject AuthService
         public LoginViewModel(IAuthService authService)
         {
@@ -35,9 +39,11 @@ namespace EasyFlips.ViewModels
             if (parameter is PasswordBox pwBox)
                 Password = pwBox.Password;
 
+            ErrorMessage = string.Empty; // Reset lỗi trước mỗi lần đăng nhập
+
             if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
-                MessageBox.Show("Email và mật khẩu không được để trống!");
+                ErrorMessage = "Email và mật khẩu không được để trống";
                 return;
             }
 
@@ -58,7 +64,7 @@ namespace EasyFlips.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Đăng nhập thất bại");
+                ErrorMessage = ex.Message; // Hiển thị lỗi lên UI thay vì MessageBox
             }
         }
     }
