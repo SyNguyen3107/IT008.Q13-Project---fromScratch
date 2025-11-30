@@ -1,4 +1,7 @@
-﻿using EasyFlips.Interfaces;
+﻿using CommunityToolkit.Mvvm.ComponentModel; // ✅ THÊM DÒNG NÀY
+using CommunityToolkit.Mvvm.Messaging;
+using EasyFlips.Converters;
+using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Repositories;
 using EasyFlips.Services;
@@ -9,9 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.IO;
 using System.Windows;
-using CommunityToolkit.Mvvm.Messaging;
-using EasyFlips.Converters;
-using CommunityToolkit.Mvvm.ComponentModel; // ✅ THÊM DÒNG NÀY
+using EasyFlips.Properties; // Để dùng Settings
 
 namespace EasyFlips
 {
@@ -109,9 +110,29 @@ namespace EasyFlips
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            // Chỉ mở LoginWindow làm cửa sổ khởi động
-            var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
-            loginWindow.Show();
+            base.OnStartup(e);
+
+            // 1. Kiểm tra xem có dữ liệu đã lưu không
+            string savedId = Settings.Default.UserId;
+            string savedToken = Settings.Default.UserToken; // (Token Firebase)
+            string savedEmail = Settings.Default.UserEmail;
+
+            if (!string.IsNullOrEmpty(savedId) && !string.IsNullOrEmpty(savedToken))
+            {
+                // 2. NẾU CÓ: Khôi phục Session
+                var userSession = ServiceProvider.GetRequiredService<UserSession>();
+                userSession.SetUser(savedId, savedEmail, savedToken);
+
+                // 3. Mở thẳng MainWindow
+                var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+                mainWindow.Show();
+            }
+            else
+            {
+                // 4. NẾU KHÔNG: Mở LoginWindow như bình thường
+                var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
+                loginWindow.Show();
+            }
         }
     }
 }

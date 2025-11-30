@@ -1,4 +1,5 @@
 ﻿using EasyFlips.Interfaces;
+using EasyFlips.Properties;
 using Firebase.Auth;
 using Firebase.Auth.Providers;
 using System;
@@ -78,8 +79,32 @@ namespace EasyFlips.Services
 
         public void Logout()
         {
-            _authClient.SignOut();
-            _userSession.Clear();
+            // BƯỚC 1: Cố gắng đăng xuất khỏi Firebase Client
+            // Chúng ta dùng try-catch để nếu thư viện có lỗi nội bộ thì app vẫn không bị sập
+            try
+            {
+                if (_authClient.User != null)
+                {
+                    _authClient.SignOut();
+                }
+            }
+            catch (Exception)
+            {
+                // Nếu lỗi xảy ra (ví dụ User đã null sẵn), ta cứ lờ đi.
+                // Mục đích chính là xóa dữ liệu cục bộ bên dưới.
+            }
+
+            // BƯỚC 2: Xóa Session trong RAM (Quan trọng nhất với App của ta)
+            if (_userSession != null)
+            {
+                _userSession.Clear();
+            }
+
+            // BƯỚC 3: Xóa dữ liệu "Remember Me" trong ổ cứng
+            Settings.Default.UserId = string.Empty;
+            Settings.Default.UserToken = string.Empty;
+            Settings.Default.UserEmail = string.Empty;
+            Settings.Default.Save();
         }
     }
 }

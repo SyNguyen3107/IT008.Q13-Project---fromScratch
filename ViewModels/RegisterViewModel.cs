@@ -41,19 +41,19 @@ namespace EasyFlips.ViewModels
             // Kiểm tra placeholder
             if (Password == "Enter Password" || ConfirmPassword == "Confirm Password")
             {
-                MessageBox.Show("Vui lòng nhập mật khẩu hợp lệ.", "Lỗi nhập liệu");
+                ErrorMessage = "Please enter a valid password.";
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
-                MessageBox.Show("Vui lòng điền đầy đủ thông tin.", "Lỗi nhập liệu");
+                ErrorMessage = "Please fill in all fields.";
                 return;
             }
 
             if (Password != ConfirmPassword)
             {
-                MessageBox.Show("Mật khẩu xác nhận không khớp.", "Lỗi nhập liệu");
+                ErrorMessage = "Passwords do not match.";
                 return;
             }
 
@@ -63,7 +63,7 @@ namespace EasyFlips.ViewModels
 
                 if (!string.IsNullOrEmpty(userId))
                 {
-                    MessageBox.Show("Đăng ký tài khoản thành công!", "Chúc mừng", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Account created successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     _navigationService.ShowLoginWindow();
 
@@ -74,9 +74,6 @@ namespace EasyFlips.ViewModels
             catch (Exception ex)
             {
                 ErrorMessage = ex.Message; // Hiện text đỏ trên UI
-
-                // --- DEBUG: Hiện Popup lỗi chi tiết ---
-                MessageBox.Show($"DEBUG LỖI ĐĂNG KÝ:\n{ex.ToString()}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

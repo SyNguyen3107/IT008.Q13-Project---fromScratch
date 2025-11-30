@@ -165,5 +165,10 @@ namespace EasyFlips.Services
             var window = _serviceProvider.GetRequiredService<LoginWindow>();
             window.Show();
         }
+        public void ShowMainWindow()
+        {
+            var window = _serviceProvider.GetRequiredService<MainWindow>();
+            window.Show();
+        }
     }
 }

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EasyFlips.Views"
         mc:Ignorable="d"
-        Title="Login" Height="450" Width="350"
+        Title="Login" Height="500" Width="350"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Background ="#1E1E1E">
@@ -24,7 +24,15 @@
 
             <!-- Password -->
             <PasswordBox x:Name="txtPassword" Tag="Enter Password" FontSize ="14" GotFocus="Password_GotFocus" LostFocus="Password_LostFocus" Margin="0,5" Height="35" Background="#40444B" Foreground="White"/>
-
+            
+            <!-- Remember Me Checkbox -->
+            <CheckBox Content="Remember me" 
+              IsChecked="{Binding IsRememberMe}"
+              Foreground="White"
+              Margin="0,0,5,0"
+              HorizontalAlignment="Right"
+              FontSize="12"/>
+            
             <!-- Error Message -->
             <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
 

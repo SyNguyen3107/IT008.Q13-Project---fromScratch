@@ -23,6 +23,11 @@ namespace EasyFlips.ViewModels
         private readonly IMessenger _messenger;
         private readonly ImportService _importService;
         private readonly ExportService _exportService;
+        private readonly IAuthService _authService;
+
+        // Nếu bạn muốn hiển thị tên user đang đăng nhập trên Main Window
+        [ObservableProperty]
+        private string currentEmail;
 
         public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>();
 
@@ -30,7 +35,9 @@ namespace EasyFlips.ViewModels
                                  INavigationService navigationService,
                                  IMessenger messenger,
                                  ImportService importService,
-                                 ExportService exportService)
+                                 ExportService exportService,
+                                 UserSession userSession,
+                                 IAuthService authService)
         {
             _deckRepository = deckRepository;
             _navigationService = navigationService;
@@ -38,7 +45,11 @@ namespace EasyFlips.ViewModels
             _exportService = exportService;
             _importService = importService;
 
+            _authService = authService;
             _messenger.RegisterAll(this);
+            // Lấy thông tin hiển thị (nếu cần)
+            CurrentEmail = userSession.Email;
+
         }
 
         // Xử lý khi có Deck mới (Add hoặc Import)
@@ -247,6 +258,25 @@ namespace EasyFlips.ViewModels
 
                 MessageBox.Show("Successfully deleted deck!", "Notice");
             }
+        }
+        [RelayCommand]
+        private void Logout()
+        {
+            // 1. Xử lý logic đăng xuất (Xóa Session, Xóa Remember Me...)
+            _authService.Logout();
+
+            // 2. Mở màn hình Login
+            _navigationService.ShowLoginWindow();
+
+            // 3. Đóng MainWindow hiện tại
+            CloseCurrentWindow();
+        }
+        [RelayCommand]
+        private void CloseCurrentWindow()
+        {
+            // Tìm cửa sổ đang giữ ViewModel này (chính là MainWindow) và đóng nó
+            var window = Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.DataContext == this);
+            window?.Close();
         }
     }
 }

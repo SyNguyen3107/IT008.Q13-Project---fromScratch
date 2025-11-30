@@ -96,7 +96,8 @@
                 <MenuItem Header="_Import" Cursor="Hand" InputGestureText="Ctrl+Shift+I" Foreground="Black" Command="{Binding ImportFileCommand}" />
                 <!--<MenuItem Header="_Export" Cursor="Hand" InputGestureText="Ctrl+E" Foreground="Black"/>
                 <Separator/>-->
-                <MenuItem Header="E_xit" Cursor="Hand" InputGestureText="Ctrl+Q" Foreground="Black"/>
+                <MenuItem Header="_Logout" Cursor="Hand" Foreground="Black" Command="{Binding LogoutCommand}"/>
+                <MenuItem Header="E_xit" Cursor="Hand" InputGestureText="Ctrl+Q" Foreground="Black" Command="{Binding CloseCurrentWindowCommand}"/>
             </MenuItem>
             <!--<MenuItem Header="_Edit" Foreground="White">
                 <MenuItem Header="Undo" Cursor="Hand" InputGestureText="Ctrl+Z" Foreground="Gray"/>
