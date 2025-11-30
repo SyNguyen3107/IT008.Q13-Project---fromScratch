@@ -37,14 +37,14 @@ namespace EasyFlips.ViewModels
             if (parameter is PasswordBox pwBox)
             {
                 Password = pwBox.Password;
-                // Xử lý placeholder
                 if (Password == "Enter Password") Password = "";
             }
 
-            // 2. Validate
-            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password) || Email == "Enter Email")
+            ErrorMessage = string.Empty; // Reset lỗi trước mỗi lần đăng nhập
+
+            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
-                MessageBox.Show("Vui lòng nhập Email và Mật khẩu!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ErrorMessage = "Email và mật khẩu không được để trống";
                 return;
             }
 
@@ -64,22 +64,8 @@ namespace EasyFlips.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi: {ex.Message}", "Đăng nhập thất bại", MessageBoxButton.OK, MessageBoxImage.Error);
+                ErrorMessage = ex.Message; // Hiển thị lỗi lên UI thay vì MessageBox
             }
-        }
-
-        // Tự động sinh ra lệnh: OpenRegisterCommand
-        [RelayCommand]
-        private void OpenRegister()
-        {
-            _navigationService.ShowRegisterWindow();
-            CloseCurrentWindow();
-        }
-
-        private void CloseCurrentWindow()
-        {
-            var window = Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.DataContext == this);
-            window?.Close();
         }
     }
 }
