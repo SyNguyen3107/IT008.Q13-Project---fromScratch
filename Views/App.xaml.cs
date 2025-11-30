@@ -107,14 +107,11 @@ namespace EasyFlips
             services.AddSingleton<UserSession>();
         }
 
-        protected override async void OnStartup(StartupEventArgs e)
+        protected override void OnStartup(StartupEventArgs e)
         {
-            base.OnStartup(e); // Quan trọng
-
-            // Gọi LoginWindow từ DI để nó tự tiêm LoginViewModel vào
+            // Chỉ mở LoginWindow làm cửa sổ khởi động
             var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
             loginWindow.Show();
-
         }
     }
 }
