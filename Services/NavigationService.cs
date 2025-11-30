@@ -153,5 +153,17 @@ namespace EasyFlips.Services
             // Chặn cửa sổ chính khi cửa sổ con đang mở
             window.ShowDialog();
         }
+        public void ShowRegisterWindow()
+        {
+            var window = _serviceProvider.GetRequiredService<RegisterWindow>();
+            window.Show();
+            // Không dùng ShowDialog() nếu muốn đóng cửa sổ cũ ngay lập tức
+        }
+
+        public void ShowLoginWindow()
+        {
+            var window = _serviceProvider.GetRequiredService<LoginWindow>();
+            window.Show();
+        }
     }
 }

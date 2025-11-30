@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EasyFlips.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251125104346_InitialCreate")]
+    [Migration("20251130155242_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -118,6 +118,11 @@ namespace EasyFlips.Migrations
 
                     b.Property<int>("NewCount")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
 
                     b.HasKey("ID");
 

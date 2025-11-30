@@ -11,6 +11,7 @@ using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.Messaging;
 using EasyFlips.Converters;
+using CommunityToolkit.Mvvm.ComponentModel; // ✅ THÊM DÒNG NÀY
 
 namespace EasyFlips
 {
@@ -83,6 +84,8 @@ namespace EasyFlips
             services.AddTransient<DeckChosenViewModel>();
             services.AddTransient<DeckRenameViewModel>();
             services.AddTransient<ChooseDeckViewModel>();
+            services.AddTransient<LoginViewModel>(); // Đăng ký LoginViewModel
+            services.AddTransient<RegisterViewModel>();
 
             // 5. Đăng ký Views (Cửa sổ)
             services.AddTransient<MainWindow>();
@@ -93,18 +96,22 @@ namespace EasyFlips
             services.AddTransient<DeckRenameWindow>();
             services.AddTransient<ChooseDeckWindow>();
             services.AddTransient<SyncWindow>();
-            services.AddTransient<LoginWindow>();
             services.AddTransient<RegisterWindow>();
-            services.AddTransient<MainWindow>();
+            services.AddTransient<LoginWindow>();
+            
 
             // 6. Messenger
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
+
+            // 7. Đăng ký phiên người dùng
+            services.AddSingleton<UserSession>();
         }
 
         protected override async void OnStartup(StartupEventArgs e)
         {
-            var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
-            // MỞ LOGIN WINDOW ĐẦU TIÊN
+            base.OnStartup(e); // Quan trọng
+
+            // Gọi LoginWindow từ DI để nó tự tiêm LoginViewModel vào
             var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
             loginWindow.Show();
 

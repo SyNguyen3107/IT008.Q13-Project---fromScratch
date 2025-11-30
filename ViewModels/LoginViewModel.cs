@@ -1,43 +1,49 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel; // ObservableObject
-using CommunityToolkit.Mvvm.Input; // Relay Command
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using EasyFlips.Services;
-using EasyFlips.Views;
 using EasyFlips.Interfaces;
+using EasyFlips.Views;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EasyFlips.ViewModels
 {
+    // BẮT BUỘC PHẢI CÓ 'partial'
     public partial class LoginViewModel : ObservableObject
     {
         private readonly IAuthService _authService;
+        private readonly INavigationService _navigationService;
 
-        // Thuộc tính Email - Tự động sinh ra public property Email
         [ObservableProperty]
         private string email;
 
-        // Thuộc tính Password - Tự động sinh ra public property "Password"
         [ObservableProperty]
         private string password;
 
-        // Inject AuthService
-        public LoginViewModel(IAuthService authService)
+        public LoginViewModel(IAuthService authService, INavigationService navigationService)
         {
             _authService = authService;
+            _navigationService = navigationService;
         }
 
-        // Command Login 
-        [RelayCommand]
+        // --- DÙNG LẠI RELAY COMMAND ---
+
+        [RelayCommand] // -> Tự sinh ra: LoginCommand (đã cắt chữ Async)
         private async Task LoginAsync(object parameter)
         {
+            // Code xử lý giữ nguyên
             if (parameter is PasswordBox pwBox)
-                Password = pwBox.Password;
-
-            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
-                MessageBox.Show("Email và mật khẩu không được để trống!");
+                Password = pwBox.Password;
+                if (Password == "Enter Password") Password = "";
+            }
+
+            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password) || Email == "Enter Email")
+            {
+                MessageBox.Show("Vui lòng nhập Email và Mật khẩu!", "Cảnh báo");
                 return;
             }
 
@@ -45,21 +51,26 @@ namespace EasyFlips.ViewModels
             {
                 string userId = await _authService.LoginAsync(Email, Password);
 
-                // LẤY MainWindow từ DI
                 var main = App.ServiceProvider.GetRequiredService<MainWindow>();
                 main.Show();
 
-                // Đóng cửa sổ login hiện tại
-                var loginWindow = Application.Current.Windows
-                    .OfType<Window>()
-                    .FirstOrDefault(w => w.DataContext == this);
-
-                loginWindow?.Close();
+                // Đóng LoginWindow
+                var window = Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.DataContext == this);
+                window?.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Đăng nhập thất bại");
+                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi Đăng Nhập", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        [RelayCommand] // -> Tự sinh ra: OpenRegisterCommand
+        private void OpenRegister()
+        {
+            _navigationService.ShowRegisterWindow();
+
+            var window = Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.DataContext == this);
+            window?.Close();
         }
     }
 }

@@ -15,6 +15,9 @@ namespace EasyFlips.Interfaces
         void ImportFileWindow();
         void ShowDeckChosenWindow(int deckId);
         void ShowDeckRenameWindow(Deck deck);
+        void ShowLoginWindow();
+        void ShowRegisterWindow();
+        //void ShowMainAnkiWindow(); //Tạm thời ẩn chức năng này, sẽ implement sau
 
     }
 }

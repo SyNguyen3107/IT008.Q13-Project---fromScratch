@@ -4,44 +4,46 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EasyFlips.Views"
+        xmlns:helpers="clr-namespace:EasyFlips.Helpers" 
         mc:Ignorable="d"
         Background="#1E1E1E"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Title="Register" Height="450" Width="350">
+
     <Grid Margin="20">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="280">
-            <!-- Picture -->
             <Image Source="pack://application:,,,/Resources/cards.png" Width="100" Height="100" HorizontalAlignment="Center" Margin="0,0,0,20"/>
-
-            <!-- Welcome -->
             <TextBlock Text="Create Account" FontSize="20" Foreground="White" HorizontalAlignment="Center"/>
             <TextBlock Text="Fill in your details below" FontSize="14" Foreground="Gray" HorizontalAlignment="Center" Margin="0,5,0,20"/>
 
-            <!-- Email -->
             <TextBox x:Name="txtEmail" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" 
                      FontSize="14"
                      GotFocus="Email_GotFocus" LostFocus="Email_LostFocus"
                      Margin="0,5" Height="35" Background="#40444B" Foreground="White"/>
-            <!-- Password -->
+
             <PasswordBox x:Name="txtPassword" Tag="Enter Password" FontSize="14"
                          GotFocus="Password_GotFocus" LostFocus="Password_LostFocus"
+                         helpers:PasswordBoxHelper.BindPassword="True"
+                         helpers:PasswordBoxHelper.BoundPassword="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Margin="0,5" Height="35" Background="#40444B" Foreground="White"/>
 
-            <!-- Confirm Password -->
-            <PasswordBox x:Name="txtConfirmPassword" 
-                         Tag="Confirm Password" FontSize="14"
+            <PasswordBox x:Name="txtConfirmPassword" Tag="Confirm Password" FontSize="14"
                          GotFocus="ConfirmPassword_GotFocus" LostFocus="ConfirmPassword_LostFocus"
+                         helpers:PasswordBoxHelper.BindPassword="True"
+                         helpers:PasswordBoxHelper.BoundPassword="{Binding ConfirmPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Margin="0,5" Height="35" Background="#40444B" Foreground="White"/>
 
-            <!-- Register Button -->
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,5" HorizontalAlignment="Center"/>
+
             <Button x:Name="btnRegister" Content="Register"
-                    Command="{Binding RegisterAsyncCommand}"
-                    CommandParameter="{Binding ElementName=txtPassword}"
+                    Command="{Binding RegisterCommand}"
                     Margin="60,15" Height="35"
                     Background="#E74C3C" Foreground="White"/>
 
-           
+            <Button Content="Back to Login" Command="{Binding BackToLoginCommand}"
+                    Background="Transparent" Foreground="#3498DB" BorderThickness="0" Cursor="Hand"/>
+
         </StackPanel>
     </Grid>
 </Window>

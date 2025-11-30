@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EasyFlips.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,19 +20,21 @@ namespace EasyFlips.Views
     /// </summary>
     public partial class RegisterWindow : Window
     {
-        public RegisterWindow()
+        // Constructor injection: Nhận ViewModel từ DI
+        public RegisterWindow(RegisterViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = viewModel; // Gán DataContext
+
+            // Khởi tạo placeholder
             txtPassword.Password = (string)txtPassword.Tag;
             txtConfirmPassword.Password = (string)txtConfirmPassword.Tag;
         }
 
-        // Xử lý placeholder cho PasswordBox và TextBox
         private void Password_GotFocus(object sender, RoutedEventArgs e)
         {
             if (txtPassword.Password == (string)txtPassword.Tag)
             {
-                //Xóa placeholder khi textbox được focus
                 txtPassword.Password = string.Empty;
                 txtPassword.Foreground = Brushes.White;
             }

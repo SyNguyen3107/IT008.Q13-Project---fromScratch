@@ -1,6 +1,6 @@
 ﻿using EasyFlips.Interfaces;
 using Firebase.Auth;
-using Firebase.Auth.Providers; // QUAN TRỌNG: Cần thêm cái này cho bản 4.x
+using Firebase.Auth.Providers;
 using System;
 using System.Threading.Tasks;
 
@@ -8,46 +8,47 @@ namespace EasyFlips.Services
 {
     public class FirebaseAuthService : IAuthService
     {
-        // --- Dán API Key của bạn vào đây ---
-        private const string ApiKey = "AIzaSyDUxy-8er5pLq8LgMaDbF6pvSJII4WChGM";
+        private const string ApiKey = "AIzaSyDUxy-8er5pLq8LgMaDbF6pvSJII4WChGM"; // API Key của bạn
+        private readonly FirebaseAuthClient _authClient;
+        private readonly UserSession _userSession;
 
-        private readonly FirebaseAuthClient _authClient;// Cập nhật cho bản 4.x
-
-        public string CurrentUserId { get; private set; }
-
-        // Trong bản mới, User nằm trong _authClient.User
-        public bool IsLoggedIn => _authClient.User != null;
-
-        public FirebaseAuthService()
+        public FirebaseAuthService(UserSession userSession)
         {
-            // Cấu hình cho bản 4.x
+            _userSession = userSession;
             var config = new FirebaseAuthConfig
             {
                 ApiKey = ApiKey,
-                AuthDomain = "easyflips.firebaseapp.com", // (Tùy chọn) Thay bằng domain project của bạn
-                Providers = new FirebaseAuthProvider[]
-                {
-                    // Cần khai báo provider Email/Password
-                    new EmailProvider()
-                }
+                AuthDomain = "easyflips.firebaseapp.com",
+                Providers = new FirebaseAuthProvider[] { new EmailProvider() }
             };
-
             _authClient = new FirebaseAuthClient(config);
         }
+
+        public string CurrentUserId => _userSession.UserId;
+        public bool IsLoggedIn => _userSession.IsLoggedIn;
 
         public async Task<string> LoginAsync(string email, string password)
         {
             try
             {
-                // Cú pháp mới: SignInWithEmailAndPasswordAsync
                 var userCredential = await _authClient.SignInWithEmailAndPasswordAsync(email, password);
 
-                CurrentUserId = userCredential.User.Uid; // Lấy UID
-                return CurrentUserId;
+                // Lưu session
+                string userId = userCredential.User.Uid;
+                string token = await userCredential.User.GetIdTokenAsync();
+                string userEmail = userCredential.User.Info.Email;
+                _userSession.SetUser(userId, userEmail, token);
+
+                return userId;
+            }
+            catch (FirebaseAuthException ex)
+            {
+                // [QUAN TRỌNG] Lấy lý do lỗi cụ thể từ Firebase (VD: INVALID_PASSWORD)
+                throw new Exception($"Lỗi Firebase ({ex.Reason}): {ex.Message}", ex);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Đăng nhập thất bại: {ex.Message}");
+                throw new Exception($"Lỗi hệ thống: {ex.Message}", ex);
             }
         }
 
@@ -55,22 +56,30 @@ namespace EasyFlips.Services
         {
             try
             {
-                // Cú pháp mới: CreateUserWithEmailAndPasswordAsync
                 var userCredential = await _authClient.CreateUserWithEmailAndPasswordAsync(email, password);
 
-                CurrentUserId = userCredential.User.Uid;
-                return CurrentUserId;
+                string userId = userCredential.User.Uid;
+                string token = await userCredential.User.GetIdTokenAsync();
+                string userEmail = userCredential.User.Info.Email;
+                _userSession.SetUser(userId, userEmail, token);
+
+                return userId;
+            }
+            catch (FirebaseAuthException ex)
+            {
+                // [QUAN TRỌNG] Bắt lỗi như Email đã tồn tại (EMAIL_EXISTS)
+                throw new Exception($"Lỗi Firebase ({ex.Reason}): {ex.Message}", ex);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Đăng ký thất bại: {ex.Message}");
+                throw new Exception($"Lỗi hệ thống: {ex.Message}", ex);
             }
         }
 
         public void Logout()
         {
             _authClient.SignOut();
-            CurrentUserId = null;
+            _userSession.Clear();
         }
     }
 }

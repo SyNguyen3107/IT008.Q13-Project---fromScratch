@@ -21,7 +21,8 @@ namespace EasyFlips.Migrations
                     Description = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: false),
                     NewCount = table.Column<int>(type: "INTEGER", nullable: false),
                     LearnCount = table.Column<int>(type: "INTEGER", nullable: false),
-                    DueCount = table.Column<int>(type: "INTEGER", nullable: false)
+                    DueCount = table.Column<int>(type: "INTEGER", nullable: false),
+                    UserId = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false)
                 },
                 constraints: table =>
                 {

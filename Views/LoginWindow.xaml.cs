@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using EasyFlips.ViewModels;
 
 namespace EasyFlips.Views
 {
@@ -19,9 +20,16 @@ namespace EasyFlips.Views
     /// </summary>
     public partial class LoginWindow : Window
     {
-        public LoginWindow()
+        // ✅ INJECT LoginViewModel
+        public LoginWindow(LoginViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = viewModel; 
+            
+            // ✅ Khởi tạo placeholder cho Email
+            txtEmail.Text = "Enter Email";
+            txtEmail.Foreground = Brushes.Gray;
+            
             txtPassword.Password = (string)txtPassword.Tag;
         }
 

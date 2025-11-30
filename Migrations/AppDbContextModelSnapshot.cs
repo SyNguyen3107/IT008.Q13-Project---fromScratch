@@ -116,6 +116,11 @@ namespace EasyFlips.Migrations
                     b.Property<int>("NewCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("ID");
 
                     b.ToTable("Decks", (string)null);
