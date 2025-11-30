@@ -27,6 +27,26 @@ namespace EasyFlips.Repositories
             await _context.SaveChangesAsync();
         }
 
+        public async Task ClaimData()
+        {
+            if(_authService?.IsLoggedIn == true)
+            {
+                var uid = _authService.CurrentUserId;
+                // Tìm tất cả Deck không có UserId (dữ liệu ẩn danh)
+                var anonymousDecks = await _context.Decks
+                    .Where(d => d.UserId == null)
+                    .ToListAsync();
+                // Gán UserId hiện tại cho tất cả Deck ẩn danh
+                foreach (var deck in anonymousDecks)
+                {
+                    deck.UserId = uid;
+                }
+                // Lưu thay đổi
+                await _context.SaveChangesAsync();
+            }
+        }
+
+
         // Lấy toàn bộ danh sách Deck hiện có
         public async Task<IEnumerable<Deck>> GetAllAsync()
         {
