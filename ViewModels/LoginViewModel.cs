@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace EasyFlips.ViewModels
 {
@@ -31,6 +32,11 @@ namespace EasyFlips.ViewModels
         // Thêm thuộc tính cho Checkbox
         [ObservableProperty]
         private bool isRememberMe = true; // Mặc định là tick chọn
+
+        // Thuộc tính cho việc hiển thị/mật khẩu
+
+        [ObservableProperty]
+        private bool isPasswordVisible; // mặc định false
 
         public LoginViewModel(IAuthService authService, INavigationService navigationService)
         {
@@ -107,5 +113,22 @@ namespace EasyFlips.ViewModels
             var window = Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.DataContext == this);
             window?.Close();
         }
+
+     
+      
+        
+
+        [RelayCommand]
+        private void TogglePasswordVisibility()
+        {
+            IsPasswordVisible = !IsPasswordVisible;
+        }
+
+
+
+
+
+
+
     }
 }

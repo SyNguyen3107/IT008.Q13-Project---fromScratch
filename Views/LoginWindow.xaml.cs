@@ -29,29 +29,11 @@ namespace EasyFlips.Views
             // ✅ Khởi tạo placeholder cho Email
             txtEmail.Text = "Enter Email";
             txtEmail.Foreground = Brushes.Gray;
-            
-            txtPassword.Password = (string)txtPassword.Tag;
+        
+
         }
 
-        private void Password_GotFocus(object sender, RoutedEventArgs e)
-        {
-            if (txtPassword.Password == (string)txtPassword.Tag)
-            {
-                //Xóa placeholder khi textbox được focus
-                txtPassword.Password = string.Empty;
-                txtPassword.Foreground = Brushes.White;
-            }
-        }
-
-        private void Password_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtPassword.Password))
-            {
-                //Khôi phục placeholder khi textbox mất focus và không có nội dung
-                txtPassword.Password = (string)txtPassword.Tag;
-                txtPassword.Foreground = Brushes.Gray;
-            }
-        }
+       
         
         private void Email_GotFocus(object sender, RoutedEventArgs e)
         {
@@ -72,7 +54,14 @@ namespace EasyFlips.Views
                 txtEmail.Foreground = Brushes.Gray;
             }
         }
-        
-        
+        private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (sender is PasswordBox pwBox && DataContext is LoginViewModel vm)
+            {
+                vm.Password = pwBox.Password;
+            }
+        }
+
+
     }
 }
