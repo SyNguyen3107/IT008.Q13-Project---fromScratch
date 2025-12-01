@@ -25,35 +25,8 @@ namespace EasyFlips.Views
         {
             InitializeComponent();
             DataContext = viewModel; 
-            
-            // ✅ Khởi tạo placeholder cho Email
-            txtEmail.Text = "Enter Email";
-            txtEmail.Foreground = Brushes.Gray;
+        }
         
-
-        }
-
-       
-        
-        private void Email_GotFocus(object sender, RoutedEventArgs e)
-        {
-            if (txtEmail.Text == "Enter Email")
-            {
-                //Xóa placeholder khi textbox được focus
-                txtEmail.Text = string.Empty;
-                txtEmail.Foreground = Brushes.White;
-            }
-        }
-
-        private void Email_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtEmail.Text))
-            {
-                //Khôi phục placeholder khi textbox mất focus và không có nội dung
-                txtEmail.Text = "Enter Email";
-                txtEmail.Foreground = Brushes.Gray;
-            }
-        }
         private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
         {
             if (sender is PasswordBox pwBox && DataContext is LoginViewModel vm)

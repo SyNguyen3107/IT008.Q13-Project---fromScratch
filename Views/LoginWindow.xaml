@@ -3,7 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:EasyFlips.Views"
+        xmlns:views="clr-namespace:EasyFlips.Views"
+        xmlns:services="clr-namespace:EasyFlips.Services"
+
         mc:Ignorable="d"
         Title="Login" Height="514" Width="354"
         WindowStartupLocation="CenterScreen"
@@ -19,25 +21,46 @@
 
             <!-- Email -->
             <TextBox x:Name="txtEmail" 
-                     Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}"
-                     FontSize="14" GotFocus="Email_GotFocus" LostFocus="Email_LostFocus" Margin="0,5" Height="35" Background="#40444B" Foreground="White"/>
+             Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}"
+             services:WatermarkService.Watermark="Enter email"
+             FontSize="14" Margin="0,5" Height="35" Background="#40444B" Foreground="White"
+             VerticalContentAlignment="Center" />
 
             <Grid Margin="0,5" Height="35">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
                 <!-- TextBox hiển thị mật khẩu -->
-                <TextBox Text="{Binding Password, Mode=TwoWay}"
-             Visibility="{Binding IsPasswordVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
-             Background="#40444B" Foreground="White"/>
+                <TextBox x:Name="txtPasswordVisible"
+               Grid.Column="0"
+               Text="{Binding Password, Mode=TwoWay}"    
+               Background="#40444B" Foreground="White"
+               VerticalContentAlignment="Center"
+               Visibility="{Binding IsPasswordVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
                 <!-- PasswordBox ẩn mật khẩu -->
-                <PasswordBox PasswordChanged="PasswordBox_PasswordChanged"
-                 Visibility="{Binding IsPasswordVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
-                 Background="#40444B" Foreground="White"/>
+                <PasswordBox x:Name="txtPasswordHidden"
+               Grid.Column="0"
+               PasswordChanged="PasswordBox_PasswordChanged"
+               services:WatermarkService.Watermark="Enter password"
+               Background="#40444B" Foreground="White"
+                Visibility="{Binding IsPasswordVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
+               VerticalContentAlignment="Center"></PasswordBox>
+          
 
                 <!-- Nút con mắt -->
-                <Button Content="👁"
-            Command="{Binding TogglePasswordVisibilityCommand}"
-            HorizontalAlignment="Right"/>
+                <Button Grid.Column="1"
+              Content="👁"
+              Command="{Binding TogglePasswordVisibilityCommand}"
+              Width="35"
+              Background="#D3D3D3"
+              Foreground="Black"/>
             </Grid>
+
+
+
 
             <!-- Remember Me Checkbox -->
             <CheckBox Content="Remember me" 
