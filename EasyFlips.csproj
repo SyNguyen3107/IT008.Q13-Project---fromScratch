@@ -15,6 +15,7 @@
     <None Remove="Resources\hide.png" />
     <None Remove="Resources\lock.png" />
     <None Remove="Resources\view.png" />
+    <None Remove="Resources\error.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,6 +50,9 @@
     </Resource>
     <Resource Include="Resources\view.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\error.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>
 

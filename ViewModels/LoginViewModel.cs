@@ -48,58 +48,51 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private async Task LoginAsync(object parameter)
         {
-            // 1. Lấy Password từ View (PasswordBox)
             if (parameter is PasswordBox pwBox)
                 Password = pwBox.Password;
 
             ErrorMessage = "";
 
-            // Kiểm tra đầu vào (Validation)
             if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
-                ErrorMessage = "Email and password are required.";
+                ShowErrorDialog("Email và mật khẩu không được để trống.");
                 return;
             }
 
             try
             {
-                // 3. Call Login Service
                 string userId = await _authService.LoginAsync(Email, Password);
 
-                // HANDLE "REMEMBER ME"
                 if (IsRememberMe)
                 {
-                    // Save to Properties.Settings
                     Settings.Default.UserId = userId;
                     Settings.Default.UserEmail = Email;
-
-                    // Lưu ý: Đảm bảo bạn lấy đúng Token từ Session nếu muốn lưu Token
-                    // Settings.Default.UserToken = _userSession.Token; 
-                    // Tạm thời giữ nguyên logic của bạn:
                     Settings.Default.UserToken = _authService.CurrentUserId;
-
                     Settings.Default.Save();
                 }
                 else
                 {
-                    // Clear saved data
                     Settings.Default.UserId = string.Empty;
                     Settings.Default.UserToken = string.Empty;
                     Settings.Default.UserEmail = string.Empty;
                     Settings.Default.Save();
                 }
 
-                // 4. Open MainWindow
                 _navigationService.ShowMainWindow();
-
-                // 5. Close current LoginWindow
                 CloseCurrentWindow();
             }
             catch (Exception ex)
             {
-                ErrorMessage = ex.Message; // Hiển thị lỗi lên UI thay vì MessageBox
+                ShowErrorDialog("Thông tin đăng nhập không chính xác. Vui lòng kiểm tra lại email hoặc mật khẩu và thử lại!");
             }
         }
+
+        private void ShowErrorDialog(string message)
+        {
+            var errorDialog = new ErrorDialogWindow(message);
+            errorDialog.ShowDialog();
+        }
+
         // Tự động sinh ra lệnh: OpenRegisterCommand
         [RelayCommand]
         private void OpenRegister()
@@ -114,21 +107,10 @@ namespace EasyFlips.ViewModels
             window?.Close();
         }
 
-     
-      
-        
-
         [RelayCommand]
         private void TogglePasswordVisibility()
         {
             IsPasswordVisible = !IsPasswordVisible;
         }
-
-
-
-
-
-
-
     }
 }
