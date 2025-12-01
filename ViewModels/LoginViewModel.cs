@@ -53,9 +53,22 @@ namespace EasyFlips.ViewModels
 
             ErrorMessage = "";
 
-            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
+            // Kiểm tra email và mật khẩu trống
+            if (string.IsNullOrWhiteSpace(Email) && string.IsNullOrWhiteSpace(Password))
             {
-                ShowErrorDialog("Email và mật khẩu không được để trống.");
+                ShowErrorDialog("Email và mật khẩu không được để trống. Vui lòng nhập đầy đủ thông tin!");
+                return;
+            }
+            
+            if (string.IsNullOrWhiteSpace(Email))
+            {
+                ShowErrorDialog("Email không được để trống. Vui lòng nhập email của bạn!");
+                return;
+            }
+            
+            if (string.IsNullOrWhiteSpace(Password))
+            {
+                ShowErrorDialog("Mật khẩu không được để trống. Vui lòng nhập mật khẩu của bạn!");
                 return;
             }
 
@@ -83,8 +96,46 @@ namespace EasyFlips.ViewModels
             }
             catch (Exception ex)
             {
-                ShowErrorDialog("Thông tin đăng nhập không chính xác. Vui lòng kiểm tra lại email hoặc mật khẩu và thử lại!");
+                // Xử lý các loại lỗi khác nhau từ Firebase
+                string errorMessage = GetUserFriendlyErrorMessage(ex);
+                ShowErrorDialog(errorMessage);
             }
+        }
+
+        private string GetUserFriendlyErrorMessage(Exception ex)
+        {
+            string exceptionMessage = ex.Message.ToUpper();
+            
+            // Lỗi thông tin đăng nhập không chính xác
+            if (exceptionMessage.Contains("INVALID_PASSWORD") || 
+                exceptionMessage.Contains("INVALID_LOGIN_CREDENTIALS") ||
+                exceptionMessage.Contains("USER_NOT_FOUND") ||
+                exceptionMessage.Contains("EMAIL_NOT_FOUND") ||
+                exceptionMessage.Contains("INVALID_EMAIL"))
+            {
+                return "Thông tin đăng nhập không chính xác. Vui lòng kiểm tra lại email hoặc mật khẩu và thử lại!";
+            }
+            
+            // Lỗi tài khoản bị vô hiệu hóa
+            if (exceptionMessage.Contains("USER_DISABLED"))
+            {
+                return "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ với quản trị viên!";
+            }
+            
+            // Lỗi quá nhiều lần đăng nhập thất bại
+            if (exceptionMessage.Contains("TOO_MANY_ATTEMPTS_TRY_LATER"))
+            {
+                return "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau!";
+            }
+            
+            // Lỗi mạng
+            if (exceptionMessage.Contains("NETWORK") || exceptionMessage.Contains("CONNECTION"))
+            {
+                return "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet của bạn!";
+            }
+            
+            // Các lỗi khác
+            return "Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại sau!";
         }
 
         private void ShowErrorDialog(string message)
