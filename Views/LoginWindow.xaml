@@ -56,12 +56,33 @@
 
                 <!-- Nút con mắt -->
                 <Button Grid.Column="1"
-              Content="👁"
-              Command="{Binding TogglePasswordVisibilityCommand}"
-              IsEnabled="{Binding Password, Converter={StaticResource StringNotEmptyConverter}}"
-              Width="35"
-              Background="#D3D3D3"
-              Foreground="Black"/>
+        Command="{Binding TogglePasswordVisibilityCommand}"
+        IsEnabled="{Binding Password, Converter={StaticResource StringNotEmptyConverter}}"
+        Width="35" Background="Transparent" Foreground="White">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <!-- mặc định mắt nhắm -->
+                            <Setter Property="Content">
+                                <Setter.Value>
+                                    <Image Source="pack://application:,,,/EasyFlips;component/Resources/hide.png"
+                           Width="20" Height="20"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <!-- khi IsPasswordVisible = true thì đổi sang mắt mở -->
+                                <DataTrigger Binding="{Binding IsPasswordVisible}" Value="True">
+                                    <Setter Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="pack://application:,,,/EasyFlips;component/Resources/view.png"
+                                   Width="20" Height="20"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
             </Grid>
 
 
