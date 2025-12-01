@@ -12,7 +12,9 @@
 
   <ItemGroup>
     <None Remove="Resources\cards.png" />
+    <None Remove="Resources\hide.png" />
     <None Remove="Resources\lock.png" />
+    <None Remove="Resources\view.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,8 +41,14 @@
     <Resource Include="Resources\cards.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
+    <Resource Include="Resources\hide.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Resources\lock.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\view.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>
 

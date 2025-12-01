@@ -95,5 +95,21 @@ namespace EasyFlips.ViewModels
                 }
             }
         }
+        [ObservableProperty]
+        private bool isPasswordVisible; // mặc định false
+        [ObservableProperty]
+        private bool isConfirmPasswordVisible;
+
+        [RelayCommand]
+        private void TogglePasswordVisibility()
+        {
+            IsPasswordVisible = !IsPasswordVisible;
+        }
+
+        [RelayCommand]
+        private void ToggleConfirmPasswordVisibility()
+        {
+            IsConfirmPasswordVisible = !IsConfirmPasswordVisible;
+        }
     }
 }
