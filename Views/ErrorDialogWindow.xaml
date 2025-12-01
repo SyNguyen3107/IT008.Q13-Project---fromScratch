@@ -1,17 +1,17 @@
-<Window x:Class="EasyFlips.Views.ErrorDialogWindow"
+﻿<Window x:Class="EasyFlips.Views.ErrorDialogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
-        Title="L?i ??ng nh?p" 
-        Height="280" 
-        Width="500"
+        xmlns:gif="http://wpfanimatedgif.codeplex.com"
+
+        Title="Lỗi đăng nhập"
+        Height="200" Width="360"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        Background="White"
+        Background="Transparent"
         WindowStyle="None"
-        AllowsTransparency="True">
+        AllowsTransparency="True"
+        SizeToContent="Height">
+
     <Border BorderBrush="#E0E0E0" BorderThickness="1" Background="White" CornerRadius="8">
         <Grid>
             <Grid.RowDefinitions>
@@ -19,39 +19,34 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Content Area -->
-            <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="25">
-                <!-- Error Icon -->
-                <Image x:Name="ErrorImage" 
-                       Source="pack://application:,,,/Resources/error.png" 
-                       Width="60" 
-                       Height="60" 
-                       HorizontalAlignment="Center" 
-                       Margin="0,0,0,15"/>
+            <!-- Nội dung -->
+            <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="15">
+                <Image Width="80" Height="80"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,10"
+                    gif:ImageBehavior.AnimatedSource="pack://application:,,,/Resources/fail.gif"/>
 
-                <!-- Error Message -->
                 <TextBlock x:Name="ErrorMessageText"
-                           FontSize="15"
-                           FontWeight="Bold"
+                           FontSize="13" FontWeight="Bold"
                            Foreground="#37474F"
                            TextAlignment="Center"
                            TextWrapping="Wrap"
-                           MaxWidth="440"
-                           LineHeight="22"/>
+                           MaxWidth="300"
+                           LineHeight="16"
+                           MaxHeight="100"/>
+
+
             </StackPanel>
 
-            <!-- Close Button -->
+            <!-- Nút đóng -->
             <Button Grid.Row="1"
-                    x:Name="CloseButton"
-                    Content="Close"
+                    Content="Đóng"
                     Click="CloseButton_Click"
-                    FontSize="13"
-                    FontWeight="SemiBold"
+                    FontSize="13" FontWeight="SemiBold"
                     Foreground="White"
                     Background="#4CAF50"
-                    Height="38"
-                    Width="140"
-                    Margin="0,0,0,20"
+                    Height="30" Width="100"
+                    Margin="0,0,0,15"
                     HorizontalAlignment="Center"
                     Cursor="Hand"
                     BorderThickness="0">
@@ -61,11 +56,8 @@
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="Button">
-                                    <Border Background="{TemplateBinding Background}" 
-                                            CornerRadius="19"
-                                            BorderThickness="0">
-                                        <ContentPresenter HorizontalAlignment="Center" 
-                                                        VerticalAlignment="Center"/>
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="19">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                 </ControlTemplate>
                             </Setter.Value>

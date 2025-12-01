@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <None Remove="Resources\cards.png" />
+    <None Remove="Resources\fail.gif" />
     <None Remove="Resources\hide.png" />
     <None Remove="Resources\lock.png" />
     <None Remove="Resources\view.png" />
@@ -36,11 +37,15 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
+    <PackageReference Include="WpfAnimatedGif" Version="2.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Resources\cards.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\fail.gif">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Resources\hide.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
