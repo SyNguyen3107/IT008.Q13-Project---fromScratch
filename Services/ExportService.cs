@@ -2,7 +2,11 @@
 using EasyFlips.Models;
 using System.IO;
 using System.IO.Compression;
-using System.Text.Json;
+using System.Text.Json; // Giữ nguyên System.Text.Json như code gốc của bạn
+using EasyFlips.Helpers; // ✅ BẮT BUỘC: Để dùng PathHelper
+using System.Linq;
+using System.Threading.Tasks;
+using System;
 
 namespace EasyFlips.Services
 {
@@ -23,9 +27,7 @@ namespace EasyFlips.Services
             var cards = await _cardRepository.GetCardsByDeckIdAsync(deckId);
             if (deck == null) return;
 
-            // Hàm phụ trợ: Xử lý tên file để lưu vào JSON
-            // - Nếu là URL -> Giữ nguyên
-            // - Nếu là Local -> Chỉ lấy tên file
+            // Hàm phụ trợ: Chỉ lấy tên file để lưu vào JSON (giữ nguyên logic của bạn)
             string? GetExportName(string? path)
             {
                 if (string.IsNullOrEmpty(path)) return null;
@@ -34,6 +36,7 @@ namespace EasyFlips.Services
             }
 
             // 1. Chuẩn bị dữ liệu JSON
+            // Lưu ý: Trong JSON chỉ lưu tên file (vd: "image.png") để sang máy khác vẫn hiểu
             var exportData = new DeckExportModel
             {
                 DeckName = deck.Name,
@@ -43,7 +46,6 @@ namespace EasyFlips.Services
                     FrontText = c.FrontText,
                     BackText = c.BackText,
                     Answer = c.Answer,
-                    // SỬA LỖI: Dùng hàm GetExportName để không làm hỏng URL
                     FrontImageName = GetExportName(c.FrontImagePath),
                     BackImageName = GetExportName(c.BackImagePath),
                     FrontAudioName = GetExportName(c.FrontAudioPath),
@@ -64,7 +66,7 @@ namespace EasyFlips.Services
             using (var zipStream = new FileStream(filePath, FileMode.Create))
             using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create))
             {
-                // Ghi deck.json
+                // Ghi file deck.json vào zip
                 var jsonEntry = archive.CreateEntry("deck.json");
                 using (var writer = new StreamWriter(jsonEntry.Open()))
                 {
@@ -74,26 +76,42 @@ namespace EasyFlips.Services
                 // 3. Copy media local vào zip
                 foreach (var c in cards)
                 {
-                    void CopyIfExists(string? path)
+                    // --- HÀM CỤC BỘ ĐÃ ĐƯỢC SỬA ĐỔI ---
+                    void AddMediaToZip(string? relativeFileName)
                     {
-                        // Chỉ copy nếu là file local tồn tại (Bỏ qua URL)
-                        if (!string.IsNullOrEmpty(path)
-                            && !path.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                            && File.Exists(path))
+                        if (string.IsNullOrEmpty(relativeFileName)) return;
+
+                        // Bỏ qua nếu là link online
+                        if (relativeFileName.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return;
+
+                        // ✅ BƯỚC QUAN TRỌNG: 
+                        // relativeFileName lúc này chỉ là "cat.png".
+                        // Ta phải dùng PathHelper để tìm ra đường dẫn thật: "C:\Users\Sy\AppData\...\cat.png"
+                        string fullPath = PathHelper.GetFullPath(relativeFileName);
+
+                        // Kiểm tra file có thật sự tồn tại trên ổ cứng không
+                        if (File.Exists(fullPath))
                         {
-                            // Tránh lỗi trùng tên file trong zip (nếu cần thiết có thể xử lý thêm)
                             try
                             {
-                                archive.CreateEntryFromFile(path, Path.Combine("media", Path.GetFileName(path)));
+                                // Tạo đường dẫn trong zip: media/cat.png
+                                string entryName = Path.Combine("media", Path.GetFileName(relativeFileName));
+
+                                // Nhét file thật vào trong zip
+                                archive.CreateEntryFromFile(fullPath, entryName);
                             }
-                            catch { /* Bỏ qua nếu file đã được thêm rồi */ }
+                            catch
+                            {
+                                // Bỏ qua lỗi nếu file đã được thêm rồi (trường hợp nhiều card dùng chung 1 ảnh) 
+                            }
                         }
                     }
+                    // ----------------------------------
 
-                    CopyIfExists(c.FrontImagePath);
-                    CopyIfExists(c.BackImagePath);
-                    CopyIfExists(c.FrontAudioPath);
-                    CopyIfExists(c.BackAudioPath);
+                    AddMediaToZip(c.FrontImagePath);
+                    AddMediaToZip(c.BackImagePath);
+                    AddMediaToZip(c.FrontAudioPath);
+                    AddMediaToZip(c.BackAudioPath);
                 }
             }
         }

@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics; // Cần thêm để dùng Process.Start
 using System.IO; // Cần thêm để dùng Path.GetFileName
 using System.Windows; // Dùng cho MessageBox
+using EasyFlips.Helpers; //Để dùng PathHelper
 
 namespace EasyFlips.ViewModels
 {
@@ -110,6 +111,9 @@ namespace EasyFlips.ViewModels
                     FrontText = this.FrontText,
                     Answer = this.Answer,
                     BackText = this.BackText ?? "",
+
+                    // Lưu ý: Các biến này bây giờ chỉ chứa Tên File (nếu là local) hoặc URL (nếu online)
+                    // Nhờ logic trong SetMedia xử lý trước đó.
                     FrontImagePath = this.FrontImagePath,
                     FrontAudioPath = this.FrontAudioPath,
                     BackImagePath = this.BackImagePath,
@@ -127,6 +131,55 @@ namespace EasyFlips.ViewModels
             catch (System.Exception ex)
             {
                 MessageBox.Show($"Error: {ex.Message}");
+            }
+        }
+
+        // LOGIC XỬ LÝ MEDIA
+
+        //Hàm xử lý chung: Copy file vào AppData và lấy tên file tương đối
+        //sourcePath: Đường dẫn gốc người dùng chọn
+        //pathProperty: Biến tham chiếu để lưu Path (sẽ lưu vào DB)
+        //nameProperty: Biến tham chiếu để lưu Tên hiển thị
+        private void ProcessAndSetMedia(string sourcePath, ref string pathProperty, ref string nameProperty)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath)) return;
+
+            try
+            {
+                // TRƯỜNG HỢP 1: Link Online
+                if (sourcePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    pathProperty = sourcePath; // Lưu nguyên link
+                    nameProperty = "🌐 Online Link";
+                }
+                // TRƯỜNG HỢP 2: File Local (Cần copy)
+                else
+                {
+                    // 1. Lấy tên file gốc (vd: cat.png)
+                    string fileName = Path.GetFileName(sourcePath);
+
+                    // 2. Tạo tên file duy nhất (vd: cat_8s7d6f5g.png) để tránh trùng
+                    string extension = Path.GetExtension(fileName);
+                    string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+                    string uniqueName = $"{nameWithoutExt}_{Guid.NewGuid().ToString().Substring(0, 8)}{extension}";
+
+                    // 3. Tạo đường dẫn đích trong AppData/Roaming/EasyFlips/Media
+                    string mediaFolder = PathHelper.GetMediaFolderPath();
+                    string destPath = Path.Combine(mediaFolder, uniqueName);
+
+                    // 4. Copy file vào đó
+                    File.Copy(sourcePath, destPath, overwrite: true);
+
+                    // 5. QUAN TRỌNG: Chỉ lưu TÊN FILE DUY NHẤT vào biến (để lưu DB)
+                    pathProperty = uniqueName;
+
+                    // 6. Hiển thị tên gốc cho người dùng dễ nhìn
+                    nameProperty = fileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error importing media: {ex.Message}", "Error");
             }
         }
 
@@ -178,51 +231,48 @@ namespace EasyFlips.ViewModels
             var path = PickFile("Images|*.png;*.jpg;*.jpeg;*.gif|All Files|*.*");
             if (path != null)
             {
-                FrontImagePath = path;
-                SetMedia(path, ref _frontImagePath, ref _frontImageName);
-                // Cập nhật lại property để UI nhận biết thay đổi
+                ProcessAndSetMedia(path, ref _frontImagePath, ref _frontImageName);
                 OnPropertyChanged(nameof(FrontImagePath));
                 OnPropertyChanged(nameof(FrontImageName));
             }
         }
+
         [RelayCommand]
         private void PickFrontAudio()
         {
             var path = PickFile("Audio|*.mp3;*.wav;*.m4a|All Files|*.*");
             if (path != null)
             {
-                FrontAudioPath = path;
-                SetMedia(path, ref _frontAudioPath, ref _frontAudioName);
+                ProcessAndSetMedia(path, ref _frontAudioPath, ref _frontAudioName);
                 OnPropertyChanged(nameof(FrontAudioPath));
                 OnPropertyChanged(nameof(FrontAudioName));
             }
         }
+
         [RelayCommand]
         private void PickBackImage()
         {
             var path = PickFile("Images|*.png;*.jpg;*.jpeg;*.gif|All Files|*.*");
             if (path != null)
             {
-                BackImagePath = path;
-                SetMedia(path, ref _backImagePath, ref _backImageName);
+                ProcessAndSetMedia(path, ref _backImagePath, ref _backImageName);
                 OnPropertyChanged(nameof(BackImagePath));
                 OnPropertyChanged(nameof(BackImageName));
             }
         }
+
         [RelayCommand]
         private void PickBackAudio()
         {
             var path = PickFile("Audio|*.mp3;*.wav;*.m4a|All Files|*.*");
             if (path != null)
             {
-                BackAudioPath = path;
-                SetMedia(path, ref _backAudioPath, ref _backAudioName);
+                ProcessAndSetMedia(path, ref _backAudioPath, ref _backAudioName);
                 OnPropertyChanged(nameof(BackAudioPath));
                 OnPropertyChanged(nameof(BackAudioName));
             }
         }
 
-        // Hàm phụ trợ có tham số filter
         private string? PickFile(string filter)
         {
             OpenFileDialog dialog = new OpenFileDialog
@@ -230,7 +280,6 @@ namespace EasyFlips.ViewModels
                 Title = "Select Media",
                 Filter = filter
             };
-
             return dialog.ShowDialog() == true ? dialog.FileName : null;
         }
 
@@ -242,50 +291,53 @@ namespace EasyFlips.ViewModels
             if (Clipboard.ContainsText())
             {
                 var text = Clipboard.GetText().Trim();
-                if (text.StartsWith("http", System.StringComparison.OrdinalIgnoreCase))
+                if (text.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
+                    // Tái sử dụng hàm ProcessAndSetMedia (nó sẽ nhận diện là http và không copy)
                     switch (type)
                     {
-                        case "FrontImage": SetMedia(text, ref _frontImagePath, ref _frontImageName); OnPropertyChanged(nameof(FrontImagePath)); OnPropertyChanged(nameof(FrontImageName)); break;
-                        case "FrontAudio": SetMedia(text, ref _frontAudioPath, ref _frontAudioName); OnPropertyChanged(nameof(FrontAudioPath)); OnPropertyChanged(nameof(FrontAudioName)); break;
-                        case "BackImage": SetMedia(text, ref _backImagePath, ref _backImageName); OnPropertyChanged(nameof(BackImagePath)); OnPropertyChanged(nameof(BackImageName)); break;
-                        case "BackAudio": SetMedia(text, ref _backAudioPath, ref _backAudioName); OnPropertyChanged(nameof(BackAudioPath)); OnPropertyChanged(nameof(BackAudioName)); break;
+                        case "FrontImage": ProcessAndSetMedia(text, ref _frontImagePath, ref _frontImageName); OnPropertyChanged(nameof(FrontImagePath)); OnPropertyChanged(nameof(FrontImageName)); break;
+                        case "FrontAudio": ProcessAndSetMedia(text, ref _frontAudioPath, ref _frontAudioName); OnPropertyChanged(nameof(FrontAudioPath)); OnPropertyChanged(nameof(FrontAudioName)); break;
+                        case "BackImage": ProcessAndSetMedia(text, ref _backImagePath, ref _backImageName); OnPropertyChanged(nameof(BackImagePath)); OnPropertyChanged(nameof(BackImageName)); break;
+                        case "BackAudio": ProcessAndSetMedia(text, ref _backAudioPath, ref _backAudioName); OnPropertyChanged(nameof(BackAudioPath)); OnPropertyChanged(nameof(BackAudioName)); break;
                     }
                 }
-                else MessageBox.Show("Invalid URL.");
+                else MessageBox.Show("Invalid URL. Please copy a link starting with http/https.");
             }
         }
 
-        // --- LỆNH MỞ FILE (LOCAL HOẶC ONLINE)---
+        // --- LỆNH MỞ FILE (ĐÃ CẬP NHẬT LOGIC RELATIVE PATH) ---
         [RelayCommand]
-        private void OpenFileLocation(string filePath)
+        private void OpenFileLocation(string relativeOrUrlPath)
         {
-            if (string.IsNullOrEmpty(filePath)) return;
+            if (string.IsNullOrEmpty(relativeOrUrlPath)) return;
 
             try
             {
-                // Trường hợp 1: Link Online (http/https) -> Mở trình duyệt
-                if (filePath.StartsWith("http", System.StringComparison.OrdinalIgnoreCase))
+                // TH1: Link Online
+                if (relativeOrUrlPath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = filePath,
-                        UseShellExecute = true
-                    });
+                    Process.Start(new ProcessStartInfo { FileName = relativeOrUrlPath, UseShellExecute = true });
                 }
-                // Trường hợp 2: File Local -> Mở File Explorer và chọn file
-                else if (File.Exists(filePath))
-                {
-                    Process.Start("explorer.exe", $"/select, \"{filePath}\"");
-                }
+                // TH2: File Local (Chỉ có tên file) -> Cần ghép đường dẫn full
                 else
                 {
-                    MessageBox.Show("File does not exist or directory is not valid.", "Notice");
+                    // Dùng PathHelper để lấy đường dẫn thực tế trên máy này
+                    string fullPath = PathHelper.GetFullPath(relativeOrUrlPath);
+
+                    if (File.Exists(fullPath))
+                    {
+                        Process.Start("explorer.exe", $"/select, \"{fullPath}\"");
+                    }
+                    else
+                    {
+                        MessageBox.Show($"File not found at:\n{fullPath}", "Notice");
+                    }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                MessageBox.Show($"Cannot open the following file: {ex.Message}", "Error");
+                MessageBox.Show($"Cannot open file: {ex.Message}", "Error");
             }
         }
         // --- NEW COMMANDS: XÓA MEDIA ---

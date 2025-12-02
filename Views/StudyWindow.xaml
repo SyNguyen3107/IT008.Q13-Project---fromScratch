@@ -13,6 +13,7 @@
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
         <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBoolToVisConverter"/>
         <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
+        <converters:ImagePathConverter x:Key="ImagePathConverter"/>
     </Window.Resources>
     <Grid>
         <local:StudyCardView/>
