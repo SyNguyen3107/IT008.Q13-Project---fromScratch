@@ -11,6 +11,10 @@
             <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter"/>
             <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
             <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>
+            <converters:DiffTypeToBrushConverter x:Key="DiffTypeToBrushConverter"/>
+            <converters:DiffTypeToFontWeightConverter x:Key="DiffTypeToFontWeightConverter"/>
+            <converters:DiffTypeToTextDecorationConverter x:Key="DiffTypeToTextDecorationConverter"/>
+
             <Style x:Key="ReviewButtonStyle" TargetType="Button">
                 <Setter Property="Width" Value="80"/>
                 <Setter Property="Height" Value="40"/>

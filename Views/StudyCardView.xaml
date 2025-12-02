@@ -55,7 +55,7 @@
                     <StackPanel Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}">
 
                         <!-- Kết quả so sánh -->
-                        <ItemsControl ItemsSource="{Binding ComparisonResult}" HorizontalAlignment="Center" Margin="0,0,0,15">
+                        <ItemsControl ItemsSource="{Binding ComparisonPieces}" HorizontalAlignment="Center">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel Orientation="Horizontal"/>
@@ -63,15 +63,17 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Character}" 
-                                               Foreground="{Binding Color}" 
-                                               FontWeight="{Binding FontWeight}"
-                                               FontSize="24" Margin="1,0"/>
+                                    <TextBlock Text="{Binding Text}"
+                                       Foreground="{Binding Type, Converter={StaticResource DiffTypeToBrushConverter}}"
+                                       FontWeight="{Binding Type, Converter={StaticResource DiffTypeToFontWeightConverter}}"
+                                       TextDecorations="{Binding Type, Converter={StaticResource DiffTypeToTextDecorationConverter}}"
+                                        FontSize="24" Margin="1,0"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            </ItemsControl>
 
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
                             <TextBlock Text="Correct Answer: " Foreground="Gray" FontSize="14" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding CorrectAnswer}" Foreground="#81C784" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
                         </StackPanel>

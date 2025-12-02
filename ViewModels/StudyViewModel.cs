@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DiffPlex.DiffBuilder.Model;
 using EasyFlips.Models;
 using EasyFlips.Services;
 using System.Collections.ObjectModel; // Cần cho ObservableCollection
@@ -13,6 +14,8 @@ namespace EasyFlips.ViewModels
         private readonly AudioService _audioService;
         private int _currentDeckId; //Deck đang học
         private Card? _currentCard; // Thẻ đang học
+        private readonly ComparisonService _comparisonService = new ComparisonService(); // Dịch vụ so sánh
+
 
         // --- Các thuộc tính hiển thị lên View ---
         [ObservableProperty] private string _questionText = string.Empty;
@@ -72,7 +75,7 @@ namespace EasyFlips.ViewModels
                 // Reset trạng thái
                 IsAnswerVisible = false;
                 UserInputText = string.Empty;
-                ComparisonResult.Clear(); // Xóa kết quả cũ
+                ComparisonPieces.Clear();
 
                 // Lấy thẻ
                 _currentCard = await _studyService.GetNextCardToReviewAsync(_currentDeckId);
@@ -130,69 +133,47 @@ namespace EasyFlips.ViewModels
                 MessageBox.Show($"Error loading next card: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+        public ObservableCollection<DiffPiece> ComparisonPieces { get; } = new();
 
         // Hiện đáp án (người dùng nhấn để xem mặt sau)
         [RelayCommand]
         private void ShowAnswer()
         {
             IsAnswerVisible = true;
+            // Tính điểm và tạo so sánh
             GenerateComparison();
         }
 
+
+
+
         private void GenerateComparison()
         {
-            ComparisonResult.Clear();
-            string input = UserInputText ?? "";
-            string target = CorrectAnswer ?? "";
+            ComparisonPieces.Clear();
 
-            // Lấy độ dài lớn nhất để duyệt hết cả 2 chuỗi
-            int length = System.Math.Max(input.Length, target.Length);
+            var pieces = _comparisonService.GetCharDiff(UserInputText, CorrectAnswer);
 
-            for (int i = 0; i < length; i++)
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Input = '{UserInputText}'");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Target = '{CorrectAnswer}'");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Diff count = {pieces.Count}");
+
+            if (pieces.Count == 0 && !string.IsNullOrEmpty(UserInputText))
             {
-                string charToDisplay = "";
-                string color = "#FFFFFF"; // Mặc định trắng
-                string weight = "Normal";
-
-                if (i < input.Length)
+                ComparisonPieces.Add(new DiffPiece(UserInputText, ChangeType.Unchanged));
+            }
+            else
+            {
+                foreach (var piece in pieces)
                 {
-                    charToDisplay = input[i].ToString();
-
-                    if (i < target.Length)
-                    {
-                        // Có ký tự ở cả input và target -> So sánh
-                        if (char.ToLower(input[i]) == char.ToLower(target[i]))
-                        {
-                            color = "#2ECC71"; // Đúng (Xanh lá)
-                        }
-                        else
-                        {
-                            color = "#FF5252"; // Sai (Đỏ)
-                            weight = "Bold";
-                        }
-                    }
-                    else
-                    {
-                        // Input dài hơn Target -> Thừa (Đỏ)
-                        color = "#FF5252";
-                        weight = "Bold";
-                    }
-                }
-                else
-                {
-                    // Input ngắn hơn Target -> Thiếu
-                    // (Tùy chọn: Có thể hiển thị dấu gạch dưới _ màu đỏ để báo thiếu)
-                    continue;
+                    System.Diagnostics.Debug.WriteLine($"Piece: '{piece.Text}' Type: {piece.Type}");
+                    ComparisonPieces.Add(piece);
                 }
 
-                ComparisonResult.Add(new ComparisonChar
-                {
-                    Character = charToDisplay,
-                    Color = color,
-                    FontWeight = weight
-                });
             }
         }
+
+
+
         // Các lệnh đánh giá: khi người dùng chọn Again/Hard/Good/Easy
         // Mỗi lệnh gọi StudyService.ProcessReviewAsync rồi tải thẻ kế tiếp
 
