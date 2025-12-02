@@ -14,6 +14,7 @@
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
         <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBoolToVisConverter"/>
         <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
+        <converters:ImagePathConverter x:Key="ImagePathConverter"/>
     </UserControl.Resources>
 
     <Grid Margin="20">
@@ -34,7 +35,7 @@
                     <!-- MẶT TRƯỚC -->
                     <TextBlock Text="{Binding QuestionText}" Foreground="White" FontSize="28" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,10"/>
 
-                    <Image Source="{Binding FrontImagePath}" 
+                    <Image Source="{Binding FrontImagePath, Converter={StaticResource ImagePathConverter}}" 
                            MaxHeight="300" 
                            MaxWidth="600"
                            Stretch="Uniform"
@@ -78,7 +79,7 @@
 
                         <TextBlock Text="{Binding AnswerText}" Foreground="White" FontSize="20" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,10"/>
 
-                        <Image Source="{Binding BackImagePath}" 
+                        <Image Source="{Binding BackImagePath, Converter={StaticResource ImagePathConverter}}" 
                                MaxHeight="300" 
                                MaxWidth="600"
                                Stretch="Uniform"
