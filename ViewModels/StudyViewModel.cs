@@ -157,6 +157,7 @@ namespace EasyFlips.ViewModels
             System.Diagnostics.Debug.WriteLine($"[DEBUG] Target = '{CorrectAnswer}'");
             System.Diagnostics.Debug.WriteLine($"[DEBUG] Diff count = {pieces.Count}");
 
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Similarity = '{_comparisonService.IsAnswerAcceptable(UserInputText, CorrectAnswer)}'");
             if (pieces.Count == 0 && !string.IsNullOrEmpty(UserInputText))
             {
                 ComparisonPieces.Add(new DiffPiece(UserInputText, ChangeType.Unchanged));

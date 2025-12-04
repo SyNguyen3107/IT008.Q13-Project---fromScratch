@@ -13,11 +13,11 @@ namespace EasyFlips.Services
         /// <summary>
         /// Hàm 3: Chấm điểm bằng FuzzySharp
         /// </summary>
-        public bool IsAnswerAcceptable(string input, string target, int threshold = 80)
+        public int IsAnswerAcceptable(string input, string target, int threshold = 80)
         {
-            if (string.IsNullOrEmpty(input)) return false;
+            if (string.IsNullOrEmpty(input)) return 0;
             int score = Fuzz.WeightedRatio(input.ToLower(), target.ToLower());
-            return score >= threshold;
+            return score ;
         }
 
         public List<DiffPiece> GetVisualDiff(string input, string target)

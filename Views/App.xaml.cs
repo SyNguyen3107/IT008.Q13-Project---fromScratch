@@ -23,9 +23,26 @@ namespace EasyFlips
 
         public App()
         {
+            // 1. Đăng ký bắt lỗi toàn cục
+            this.DispatcherUnhandledException += App_DispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
             var services = new ServiceCollection();
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider();
+        }
+        // 2. Hàm xử lý lỗi UI
+        private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            MessageBox.Show($"Lỗi Crash UI: {e.Exception.Message}\n\n{e.Exception.StackTrace}", "Lỗi Nghiêm Trọng");
+            e.Handled = true; // Thử giữ app không bị tắt
+        }
+
+        // 3. Hàm xử lý lỗi hệ thống/Domain
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            var ex = e.ExceptionObject as Exception;
+            MessageBox.Show($"Lỗi Crash AppDomain: {ex?.Message}\n\n{ex?.StackTrace}", "Lỗi Nghiêm Trọng");
         }
 
         private void ConfigureServices(IServiceCollection services)
@@ -50,12 +67,16 @@ namespace EasyFlips
             if (!Directory.Exists(appFolder)) Directory.CreateDirectory(appFolder);
             dbPath = Path.Combine(appFolder, "EasyFlipsAppDB.db");
 
-            // Tự động copy file DB mẫu nếu chưa có (lần chạy đầu tiên)
+            // [SỬA LỖI CRASH KHI PUBLISH]
+            // Đã comment đoạn copy file mẫu vì khi đóng gói SingleFile, file mẫu có thể không tìm thấy gây lỗi.
+            // Chúng ta sẽ dùng db.Database.Migrate() ở OnStartup để tự tạo file mới an toàn hơn.
+            /*
             string sourceDb = Path.Combine(baseDirectory, "EasyFlipsAppDB.db");
             if (!File.Exists(dbPath) && File.Exists(sourceDb))
             {
                 File.Copy(sourceDb, dbPath);
             }
+            */
 #endif
             // Đăng ký DbContext
             services.AddDbContext<AppDbContext>(options =>
@@ -99,7 +120,7 @@ namespace EasyFlips
             services.AddTransient<SyncWindow>();
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();
-            
+
 
             // 6. Messenger
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
@@ -112,7 +133,35 @@ namespace EasyFlips
         {
             base.OnStartup(e);
 
-            // 1. Kiểm tra xem có dữ liệu đã lưu không
+            // --- [QUAN TRỌNG] TỰ ĐỘNG KHỞI TẠO VÀ SỬA LỖI DATABASE ---
+            try
+            {
+                using (var scope = ServiceProvider.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    // Tự động tạo bảng hoặc thêm cột mới nếu thiếu (hoặc tạo file mới nếu chưa có)
+                    db.Database.Migrate();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Nếu file DB bị hỏng quá nặng (lỗi cấu trúc cũ) -> Xóa đi làm lại
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string dbPath = Path.Combine(appData, "EasyFlips", "EasyFlipsAppDB.db");
+
+                if (File.Exists(dbPath))
+                {
+                    try { File.Delete(dbPath); } catch { }
+                }
+
+                MessageBox.Show($"Cơ sở dữ liệu đã được làm mới do phiên bản cũ không tương thích.\nVui lòng khởi động lại ứng dụng.",
+                                "Thông báo cập nhật", MessageBoxButton.OK, MessageBoxImage.Information);
+                Current.Shutdown();
+                return;
+            }
+            // ---------------------------------------------------------
+
+            // 1. Kiểm tra xem có dữ liệu đã lưu không (Remember Me)
             string savedId = Settings.Default.UserId;
             string savedToken = Settings.Default.UserToken; // (Token Firebase)
             string savedEmail = Settings.Default.UserEmail;
