@@ -14,7 +14,7 @@ namespace EasyFlips.Interfaces
         Task<string> LoginAsync(string email, string password);
 
         // Đăng ký: Trả về UserId nếu thành công
-        Task<string> RegisterAsync(string email, string password);
+        Task<string> RegisterAsync(string email, string password, string username);
 
         // Đăng xuất
         void Logout();

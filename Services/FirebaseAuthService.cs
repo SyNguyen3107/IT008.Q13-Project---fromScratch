@@ -38,7 +38,12 @@ namespace EasyFlips.Services
                 string userId = userCredential.User.Uid;
                 string token = await userCredential.User.GetIdTokenAsync();
                 string userEmail = userCredential.User.Info.Email;
-                _userSession.SetUser(userId, userEmail, token);
+
+                // Lấy DisplayName và PhotoUrl để hiển thị
+                string displayName = userCredential.User.Info.DisplayName;
+                string photoUrl = userCredential.User.Info.PhotoUrl;
+
+                _userSession.SetUser(userId, userEmail, token, displayName, photoUrl);
 
                 return userId;
             }
@@ -52,19 +57,40 @@ namespace EasyFlips.Services
                 throw new Exception($"Lỗi hệ thống: {ex.Message}", ex);
             }
         }
-
-        public async Task<string> RegisterAsync(string email, string password)
+        public async Task<string> RegisterAsync(string email, string password, string username, string photoUrl = "")
         {
             try
             {
                 var userCredential = await _authClient.CreateUserWithEmailAndPasswordAsync(email, password);
+                var user = userCredential.User;
 
-                string userId = userCredential.User.Uid;
+                // Cập nhật DisplayName (UserName) cho user vừa tạo
+                if (!string.IsNullOrEmpty(username))
+                {
+                    await user.ChangeDisplayNameAsync(username);
+                }
+                /* // Cập nhật Ảnh (NẾU CÓ) => đang lỗi tạm chưa fix
+                if (!string.IsNullOrEmpty(photoUrl))
+                {
+                    // Hàm này nhận vào một đường link ảnh (URL string)
+                    await user.ChangePhotoUrlAsync(photoUrl);
+                } */
+
+                // 3. Lưu session
+                string userId = user.Uid;
+                string token = await user.GetIdTokenAsync();
+                string userEmail = user.Info.Email;
+
+                // Lưu username vào session luôn để hiển thị ngay lập tức
+                _userSession.SetUser(userId, userEmail, token, username, "");
+
+                return userId;
+                /* string userId = userCredential.User.Uid;
                 string token = await userCredential.User.GetIdTokenAsync();
                 string userEmail = userCredential.User.Info.Email;
                 _userSession.SetUser(userId, userEmail, token);
 
-                return userId;
+                return userId; */
             }
             catch (FirebaseAuthException ex)
             {
@@ -105,6 +131,11 @@ namespace EasyFlips.Services
             Settings.Default.UserToken = string.Empty;
             Settings.Default.UserEmail = string.Empty;
             Settings.Default.Save();
+        }
+
+        public Task<string> RegisterAsync(string email, string password, string username)
+        {
+            throw new NotImplementedException();
         }
     }
 }

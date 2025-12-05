@@ -18,6 +18,10 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private string email;
 
+        // Username
+        [ObservableProperty]
+        private string userName;
+
         // Lưu ý: Đang dùng Binding (Option B) cho Password ở Register
         [ObservableProperty]
         private string password;
@@ -47,9 +51,15 @@ namespace EasyFlips.ViewModels
             }
 
             // Kiểm tra trường trống
-            if (string.IsNullOrWhiteSpace(Email) && string.IsNullOrWhiteSpace(Password) && string.IsNullOrWhiteSpace(ConfirmPassword))
+            if (string.IsNullOrWhiteSpace(UserName) && string.IsNullOrWhiteSpace(Email) && string.IsNullOrWhiteSpace(Password) && string.IsNullOrWhiteSpace(ConfirmPassword))
             {
                 ShowErrorDialog("Email và mật khẩu không được để trống. Vui lòng nhập đầy đủ thông tin!");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(UserName))
+            {
+                ShowErrorDialog("Vui lòng nhập tên hiển thị!");
                 return;
             }
 
@@ -87,7 +97,7 @@ namespace EasyFlips.ViewModels
 
             try
             {
-                var userId = await _authService.RegisterAsync(Email, Password);
+                var userId = await _authService.RegisterAsync(Email, Password, UserName);
 
                 if (!string.IsNullOrEmpty(userId))
                 {
