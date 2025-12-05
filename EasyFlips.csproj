@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <ApplicationIcon>Resources\easyflips.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +26,14 @@
 
   <ItemGroup>
     <ApplicationDefinition Include="Views\App.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\easyflips.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\easyflips.ico" />
   </ItemGroup>
 
   <ItemGroup>
