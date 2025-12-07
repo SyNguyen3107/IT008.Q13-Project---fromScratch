@@ -1,0 +1,51 @@
+﻿<Window x:Class="EasyFlips.Views.TestRealtimeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Test Realtime Supabase" Height="450" Width="700"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Khu vực Kết nối -->
+        <Border Grid.Row="0" BorderBrush="#DDD" BorderThickness="1" Padding="10" Margin="0,0,0,10" Background="#FAFAFA">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Mã Phòng:" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
+                    <TextBox Text="{Binding RoomId}" Width="120" Padding="5"/>
+                    <Button Content="KẾT NỐI" Command="{Binding ConnectCommand}" 
+                            Margin="10,0,0,0" Padding="15,5" Background="#27AE60" Foreground="White" FontWeight="Bold"/>
+                </StackPanel>
+
+                <!-- NÚT MỚI: Mở thêm cửa sổ -->
+                <Button Grid.Column="1" Content="➕ Mở Client Mới" Click="OpenNewWindow_Click" 
+                        Padding="10,5" Background="#8E44AD" Foreground="White" BorderThickness="0"/>
+            </Grid>
+        </Border>
+
+        <!-- Khu vực Chat -->
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox Text="{Binding MessageInput}" Padding="8" FontSize="14"/>
+            <Button Grid.Column="1" Content="Gửi Tin" Command="{Binding SendCommand}" 
+                    Margin="10,0,0,0" Padding="20,5" Background="#2980B9" Foreground="White" FontWeight="Bold"/>
+        </Grid>
+
+        <!-- Khu vực Log -->
+        <GroupBox Grid.Row="2" Header="Nhật ký truyền tin (Log)">
+            <ListBox ItemsSource="{Binding Logs}" FontFamily="Consolas" FontSize="12"/>
+        </GroupBox>
+    </Grid>
+</Window>

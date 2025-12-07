@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>EasyFlips - Realtime Web Monitor</title>
+    <!-- Import thư viện Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .log-box { height: 300px; overflow-y: auto; background: #2d3436; color: #55efc4; padding: 10px; font-family: monospace; border-radius: 4px; margin-top: 10px; font-size: 13px; }
+        .controls { margin-bottom: 20px; display: flex; gap: 10px; }
+        input, button { padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #0984e3; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #74b9ff; }
+        .status { margin-bottom: 10px; font-weight: bold; }
+        .status.connected { color: green; }
+        .status.disconnected { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📡 Web Monitor (Test Client)</h2>
+        <div id="status" class="status disconnected">⚪ Chưa kết nối</div>
+
+        <div class="controls">
+            <input type="text" id="roomId" value="CLASS_DEMO_01" placeholder="Nhập Room ID">
+            <button onclick="joinRoom()">🔌 KẾT NỐI</button>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="msgInput" placeholder="Nhập tin nhắn..." style="flex:1">
+            <button onclick="sendMsg()" style="background: #00b894;">📤 GỬI TIN</button>
+        </div>
+
+        <div id="logs" class="log-box"></div>
+    </div>
+
+    <script>
+        // CẤU HÌNH SUPABASE (Lấy từ code C# của bạn)
+        const SUPABASE_URL = 'https://evbplhaiucyulblxkseo.supabase.co'
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2YnBsaGFpdWN5dWxibHhrc2VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNDE3MTEsImV4cCI6MjA4MDYxNzcxMX0.xMPlVKjOGKvkGrI6Z51_8ak0bEYHMeKSnGoHuaWpS5Y'
+
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+        let channel = null
+
+        function log(msg, isRaw = false) {
+            const box = document.getElementById('logs')
+            const time = new Date().toLocaleTimeString()
+            const content = isRaw ? `<pre style="margin:0; color:#fab1a0">${msg}</pre>` : `<div>[${time}] ${msg}</div>`
+            box.innerHTML = content + box.innerHTML
+        }
+
+        async function joinRoom() {
+            const roomId = document.getElementById('roomId').value
+            
+            if(channel) await client.removeChannel(channel)
+
+            log(`⏳ Đang tham gia phòng: ${roomId}...`)
+
+            channel = client.channel(`room:${roomId}`, {
+                config: { broadcast: { self: true } }
+            })
+
+            // Lắng nghe sự kiện Broadcast
+            channel.on('broadcast', { event: '*' }, (payload) => {
+                console.log('Full Payload:', payload)
+                
+                // Log chi tiết để debug
+                const eventName = payload.event
+                const data = payload.payload
+                
+                if (eventName) {
+                    log(`📩 NHẬN [${eventName}]: ${JSON.stringify(data)}`)
+                } else {
+                    log(`⚠️ NHẬN GÓI TIN LẠ (Không có event name):`)
+                    log(JSON.stringify(payload, null, 2), true)
+                }
+            })
+
+            channel.subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    document.getElementById('status').innerText = '🟢 ĐÃ KẾT NỐI'
+                    document.getElementById('status').className = 'status connected'
+                    log('✅ Kết nối thành công! Đang lắng nghe...')
+                }
+            })
+        }
+
+        async function sendMsg() {
+            if (!channel) return alert('Chưa kết nối phòng!')
+            const text = document.getElementById('msgInput').value
+            
+            // Gửi tin nhắn chuẩn
+            await channel.send({
+                type: 'broadcast',
+                event: 'game_event',
+                payload: { 
+                    content: text, 
+                    user: 'WebClient' 
+                }
+            })
+            log(`📤 ĐÃ GỬI: ${text}`)
+        }
+    </script>
+</body>
+</html>
