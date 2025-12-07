@@ -2,17 +2,36 @@
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
 using FuzzySharp;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace EasyFlips.Services
 {
+    public class AiReviewResult
+    {
+        public int semantic_score { get; set; }
+        public bool meaning_match { get; set; }
+        public string summary { get; set; }
+
+    }
     public class ComparisonService
     {
         /// <summary>
         /// Hàm 3: Chấm điểm bằng FuzzySharp
         /// </summary>
+        private readonly HttpClient _httpClient;
+
+        public ComparisonService()
+        {
+            _httpClient = new HttpClient();
+           
+        }
         public bool IsAnswerAcceptable(string input, string target, int threshold = 80)
         {
            if (string.IsNullOrEmpty(input)) return false;
@@ -87,62 +106,6 @@ namespace EasyFlips.Services
         }
 
 
-
-
-
-        public List<DiffPiece> GetWordDiff(string input, string target)
-        {
-            input = NormalizeText(input);
-            target = NormalizeText(target);
-
-            // Tách từ + giữ khoảng trắng
-            var inputWords = SplitWordsWithSpaces(input);
-            var targetWords = SplitWordsWithSpaces(target);
-
-            // Nối bằng ký tự đặc biệt để diff theo "word + space"
-            string inputForDiff = string.Join("\n", inputWords);
-            string targetForDiff = string.Join("\n", targetWords);
-
-            var diffBuilder = new InlineDiffBuilder(new Differ());
-            var diff = diffBuilder.BuildDiffModel(inputForDiff, targetForDiff);
-
-            var wordDiffs = new List<DiffPiece>();
-            foreach (var line in diff.Lines)
-            {
-                wordDiffs.Add(new DiffPiece
-                {
-                    Text = line.Text.Replace("\n", ""), // xóa ký tự nối
-                    Type = line.Type,
-                    SubPieces = line.SubPieces
-                });
-            }
-
-            return wordDiffs;
-        }
-
-        // Hàm tách từ nhưng giữ khoảng trắng sau từ
-        private string[] SplitWordsWithSpaces(string text)
-        {
-            var list = new List<string>();
-            int i = 0;
-            while (i < text.Length)
-            {
-                int start = i;
-                // tìm hết từ
-                while (i < text.Length && !char.IsWhiteSpace(text[i])) i++;
-                // lấy từ
-                int endWord = i;
-
-                // tìm hết khoảng trắng ngay sau từ
-                while (i < text.Length && char.IsWhiteSpace(text[i])) i++;
-                int endSpace = i;
-
-                list.Add(text[start..endSpace]); // từ + khoảng trắng
-            }
-            return list.ToArray();
-        }
-
-
         public List<DiffPiece> GetCharDiff(string input, string target)
         {
             var diffBuilder = new InlineDiffBuilder(new Differ());
@@ -167,7 +130,6 @@ namespace EasyFlips.Services
             return pieces;
         }
 
-
         private static readonly Dictionary<string, string> _normalizeCache = new();
 
         private string NormalizeText(string text)
@@ -188,6 +150,221 @@ namespace EasyFlips.Services
             _normalizeCache[text] = filtered;
             return filtered;
         }
+
+
+        //Chấm điểm bằng AI, trả về kết quả và giải thích:
+
+        public async Task<AiReviewResult> CheckSemanticMeaningAsync(string studentAnswer, string correctAnswer)
+        {
+            if (string.IsNullOrWhiteSpace(studentAnswer) || string.IsNullOrWhiteSpace(correctAnswer))
+            {
+                System.Diagnostics.Debug.WriteLine("[DEBUG] Student or correct answer is empty");
+                return new AiReviewResult
+                {
+                    semantic_score = 0,
+                    meaning_match = false,
+                    summary = "Empty input"
+                };
+            }
+
+            var requestBody = new
+            {
+                contents = new[]
+                {
+            new {
+                parts = new[]
+                {
+                    new {
+                        text =
+                        $"Evaluate the student's answer fairly and objectively compared to the correct answer.\n" +
+                        $"Student: {studentAnswer}\n" +
+                        $"Correct: {correctAnswer}\n" +
+                        $"Return ONLY a JSON object with the following fields:\n" +
+                        $"- score (numeric, 0-100, reflecting how correct the student's answer is)\n" +
+                        $"- summary (short explanation of why you gave this score)\n" +
+                        $"Rules:\n" +
+                        $"- Give a high score if the meaning is correct, even if there are minor typos.\n" +
+                        $"- Give a low score if the meaning is wrong.\n" +
+                        $"- Do not return any text outside the JSON object.\n" +
+                        $"- Be fair and unbiased."
+                    }
+                }
+            }
+        }
+            };
+
+            string jsonBody = JsonConvert.SerializeObject(requestBody);
+            var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+            string apiKey = "API_key"; // thêm API vào để duyệt
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+
+            System.Diagnostics.Debug.WriteLine("[DEBUG] Request JSON: " + jsonBody);
+            System.Diagnostics.Debug.WriteLine("[DEBUG] Request URL: " + url);
+
+            var response = await _httpClient.PostAsync(url, content);
+            string responseJson = await response.Content.ReadAsStringAsync();
+
+            System.Diagnostics.Debug.WriteLine("[DEBUG] Response JSON: " + responseJson);
+
+            try
+            {
+                var resultObj = JObject.Parse(responseJson);
+                string aiText = resultObj["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString();
+
+                if (string.IsNullOrWhiteSpace(aiText))
+                {
+                    return new AiReviewResult
+                    {
+                        semantic_score = 0,
+                        meaning_match = false,
+                        summary = "Empty AI response"
+                    };
+                }
+
+                // Loại bỏ code block nếu có
+                aiText = Regex.Replace(aiText, @"^```json\s*|```$", "", RegexOptions.IgnoreCase).Trim();
+
+                // Nếu AI chỉ trả về số, parse thành int và gán vào semantic_score
+                if (int.TryParse(aiText, out int score))
+                {
+                    return new AiReviewResult
+                    {
+                        semantic_score = score,
+                        meaning_match = score >= 80, // ví dụ: >=80 nghĩa là đúng ý
+                        summary = $"Score from AI prompt: {score}"
+                    };
+                }
+
+                // fallback: nếu AI trả về dạng khác
+                return new AiReviewResult
+                {
+                    semantic_score = 0,
+                    meaning_match = false,
+                    summary = aiText
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[DEBUG] Exception parsing AI response: " + ex.Message);
+                return new AiReviewResult
+                {
+                    semantic_score = 0,
+                    meaning_match = false,
+                    summary = responseJson
+                };
+            }
+        }
+
+        // Chấm điểm bằng AI, chỉ trả về điểm số
+
+        public async Task<int> CheckSemanticScoreAsync(string studentAnswer, string correctAnswer)
+        {
+            if (string.IsNullOrWhiteSpace(studentAnswer) || string.IsNullOrWhiteSpace(correctAnswer))
+                return 0;
+
+            var requestBody = new
+            {
+                contents = new[]
+                {
+            new {
+                parts = new[]
+                {
+                    new {
+                        text = $"Evaluate the student's answer and return only a single integer score 0-100.\n" +
+                               $"Student: {studentAnswer}\n" +
+                               $"Correct: {correctAnswer}\n"
+                    //Cần có câu lệnh promt mới để trả về kết quả tương quan nhất
+                    }
+                }
+            }
+        }
+            };
+
+            string jsonBody = JsonConvert.SerializeObject(requestBody);
+            var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+            string apiKey = "API_KEY"; //Cần thêm API vào để duyệt
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+
+            var response = await _httpClient.PostAsync(url, content);
+            string responseJson = await response.Content.ReadAsStringAsync();
+
+            // Lấy text từ candidates
+            try
+            {
+                var resultObj = JObject.Parse(responseJson);
+                string aiText = resultObj["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString();
+
+                if (int.TryParse(aiText, out int score))
+                    return Math.Clamp(score, 0, 100);
+
+                return 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+
+
+
+        //public List<DiffPiece> GetWordDiff(string input, string target)
+        //{
+        //    input = NormalizeText(input);
+        //    target = NormalizeText(target);
+
+        //    // Tách từ + giữ khoảng trắng
+        //    var inputWords = SplitWordsWithSpaces(input);
+        //    var targetWords = SplitWordsWithSpaces(target);
+
+        //    // Nối bằng ký tự đặc biệt để diff theo "word + space"
+        //    string inputForDiff = string.Join("\n", inputWords);
+        //    string targetForDiff = string.Join("\n", targetWords);
+
+        //    var diffBuilder = new InlineDiffBuilder(new Differ());
+        //    var diff = diffBuilder.BuildDiffModel(inputForDiff, targetForDiff);
+
+        //    var wordDiffs = new List<DiffPiece>();
+        //    foreach (var line in diff.Lines)
+        //    {
+        //        wordDiffs.Add(new DiffPiece
+        //        {
+        //            Text = line.Text.Replace("\n", ""), // xóa ký tự nối
+        //            Type = line.Type,
+        //            SubPieces = line.SubPieces
+        //        });
+        //    }
+
+        //    return wordDiffs;
+        //}
+
+        // Hàm tách từ nhưng giữ khoảng trắng sau từ
+        //private string[] SplitWordsWithSpaces(string text)
+        //{
+        //    var list = new List<string>();
+        //    int i = 0;
+        //    while (i < text.Length)
+        //    {
+        //        int start = i;
+        //        // tìm hết từ
+        //        while (i < text.Length && !char.IsWhiteSpace(text[i])) i++;
+        //        // lấy từ
+        //        int endWord = i;
+
+        //        // tìm hết khoảng trắng ngay sau từ
+        //        while (i < text.Length && char.IsWhiteSpace(text[i])) i++;
+        //        int endSpace = i;
+
+        //        list.Add(text[start..endSpace]); // từ + khoảng trắng
+        //    }
+        //    return list.ToArray();
+        //}
+
+
+
+
+
 
     }
 }

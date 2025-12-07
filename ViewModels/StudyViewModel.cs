@@ -5,6 +5,7 @@ using EasyFlips.Models;
 using EasyFlips.Services;
 using System.Collections.ObjectModel; // Cần cho ObservableCollection
 using System.Windows;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace EasyFlips.ViewModels
 {
@@ -137,16 +138,18 @@ namespace EasyFlips.ViewModels
 
         // Hiện đáp án (người dùng nhấn để xem mặt sau)
         [RelayCommand]
-        private void ShowAnswer()
+        private async Task ShowAnswer()
         {
             IsAnswerVisible = true;
             // Tính điểm và tạo so sánh
             GenerateComparison();
+            // await EvaluateAnswerWithAi(); // Gọi AI để đánh giá ý nghĩa
         }
 
         [ObservableProperty]
         private string _totalScore= string.Empty;
-
+        [ObservableProperty]
+        private string _similarityScore = string.Empty;
 
         private void GenerateComparison()
         {
@@ -158,7 +161,7 @@ namespace EasyFlips.ViewModels
             System.Diagnostics.Debug.WriteLine($"[DEBUG] Target = '{CorrectAnswer}'");
             System.Diagnostics.Debug.WriteLine($"[DEBUG] Diff count = {pieces.Count}");
 
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] Similarity = '{_comparisonService.IsAnswerAcceptable(UserInputText, CorrectAnswer)}'");
+           
             if (pieces.Count == 0 && !string.IsNullOrEmpty(UserInputText))
             {
                 ComparisonPieces.Add(new DiffPiece(UserInputText, ChangeType.Unchanged));
@@ -173,6 +176,70 @@ namespace EasyFlips.ViewModels
 
             }
         }
+
+        [RelayCommand]
+        private async Task CheckAiScore()
+        {
+            if (string.IsNullOrWhiteSpace(UserInputText) || string.IsNullOrWhiteSpace(CorrectAnswer))
+            {
+                SimilarityScore = "0";
+                System.Diagnostics.Debug.WriteLine("[DEBUG] UserInputText or CorrectAnswer is empty.");
+                return;
+            }
+
+            try
+            {
+                // Gọi AI trả về một số điểm
+                int score = await _comparisonService.CheckSemanticScoreAsync(UserInputText, CorrectAnswer);
+                SimilarityScore = score.ToString();
+
+                // Nếu muốn, bạn có thể kết hợp với SmartScore
+                int smartScore = _comparisonService.SmartScore(UserInputText, CorrectAnswer);
+                TotalScore = ((score + smartScore) / 2).ToString();
+
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] AI score = {score}, SmartScore = {smartScore}, TotalScore = {TotalScore}");
+            }
+            catch (Exception ex)
+            {
+                SimilarityScore = "0";
+                System.Diagnostics.Debug.WriteLine("[DEBUG] Exception calling AI: " + ex.Message);
+            }
+        }
+        [RelayCommand]
+        private async Task EvaluateAnswerWithAi()
+        {
+            if (string.IsNullOrWhiteSpace(UserInputText) || string.IsNullOrWhiteSpace(CorrectAnswer))
+            {
+                SimilarityScore = "0";
+                System.Diagnostics.Debug.WriteLine("[DEBUG] UserInputText or CorrectAnswer is empty.");
+                return;
+            }
+
+            try
+            {
+                // Gọi dịch vụ AI để chấm điểm
+                AiReviewResult result = await _comparisonService.CheckSemanticMeaningAsync(UserInputText, CorrectAnswer);
+
+                // Cập nhật điểm semantic
+                SimilarityScore = result.semantic_score.ToString();
+
+                // Cập nhật TotalScore kết hợp SmartScore (nếu muốn)
+                int smartScore = _comparisonService.SmartScore(UserInputText, CorrectAnswer);
+                TotalScore = ((result.semantic_score + smartScore) / 2).ToString();
+
+                // Debug thông tin
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] AI semantic_score = {result.semantic_score}");
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] AI meaning_match = {result.meaning_match}");
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] AI summary = {result.summary}");
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] SmartScore = {smartScore}, TotalScore = {TotalScore}");
+            }
+            catch (Exception ex)
+            {
+                SimilarityScore = "0";
+                System.Diagnostics.Debug.WriteLine("[DEBUG] Exception calling AI: " + ex.Message);
+            }
+        }
+
 
 
 
