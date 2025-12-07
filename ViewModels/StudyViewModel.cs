@@ -144,7 +144,8 @@ namespace EasyFlips.ViewModels
             GenerateComparison();
         }
 
-
+        [ObservableProperty]
+        private string _totalScore= string.Empty;
 
 
         private void GenerateComparison()
@@ -152,7 +153,7 @@ namespace EasyFlips.ViewModels
             ComparisonPieces.Clear();
 
             var pieces = _comparisonService.GetCharDiff(UserInputText, CorrectAnswer);
-
+            TotalScore = _comparisonService.SmartScore(UserInputText, CorrectAnswer).ToString();
             System.Diagnostics.Debug.WriteLine($"[DEBUG] Input = '{UserInputText}'");
             System.Diagnostics.Debug.WriteLine($"[DEBUG] Target = '{CorrectAnswer}'");
             System.Diagnostics.Debug.WriteLine($"[DEBUG] Diff count = {pieces.Count}");
