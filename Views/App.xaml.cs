@@ -100,7 +100,7 @@ namespace EasyFlips
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-
+            var networkService = Services.NetworkService.Instance;
             // --- 1. KHÔI PHỤC LOGIC MIGRATE DATABASE (ĐỂ TRÁNH CRASH) ---
             try
             {

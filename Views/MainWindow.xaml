@@ -109,7 +109,23 @@
                 <MenuItem Header="About" Cursor="Hand" Foreground="Black"/>
             </MenuItem>-->
         </Menu>
-        <StackPanel Grid.Row="1" 
+        <!-- Bên trái: trạng thái mạng -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal"
+                HorizontalAlignment="Left" Margin="10">
+                <!-- Nút tròn -->
+                <Ellipse Width="14" Height="14"
+                 Fill="{Binding IsConnected, Converter={StaticResource BoolToBrushConverter}}"
+                 Stroke="White" StrokeThickness="1"
+                 VerticalAlignment="Center"/>
+
+                <!-- Text trạng thái -->
+                <TextBlock Text="{Binding IsConnected, Converter={StaticResource BoolToTextConverter}}"
+                   Foreground="White"
+                   FontSize="14"
+                   Margin="5,0,0,0"
+                   VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Grid.Row="1" 
             Orientation="Horizontal" 
             HorizontalAlignment="Right" 
             VerticalAlignment="Center"
@@ -161,8 +177,9 @@
                 <Button Content="Sync" Style="{StaticResource NavButtonStyle}" Margin="10,0" Command="{Binding SyncCommand}" />
             </StackPanel>
         </Border>
-
-        <!-- Bảng hiển thị Deck -->
+        <!-- Thêm hiển thị trạng thái mạng -->
+     
+            <!-- Bảng hiển thị Deck -->
         <!-- BỎ MouseDown Ở ĐÂY VÌ ĐÃ GÁN CHO GRID -->
         <Border Grid.Row="2" Height="Auto" Width="800" Background="#363636" CornerRadius="15" Margin="30">
 
@@ -289,6 +306,7 @@
                 </ListView.View>
             </ListView>
         </Border>
+        
 
         <!-- Thanh nút dưới (Giữ nguyên) -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20">

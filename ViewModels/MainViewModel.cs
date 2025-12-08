@@ -28,6 +28,8 @@ namespace EasyFlips.ViewModels
         // Nếu bạn muốn hiển thị tên user đang đăng nhập trên Main Window
         [ObservableProperty]
         private string currentEmail;
+        [ObservableProperty]
+        private bool _isConnected;
 
         public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>();
 
@@ -49,6 +51,13 @@ namespace EasyFlips.ViewModels
             _messenger.RegisterAll(this);
             // Lấy thông tin hiển thị (nếu cần)
             CurrentEmail = userSession.Email;
+            // Khởi tạo trạng thái kết nối mạng
+            IsConnected = NetworkService.Instance.IsConnected;
+            // Đăng ký lắng nghe thay đổi trạng thái mạng
+            NetworkService.Instance.ConnectivityChanged += (status) =>
+            {
+                IsConnected = status;
+            };
 
         }
 
