@@ -45,5 +45,19 @@ namespace EasyFlips.Services
             UserName = null;
             AvatarURL = null;
         }
+        // Hàm này dùng để cập nhật giao diện ngay sau khi sửa profile thành công
+        // mà không cần đăng nhập lại
+        public void UpdateUserInfo(string newName, string newAvatarUrl)
+        {
+            if (!string.IsNullOrEmpty(newName))
+            {
+                UserName = newName;
+            }
+
+            if (!string.IsNullOrEmpty(newAvatarUrl))
+            {
+                AvatarURL = newAvatarUrl;
+            }
+        }
     }
 }

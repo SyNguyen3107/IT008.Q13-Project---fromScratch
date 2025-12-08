@@ -127,10 +127,10 @@
                 </Button>
             </Grid>
             <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,5" HorizontalAlignment="Center"/>
-            <Button x:Name="btnRegister" Content="Register"
+            <Button x:Name="btnRegister" Content="Register" FontSize="16" FontWeight="Bold"
                     Command="{Binding RegisterCommand}"
                     Margin="60,0, 60, 5" Height="35"
-                    Background="#E74C3C" Foreground="White"/>
+                    Background="#3498DB" Foreground="White"/>
 
             <TextBlock HorizontalAlignment="Center" Margin="0,10,0,0">
                 <Hyperlink FontSize="14" Foreground="#00AFF0" 

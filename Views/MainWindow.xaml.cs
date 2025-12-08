@@ -1,4 +1,5 @@
 ﻿using EasyFlips.ViewModels;
+using EasyFlips.Views;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives; // <-- Thêm để dùng ScrollBar
@@ -21,6 +22,17 @@ namespace EasyFlips
             DataContext = _viewModel;
             //Gọi hàm LoadDecksAsync khi cửa sổ được tải
             this.Loaded += MainWindowLoaded;
+        }
+        // ---------------------------------------------------------
+        // PHẦN LOGIC MỚI: MỞ TRANG EDIT PROFILE
+        // ---------------------------------------------------------
+        private void OpenEditProfile_Click(object sender, RoutedEventArgs e)
+        {
+            // Điều hướng Frame (lớp phủ) sang trang EditProfilePage
+            if (MainFrame != null)
+            {
+                MainFrame.Navigate(new EditProfilePage());
+            }
         }
         private async void MainWindowLoaded(object sender, RoutedEventArgs e)
         {
@@ -79,6 +91,8 @@ namespace EasyFlips
 
             // (Tùy chọn) Làm mất focus khỏi ListView để giao diện sạch hơn
             Keyboard.ClearFocus();
+            // Code để bỏ chọn dòng trong ListView khi bấm ra ngoài
+            DeckListView.SelectedItem = null;
         }
     }
 }

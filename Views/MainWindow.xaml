@@ -109,7 +109,47 @@
                 <MenuItem Header="About" Cursor="Hand" Foreground="Black"/>
             </MenuItem>-->
         </Menu>
+        <StackPanel Grid.Row="1" 
+            Orientation="Horizontal" 
+            HorizontalAlignment="Right" 
+            VerticalAlignment="Center"
+            Margin="0,0,15,0">
 
+            <Border Width="30" Height="30" CornerRadius="15" 
+            BorderBrush="#999" BorderThickness="1" Margin="0,0,10,0">
+                <Border.Background>
+                    <ImageBrush ImageSource="{Binding AvatarURL, FallbackValue='pack://application:,,,/Images/default_user.png'}" 
+                        Stretch="UniformToFill"/>
+                </Border.Background>
+            </Border>
+
+            <Button Content="Edit Profile" 
+                    Click="OpenEditProfile_Click"
+                    Background="#434343" 
+                    Foreground="White" 
+                    BorderThickness="0"
+                    FontWeight="SemiBold"
+                    Cursor="Hand">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#3498DB"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+        </StackPanel>
         <!-- Thanh Deck/Add/Browse/Stats/Sync (Giữ nguyên) -->
         <Border Grid.Row="1" Background="#434343" CornerRadius="15" HorizontalAlignment="Center" VerticalAlignment="Top" BorderBrush="#444" BorderThickness="1" Padding="5,0" Margin="0,0,0,0" Height="34">
             <!-- .. (Nội dung thanh nút cũ) .. -->
@@ -263,6 +303,10 @@
                 <Button Content="Import File" Command="{Binding ImportFileCommand}" Style="{StaticResource NavButtonStyle}"/>
             </Border>
         </StackPanel>
-
+        <Frame x:Name="MainFrame" 
+               Grid.Row="0" 
+               Grid.RowSpan="4" 
+               NavigationUIVisibility="Hidden" 
+               Background="{x:Null}" Navigated="MainFrame_Navigated"/>
     </Grid>
 </Window>
