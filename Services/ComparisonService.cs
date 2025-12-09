@@ -26,7 +26,7 @@ namespace EasyFlips.Services
         /// Hàm 3: Chấm điểm bằng FuzzySharp
         /// </summary>
         private readonly HttpClient _httpClient;
-
+        private const string ApiKey = AppConfig.GeminiApiKey;
         public ComparisonService()
         {
             _httpClient = new HttpClient();
@@ -195,8 +195,8 @@ namespace EasyFlips.Services
 
             string jsonBody = JsonConvert.SerializeObject(requestBody);
             var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-            string apiKey = "API_key"; // thêm API vào để duyệt
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={ApiKey}";
 
             System.Diagnostics.Debug.WriteLine("[DEBUG] Request JSON: " + jsonBody);
             System.Diagnostics.Debug.WriteLine("[DEBUG] Request URL: " + url);
@@ -283,8 +283,7 @@ namespace EasyFlips.Services
             string jsonBody = JsonConvert.SerializeObject(requestBody);
             var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
 
-            string apiKey = "API_KEY"; //Cần thêm API vào để duyệt
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={ApiKey}";
 
             var response = await _httpClient.PostAsync(url, content);
             string responseJson = await response.Content.ReadAsStringAsync();

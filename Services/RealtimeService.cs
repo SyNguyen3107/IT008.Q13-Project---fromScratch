@@ -22,8 +22,8 @@ namespace EasyFlips.Services
 
     public class RealtimeService
     {
-        private const string SupabaseUrl = "https://evbplhaiucyulblxkseo.supabase.co";
-        private const string SupabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2YnBsaGFpdWN5dWxibHhrc2VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNDE3MTEsImV4cCI6MjA4MDYxNzcxMX0.xMPlVKjOGKvkGrI6Z51_8ak0bEYHMeKSnGoHuaWpS5Y";
+        private readonly string SupabaseUrl = AppConfig.SupabaseUrl;
+        private readonly string SupabaseKey = AppConfig.SupabaseKey;//lấy key từ AppConfig để tránh lộ key
 
         private readonly Supabase.Client _client;
         private RealtimeChannel _channel;

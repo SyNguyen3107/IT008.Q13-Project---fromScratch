@@ -94,6 +94,14 @@ namespace EasyFlips
             // Code để bỏ chọn dòng trong ListView khi bấm ra ngoài
             DeckListView.SelectedItem = null;
         }
+        private void MainFrame_Navigated(object sender, System.Windows.Navigation.NavigationEventArgs e)
+        {
+            // Logic xử lý khi chuyển trang (nếu có). 
+            // Nếu không làm gì thì để trống cũng được, miễn là có hàm này để XAML không báo lỗi.
+
+            // Ví dụ: Xóa history để không back lại được trang Login
+            // ((Frame)sender).NavigationService.RemoveBackEntry();
+        }
     }
 }
 

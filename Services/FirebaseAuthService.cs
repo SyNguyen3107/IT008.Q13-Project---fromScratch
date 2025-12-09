@@ -9,7 +9,7 @@ namespace EasyFlips.Services
 {
     public class FirebaseAuthService : IAuthService
     {
-        private const string ApiKey = "AIzaSyDUxy-8er5pLq8LgMaDbF6pvSJII4WChGM"; // API Key của bạn
+        private const string ApiKey = AppConfig.FirebaseApiKey; // API Key của bạn
         private readonly FirebaseAuthClient _authClient;
         private readonly UserSession _userSession;
 
