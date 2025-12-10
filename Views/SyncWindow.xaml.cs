@@ -1,15 +1,14 @@
-﻿using System.Windows;
+﻿using EasyFlips.ViewModels;
+using System.Windows;
 
-namespace EasyFlips
+namespace EasyFlips.Views
 {
-    /// <summary>
-    /// Interaction logic for Sync.xaml
-    /// </summary>
     public partial class SyncWindow : Window
     {
-        public SyncWindow()
+        public SyncWindow(SyncViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = viewModel;
         }
     }
 }

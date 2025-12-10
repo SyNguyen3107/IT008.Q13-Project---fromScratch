@@ -1,102 +1,120 @@
-﻿<Window x:Class="EasyFlips.SyncWindow"
+﻿<Window x:Class="EasyFlips.Views.SyncWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:EasyFlips.Views"
+        xmlns:vm="clr-namespace:EasyFlips.ViewModels"
         mc:Ignorable="d"
-        Title="Sync" Height="290" Width="300" Background="#2c2c2c"
-        ResizeMode="NoResize"
-        WindowStartupLocation="CenterScreen">
-    <Grid>
+        Title="Đồng bộ hóa dữ liệu" Height="500" Width="800"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5">
+
+    <Window.Resources>
+        <!-- Style cho tiêu đề nhóm -->
+        <Style x:Key="HeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+            <Setter Property="Foreground" Value="#333"/>
+        </Style>
+
+        <!-- Template hiển thị từng Deck trong list -->
+        <DataTemplate x:Key="DeckTemplate">
+            <Border Background="White" Margin="0,2" Padding="8" CornerRadius="4" BorderBrush="#DDD" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13"/>
+                        <TextBlock Text="{Binding Description}" FontSize="11" Foreground="Gray" 
+                                   TextTrimming="CharacterEllipsis" MaxHeight="30"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding Cards.Count, StringFormat='{}{0} thẻ'}" 
+                               VerticalAlignment="Center" FontSize="11" Foreground="#888" Margin="10,0,0,0"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid Margin="15">
         <Grid.RowDefinitions>
-            <RowDefinition Height="1*"/>
-            <!-- Account Required -->
-            <RowDefinition Height="1*"/>
-            <!-- Description -->
-            <RowDefinition Height="1*"/>
-            <!-- Email -->
-            <RowDefinition Height="1*"/>
-            <!-- Password -->
+            <RowDefinition Height="Auto"/>
+            <!-- Header -->
             <RowDefinition Height="*"/>
-            <!-- OK / Cancel -->
+            <!-- Content Lists -->
+            <RowDefinition Height="Auto"/>
+            <!-- Footer Status -->
+            <RowDefinition Height="Auto"/>
+            <!-- Buttons -->
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
-            <TextBlock x:Name="AccRequired" 
-                       Text="Account Required" 
-                       Foreground="White"
-                       FontWeight="Bold"
-                       FontSize="24"
-                       Margin="20,10,10,0"/>
+
+        <!-- Title -->
+        <TextBlock Text="Đồng bộ với Supabase Cloud" FontSize="20" FontWeight="Bold" Foreground="#2C3E50"/>
+
+        <!-- Main Content: Chia làm 4 vùng -->
+        <Grid Grid.Row="1" Margin="0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="10"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 1. Upload New -->
+            <DockPanel Grid.Row="0" Grid.Column="0">
+                <TextBlock Text="⬆️ Tải lên Cloud (Mới)" Style="{StaticResource HeaderStyle}" Foreground="#27AE60"/>
+                <ListBox ItemsSource="{Binding Plan.ToUpload}" ItemTemplate="{StaticResource DeckTemplate}" 
+                         BorderThickness="0" Background="Transparent"/>
+            </DockPanel>
+
+            <!-- 2. Download New -->
+            <DockPanel Grid.Row="0" Grid.Column="2">
+                <TextBlock Text="⬇️ Tải về Máy (Mới)" Style="{StaticResource HeaderStyle}" Foreground="#2980B9"/>
+                <ListBox ItemsSource="{Binding Plan.ToDownload}" ItemTemplate="{StaticResource DeckTemplate}" 
+                         BorderThickness="0" Background="Transparent"/>
+            </DockPanel>
+
+            <!-- 3. Update Cloud -->
+            <DockPanel Grid.Row="2" Grid.Column="0">
+                <TextBlock Text="🔄 Cập nhật lên Cloud (Local mới hơn)" Style="{StaticResource HeaderStyle}" Foreground="#D35400"/>
+                <ListBox ItemsSource="{Binding Plan.ToUpdateCloud}" ItemTemplate="{StaticResource DeckTemplate}" 
+                         BorderThickness="0" Background="Transparent"/>
+            </DockPanel>
+
+            <!-- 4. Update Local -->
+            <DockPanel Grid.Row="2" Grid.Column="2">
+                <TextBlock Text="🔄 Cập nhật về Máy (Cloud mới hơn)" Style="{StaticResource HeaderStyle}" Foreground="#8E44AD"/>
+                <ListBox ItemsSource="{Binding Plan.ToUpdateLocal}" ItemTemplate="{StaticResource DeckTemplate}" 
+                         BorderThickness="0" Background="Transparent"/>
+            </DockPanel>
         </Grid>
-        <Grid Grid.Row="1">
-            <TextBlock x:Name="Noti"
-                       Text="A free account is required to keep your collection synchronised. Please sign up for an account, then enter your details below."
-                       TextWrapping="Wrap"
-                       Foreground="White"
-                       Margin="20,0,0,5"
-                       FontSize="12"/>
-        </Grid>
-        <StackPanel Grid.Row="2" Orientation="Vertical">
-            <TextBlock x:Name="Email" 
-                       Text="Email:"
-                       FontSize="12"
-                       Foreground="White"
-                       Margin="20,0,0,4"/>
-            <Border CornerRadius="6" BorderBrush="#FF367FF4" BorderThickness="1" Background="#242424" Width="230" Margin="0,5,0,5" Height="25">
-                <TextBox
-                     x:Name="txbEmail"
-                     Background="Transparent"
-                     FontSize="12"
-                     Foreground="White"
-                     Height="25"
-                     Width="230"
-                     Margin="0,2,0,1"
-                     BorderThickness="0"
-                     />
-            </Border>
+
+        <!-- Status Bar -->
+        <TextBlock Grid.Row="2" Text="{Binding StatusMessage}" HorizontalAlignment="Center" Margin="0,10" 
+                   FontSize="14" Foreground="#555" TextWrapping="Wrap"/>
+
+        <!-- Progress Bar (Hiện khi IsBusy) -->
+        <ProgressBar Grid.Row="2" Height="4" IsIndeterminate="True" VerticalAlignment="Bottom" 
+                     Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+        <!-- Actions -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+            <Button Command="{Binding ExecuteSyncCommand}" Content="Đồng Bộ Ngay" 
+                    IsEnabled="{Binding CanSync}"
+                    Padding="20,10" Margin="5" Background="#2980B9" Foreground="White" FontWeight="Bold"/>
+
+            <Button Command="{Binding CheckSyncCommand}" Content="Kiểm Tra Lại" 
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
+                    Padding="15,10" Margin="5"/>
+
+            <Button Command="{Binding CloseCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" 
+                    Content="Đóng" Padding="15,10" Margin="5"/>
         </StackPanel>
-        <StackPanel Grid.Row="3" Orientation="Vertical">
-            <TextBlock x:Name="Password" 
-               Text="Password:"
-               FontSize="12"
-               Foreground="White"
-               Margin="20,0,0,4"/>
-            <Border CornerRadius="6" BorderBrush="#FF367FF4" BorderThickness="1" Background="#242424" Width="230" Margin="0,5,0,5" Height="25">
-                <PasswordBox x:Name="txtPasswordBox"
-                         Width="230"
-                         Height="25"
-                         FontSize="12"
-                         Margin="0,2,0,1"
-                         Background="Transparent"
-                         Foreground="White"
-                         BorderThickness="0"/>
-            </Border>
-        </StackPanel>
-        <Grid Grid.Row="4">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,20">
-                <!-- Nút OK -->
-                <Border CornerRadius="8" BorderBrush="#FF367FF4" Background="#434343" BorderThickness="1" Margin="10,5,5,2" Width="57">
-                    <Button Content="OK"
-                            FontSize="12"
-                            Width="30"
-                            Height="18"
-                            Background="Transparent"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Cursor="Hand"/>
-                </Border>
-                <!-- Nút Cancel -->
-                <Border CornerRadius="8" Background="#434343" BorderThickness="1" Margin="5,5,5,2" Width="77">
-                    <Button Content="Cancel"
-                            FontSize="12"
-                            Height="19"
-                            Background="Transparent"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Cursor="Hand" Margin="10,0,10,0"/>
-                </Border>
-            </StackPanel>
-        </Grid>
     </Grid>
 </Window>

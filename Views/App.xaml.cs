@@ -61,27 +61,22 @@ namespace EasyFlips
                 options.UseSqlite($"Data Source={dbPath}");
             });
 
-
             // --- ĐĂNG KÝ SUPABASE CLIENT (SINGLETON) ---
-            // Chỉ tạo 1 lần duy nhất, dùng chung cho cả Auth, Realtime, Database
             services.AddSingleton<Supabase.Client>(provider =>
             {
                 var options = new Supabase.SupabaseOptions
                 {
                     AutoRefreshToken = true,
-                    AutoConnectRealtime = true
+                    AutoConnectRealtime = true,
+                    // [Gợi ý cho Lỗi 2]: Đảm bảo SessionPersistanceEnabled mặc định là true
                 };
-                // Lấy URL và Key từ AppConfig
                 var client = new Supabase.Client(AppConfig.SupabaseUrl, AppConfig.SupabaseKey, options);
-
                 return client;
             });
 
-            //Đăng ký Repositories
             services.AddScoped<IDeckRepository, DeckRepository>();
             services.AddScoped<ICardRepository, CardRepository>();
 
-            //Đăng ký Services
             services.AddScoped<StudyService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddTransient<ExportService>();
@@ -89,8 +84,8 @@ namespace EasyFlips
             services.AddSingleton<AudioService>();
             services.AddSingleton<SupabaseService>();
             services.AddSingleton<IAuthService, SupabaseAuthService>();
+            services.AddTransient<SyncService>();
 
-            //Đăng ký ViewModels 
             services.AddTransient<MainViewModel>();
             services.AddTransient<StudyViewModel>();
             services.AddTransient<CreateDeckViewModel>();
@@ -100,8 +95,8 @@ namespace EasyFlips
             services.AddTransient<ChooseDeckViewModel>();
             services.AddTransient<LoginViewModel>();
             services.AddTransient<RegisterViewModel>();
+            services.AddTransient<SyncViewModel>();
 
-            //Đăng ký Views
             services.AddTransient<MainWindow>();
             services.AddTransient<StudyWindow>();
             services.AddTransient<CreateDeckWindow>();
@@ -109,11 +104,10 @@ namespace EasyFlips
             services.AddTransient<DeckChosenWindow>();
             services.AddTransient<DeckRenameWindow>();
             services.AddTransient<ChooseDeckWindow>();
-            services.AddTransient<SyncWindow>();
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();
+            services.AddTransient<SyncWindow>();
 
-            //Đăng ký cửa sổ Test Realtime (sẽ xoá sau)
             services.AddTransient<TestRealtimeWindow>();
 
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
@@ -122,77 +116,28 @@ namespace EasyFlips
 
         protected override async void OnStartup(StartupEventArgs e)
         {
-            // MessageBox.Show("1. Bắt đầu OnStartup");
             base.OnStartup(e);
+            // Kích hoạt NetworkService để bắt đầu theo dõi mạng
+            NetworkService.Instance.Initialize();
+            // [BƯỚC 1]: Khởi tạo Supabase
+            var supabaseService = ServiceProvider.GetRequiredService<SupabaseService>();
+            await supabaseService.InitializeAsync();
 
-            // MessageBox.Show("2. Init NetworkService");
-            var networkService = Services.NetworkService.Instance;
-            networkService.Initialize(); // Đã sửa ở bước trước
+            // [BƯỚC 2]: Khôi phục session thông qua Interface
+            var authService = ServiceProvider.GetRequiredService<IAuthService>();
+            bool isLoggedIn = authService.RestoreSession(); // Gọi trực tiếp từ Interface
 
-            // MessageBox.Show("3. Init Database");
-            try
+            // [BƯỚC 3]: Điều hướng
+            if (isLoggedIn)
             {
-                using (var scope = ServiceProvider.CreateScope())
-                {
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    await db.Database.MigrateAsync(); // Dùng Async cho mượt
-                }
-            }
-            catch (Exception ex)
-            {
-                // ... (Logic reset DB giữ nguyên) ...
-                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string dbPath = Path.Combine(appData, "EasyFlips", "EasyFlipsAppDB.db");
-                if (File.Exists(dbPath)) { try { File.Delete(dbPath); } catch { } }
-                MessageBox.Show("Lỗi Database. Đã reset.");
-                Current.Shutdown(); return;
-            }
-
-            // --- [THÊM MỚI] KHỞI TẠO SUPABASE CLIENT AN TOÀN ---
-            // MessageBox.Show("3.5 Init Supabase");
-            try
-            {
-                var supabase = ServiceProvider.GetRequiredService<Supabase.Client>();
-                await supabase.InitializeAsync(); // Await ở đây an toàn, không bị treo
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi kết nối Supabase: {ex.Message}");
-            }
-
-            // MessageBox.Show("4. Kiểm tra Login");
-            string savedId = Settings.Default.UserId;
-            string savedToken = Settings.Default.UserToken;
-            string savedEmail = Settings.Default.UserEmail;
-
-            if (!string.IsNullOrEmpty(savedId) && !string.IsNullOrEmpty(savedToken))
-            {
-                try
-                {
-                    var userSession = ServiceProvider.GetRequiredService<UserSession>();
-                    userSession.SetUser(savedId, savedEmail, savedToken);
-
-                    var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
-                    // MessageBox.Show("5. Hiện MainWindow");
-                    mainWindow.Show();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Lỗi DI Main: {ex.Message}");
-                }
+                var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+                mainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
+                mainWindow.Show();
             }
             else
             {
-                try
-                {
-                    var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
-                    // MessageBox.Show("5. Hiện LoginWindow");
-                    loginWindow.Show();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Lỗi DI Login: {ex.Message}");
-                }
+                var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
+                loginWindow.Show();
             }
         }
     }

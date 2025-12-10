@@ -6,17 +6,20 @@ using EasyFlips.Messages;
 using EasyFlips.Models;
 using EasyFlips.Services;
 using Microsoft.Win32;
+using System;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace EasyFlips.ViewModels
 {
-    // --- SỬA LỖI: Thêm IRecipient<DeckUpdatedMessage> ---
     public partial class MainViewModel : ObservableObject,
-                                             IRecipient<DeckAddedMessage>,
-                                             IRecipient<DeckUpdatedMessage>,
-                                             IRecipient<CardAddedMessage>,
-                                             IRecipient<StudySessionCompletedMessage>
+                                         IRecipient<DeckAddedMessage>,
+                                         IRecipient<DeckUpdatedMessage>,
+                                         IRecipient<CardAddedMessage>,
+                                         IRecipient<StudySessionCompletedMessage>,
+                                         IRecipient<SyncCompletedMessage> // [FIX]: Đăng ký nhận tin nhắn Sync xong
     {
         private readonly IDeckRepository _deckRepository;
         private readonly INavigationService _navigationService;
@@ -25,267 +28,129 @@ namespace EasyFlips.ViewModels
         private readonly ExportService _exportService;
         private readonly IAuthService _authService;
 
-        // Nếu bạn muốn hiển thị tên user đang đăng nhập trên Main Window
-        [ObservableProperty]
-        private string currentEmail;
-        [ObservableProperty]
-        private bool _isConnected;
+        [ObservableProperty] private string currentEmail;
+        [ObservableProperty] private bool _isConnected;
 
         public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>();
 
         public MainViewModel(IDeckRepository deckRepository,
-                                 INavigationService navigationService,
-                                 IMessenger messenger,
-                                 ImportService importService,
-                                 ExportService exportService,
-                                 UserSession userSession,
-                                 IAuthService authService)
+                             INavigationService navigationService,
+                             IMessenger messenger,
+                             ImportService importService,
+                             ExportService exportService,
+                             UserSession userSession,
+                             IAuthService authService)
         {
             _deckRepository = deckRepository;
             _navigationService = navigationService;
             _messenger = messenger;
             _exportService = exportService;
             _importService = importService;
-
             _authService = authService;
+
             _messenger.RegisterAll(this);
-            // Lấy thông tin hiển thị (nếu cần)
             CurrentEmail = userSession.Email;
-            // Khởi tạo trạng thái kết nối mạng
+
             IsConnected = NetworkService.Instance.IsConnected;
-            // Đăng ký lắng nghe thay đổi trạng thái mạng
-            NetworkService.Instance.ConnectivityChanged += (status) =>
-            {
-                IsConnected = status;
-            };
+            NetworkService.Instance.ConnectivityChanged += OnConnectivityChanged;
 
+            RefreshDecks();
         }
 
-        // Xử lý khi có Deck mới (Add hoặc Import)
-        public void Receive(DeckAddedMessage message)
+        private void OnConnectivityChanged(bool isConnected)
         {
-            var newDeck = message.Value;
-            Application.Current.Dispatcher.Invoke(async () =>
-            {
-                // Reload lại deck từ database để có thống kê chính xác
-                await LoadDecksAsync();
-            });
+            Application.Current.Dispatcher.Invoke(() => IsConnected = isConnected);
         }
 
-        // Xử lý khi thêm thẻ mới vào Deck (Card Added)
-        public void Receive(CardAddedMessage message)
+        public void Receive(DeckAddedMessage message) => RefreshDecks();
+        public void Receive(CardAddedMessage message) => RefreshDecks();
+        public void Receive(StudySessionCompletedMessage message) => RefreshDecks();
+        public void Receive(DeckUpdatedMessage message) => RefreshDecks();
+
+        // [FIX]: Xử lý khi Sync hoàn tất -> Reload toàn bộ Deck
+        public void Receive(SyncCompletedMessage message) => RefreshDecks();
+
+        private void RefreshDecks()
         {
-            string deckId = message.Value;
-
-            Application.Current.Dispatcher.Invoke(async () =>
-            {
-                // Reload lại toàn bộ decks để cập nhật số lượng thẻ New chính xác
-                await LoadDecksAsync();
-            });
-        }
-
-        // Xử lý khi Deck bị sửa đổi (Rename)
-        public void Receive(DeckUpdatedMessage message)
-        {
-            var updatedDeck = message.Value;
-
-            // Đảm bảo code chạy trên luồng giao diện (UI Thread)
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                // 1. Tìm vị trí của Deck này trong danh sách hiện tại bằng ID
-                var existingDeck = Decks.FirstOrDefault(d => d.Id == updatedDeck.Id);
-
-                if (existingDeck != null)
-                {
-                    int index = Decks.IndexOf(existingDeck);
-
-                    // 2. ÉP GIAO DIỆN CẬP NHẬT (Force UI Update)
-                    // Thay vì gán đè (Decks[index] = ..), ta xóa đi và chèn lại.
-                    // Điều này gửi tín hiệu "CollectionChanged" mạnh mẽ tới ListView,
-                    // buộc nó phải vẽ lại dòng này với tên mới ngay lập tức.
-
-                    Decks.RemoveAt(index);            // Xóa deck cũ (tên cũ)
-                    Decks.Insert(index, updatedDeck); // Chèn deck mới (tên mới) vào đúng vị trí đó
-                }
-            });
-        }
-
-        // Xử lý khi học xong
-        public void Receive(StudySessionCompletedMessage message)
-        {
-            string deckId = message.Value;
-
-            // Khi học xong, số liệu New/Learn/Due chắc chắn thay đổi.
-            // Reload lại toàn bộ danh sách Deck từ DB để cập nhật số liệu chính xác
-            Application.Current.Dispatcher.Invoke(async () =>
-            {
-                await LoadDecksAsync();
-            });
+            Application.Current.Dispatcher.Invoke(async () => await LoadDecksAsync());
         }
 
         public async Task LoadDecksAsync()
         {
             var decks = await _deckRepository.GetAllAsync();
             Decks.Clear();
-            foreach (var deck in decks)
-            {
-                Decks.Add(deck);
-            }
+            foreach (var deck in decks) Decks.Add(deck);
         }
 
-        // --- CÁC COMMAND (GIỮ NGUYÊN) ---
+        // --- COMMANDS ---
 
+        // Lệnh Reload danh sách Deck (Gán vào nút "Decks" ở MainWindow)
         [RelayCommand]
-        private void ShowDeckChosen(Deck selectedDeck)
+        private async Task ReloadDecks()
         {
-            if (selectedDeck != null)
-                _navigationService.ShowDeckChosenWindow(selectedDeck.Id);
+            await LoadDecksAsync();
         }
 
-        [RelayCommand]
-        private void StartStudy(Deck selectedDeck)
-        {
-            if (selectedDeck == null) return;
-            _navigationService.ShowStudyWindow(selectedDeck.Id);
-        }
+        [RelayCommand] private void ShowDeckChosen(Deck selectedDeck) { if (selectedDeck != null) _navigationService.ShowDeckChosenWindow(selectedDeck.Id); }
+        [RelayCommand] private void StartStudy(Deck selectedDeck) { if (selectedDeck != null) _navigationService.ShowStudyWindow(selectedDeck.Id); }
+        [RelayCommand] private void CreateDeck() => _navigationService.ShowCreateDeckWindow();
+        [RelayCommand] private void AddCard() => _navigationService.ShowAddCardWindow();
+        [RelayCommand] private void RenameDeck(Deck deck) { if (deck != null) _navigationService.ShowDeckRenameWindow(deck); }
+        [RelayCommand] private void Sync() => _navigationService.ShowSyncWindow();
 
-        [RelayCommand]
-        private void CreateDeck()
-        {
-            _navigationService.ShowCreateDeckWindow();
-        }
-
-        [RelayCommand]
-        private void AddCard()
-        {
-            _navigationService.ShowAddCardWindow();
-        }
-
-        [RelayCommand]
-        private void RenameDeck(Deck deck)
-        {
-            if (deck == null) return;
-            _navigationService.ShowDeckRenameWindow(deck);
-        }
-
-        [RelayCommand]
-        private void DeckOptions(Deck deck)
-        {
-            if (deck == null) return;
-            MessageBox.Show($"In development", "Options");
-        }
         [RelayCommand]
         private async Task ImportFile()
         {
-            // 1. Mở hộp thoại chọn file
-            OpenFileDialog dlg = new OpenFileDialog();
-            // Thiết lập bộ lọc để chỉ hiển thị các file .zip.json
-            dlg.Filter = "Deck Files (.zip)|*.zip";
-            dlg.Title = "Import Deck";
-
+            OpenFileDialog dlg = new OpenFileDialog { Filter = "Deck Files (.zip)|*.zip" };
             if (dlg.ShowDialog() == true)
             {
                 try
                 {
-                    // 2. Gọi Service để Import ( đọc file zip)
                     var newDeck = await _importService.ImportDeckFromZipAsync(dlg.FileName);
-
                     if (newDeck != null)
                     {
-                        // 3. Gửi tin nhắn để cập nhật UI (hoặc thêm trực tiếp vào Decks)
-                        // Vì chúng ta đang ở MainViewModel, thêm trực tiếp vào Decks cũng được
-                        // Nhưng dùng Messenger cho nhất quán
                         _messenger.Send(new DeckAddedMessage(newDeck));
-
-                        MessageBox.Show($"'{newDeck.Name}' successfully Imported!", "Imported");
+                        MessageBox.Show($"Imported '{newDeck.Name}' successfully!");
                     }
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error occurred: {ex.Message}", "Errors");
-                }
+                catch (Exception ex) { MessageBox.Show($"Error: {ex.Message}"); }
             }
         }
-
-        [RelayCommand]
-        private async Task Sync()
-        {
-            _navigationService.ShowSyncWindow();
-        }
-
 
         [RelayCommand]
         private async Task ExportDeck(Deck deck)
         {
             if (deck == null) return;
-
-            SaveFileDialog dlg = new SaveFileDialog();
-            dlg.FileName = deck.Name;               // gợi ý tên file: TênDeck (không thêm .json)
-            dlg.DefaultExt = ".zip";                  // mặc định là .zip
-            dlg.Filter = "Deck Package (.zip)|*.zip"; // chỉ cho lưu file .zip
-            dlg.Title = "Export Deck";
-
-
+            SaveFileDialog dlg = new SaveFileDialog { FileName = deck.Name, DefaultExt = ".zip", Filter = "Deck Package (.zip)|*.zip" };
             if (dlg.ShowDialog() == true)
             {
-                // Nếu người dùng nhập "abc.json" → thành "abc.json.zip"
-                string zipPath = dlg.FileName.EndsWith(".zip")
-                    ? dlg.FileName
-                    : dlg.FileName + ".zip";
-
-                await _exportService.ExportDeckToZipAsync(deck.Id, zipPath);
-                MessageBox.Show("Successfully Exported!", "Notice");
+                await _exportService.ExportDeckToZipAsync(deck.Id, dlg.FileName);
+                MessageBox.Show("Exported successfully!");
             }
         }
 
         [RelayCommand]
         private async Task DeleteDeck(Deck deck)
         {
-            // 1. Kiểm tra null
             if (deck == null) return;
-
-            // 2. Hiển thị hộp thoại xác nhận (Confirmation Dialog)
-            var result = MessageBox.Show(
-                $"Are you sure you want to permanently delete '{deck.Name}' ?\n\nWARNING: All {deck.NewCount + deck.LearnCount + deck.DueCount} card(s) inside will be permanently deleted too!",
-                "Confirm deletion",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            // 3. Nếu người dùng chọn Yes
-            if (result == MessageBoxResult.Yes)
+            if (MessageBox.Show($"Delete '{deck.Name}'?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
-                // 3a. Xóa trong Database
                 await _deckRepository.DeleteAsync(deck.Id);
-
-                // 3b. Xóa trên Giao diện (UI)
-                // Chúng ta tìm đối tượng trong list hiện tại bằng ID để đảm bảo xóa đúng cái đang hiển thị
-                var deckToRemove = Decks.FirstOrDefault(d => d.Id == deck.Id);
-                if (deckToRemove != null)
-                {
-                    Decks.Remove(deckToRemove);
-                }
-
-                MessageBox.Show("Successfully deleted deck!", "Notice");
+                RefreshDecks();
             }
         }
+
         [RelayCommand]
-        private void Logout()
+        private async Task Logout()
         {
-            // 1. Xử lý logic đăng xuất (Xóa Session, Xóa Remember Me...)
-            _authService.Logout();
-
-            // 2. Mở màn hình Login
+            await _authService.LogoutAsync();
             _navigationService.ShowLoginWindow();
-
-            // 3. Đóng MainWindow hiện tại
             CloseCurrentWindow();
         }
         [RelayCommand]
         private void CloseCurrentWindow()
         {
-            // Tìm cửa sổ đang giữ ViewModel này (chính là MainWindow) và đóng nó
-            var window = Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.DataContext == this);
-            window?.Close();
+            Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.DataContext == this)?.Close();
         }
     }
 }

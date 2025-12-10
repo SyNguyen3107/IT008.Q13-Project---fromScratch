@@ -21,45 +21,27 @@ namespace EasyFlips.Repositories
 
         public async Task AddAsync(Deck deck)
         {
+            // Gán UserId nếu người dùng đã đăng nhập
             if (_authService?.IsLoggedIn == true && !string.IsNullOrEmpty(_authService.CurrentUserId))
             {
                 deck.UserId = _authService.CurrentUserId;
             }
 
-            // [FIX]: Đảm bảo ID luôn là chuỗi UUID hợp lệ
+            // Đảm bảo ID luôn là chuỗi UUID hợp lệ
             if (string.IsNullOrEmpty(deck.Id))
             {
                 deck.Id = Guid.NewGuid().ToString();
             }
 
-            // Đặt thời gian tạo/sync nếu chưa có (tùy chọn)
-            if (deck.LastSyncedAt == null)
+            // Đặt thời gian tạo mặc định nếu chưa có
+            if (deck.CreatedAt == default)
             {
-                // Có thể để null hoặc set DateTime.Now tùy logic sync
+                deck.CreatedAt = DateTime.Now;
+                deck.UpdatedAt = DateTime.Now;
             }
 
             await _context.Decks.AddAsync(deck);
             await _context.SaveChangesAsync();
-        }
-
-        public async Task ClaimData()
-        {
-            if (_authService?.IsLoggedIn == true)
-            {
-                var uid = _authService.CurrentUserId;
-
-                // Lấy các deck chưa có chủ sở hữu (UserId is null)
-                var anonymousDecks = await _context.Decks
-                    .Where(d => d.UserId == null)
-                    .ToListAsync();
-
-                foreach (var deck in anonymousDecks)
-                {
-                    deck.UserId = uid;
-                }
-
-                await _context.SaveChangesAsync();
-            }
         }
 
         public async Task<IEnumerable<Deck>> GetAllAsync()
@@ -69,6 +51,7 @@ namespace EasyFlips.Repositories
                 .ThenInclude(c => c.Progress)
                 .AsQueryable();
 
+            // Lọc Deck theo User hiện tại (Private Data)
             if (_authService?.IsLoggedIn == true && !string.IsNullOrEmpty(_authService.CurrentUserId))
             {
                 var uid = _authService.CurrentUserId;
@@ -76,6 +59,7 @@ namespace EasyFlips.Repositories
             }
             else
             {
+                // Nếu chưa đăng nhập (Offline/Guest), lấy các Deck không có chủ sở hữu
                 query = query.Where(d => d.UserId == null);
             }
 
@@ -111,6 +95,7 @@ namespace EasyFlips.Repositories
             var existingDeck = await _context.Decks.FindAsync(deck.Id);
             if (existingDeck != null)
             {
+                deck.UpdatedAt = DateTime.Now; // Cập nhật thời gian sửa
                 _context.Entry(existingDeck).CurrentValues.SetValues(deck);
                 await _context.SaveChangesAsync();
             }
@@ -142,12 +127,12 @@ namespace EasyFlips.Repositories
             return await query.FirstOrDefaultAsync(d => d.Name == name);
         }
 
-        // Phương thức bổ sung cho Interface nếu cần
         public async Task<Deck?> GetDeckWithCardsAsync(string deckId)
         {
             return await GetByIdAsync(deckId);
         }
 
+        // Helper: Tính toán thống kê số lượng thẻ
         private void CalculateStats(Deck deck)
         {
             if (deck.Cards == null) return;
@@ -162,6 +147,18 @@ namespace EasyFlips.Repositories
             deck.DueCount = deck.Cards.Count(c => c.Progress != null &&
                                                    c.Progress.Interval >= 1 &&
                                                    c.Progress.DueDate <= now);
+        }
+
+        // Phương thức ClaimData (nếu cần chuyển dữ liệu guest sang user sau khi login)
+        public async Task ClaimData()
+        {
+            if (_authService?.IsLoggedIn == true)
+            {
+                var uid = _authService.CurrentUserId;
+                var anonymousDecks = await _context.Decks.Where(d => d.UserId == null).ToListAsync();
+                foreach (var deck in anonymousDecks) deck.UserId = uid;
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

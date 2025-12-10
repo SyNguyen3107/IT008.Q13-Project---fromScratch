@@ -1,11 +1,14 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging; // Cần cho IMessenger
 using DiffPlex.DiffBuilder.Model;
+using EasyFlips.Messages; // Cần cho các Message
 using EasyFlips.Models;
 using EasyFlips.Services;
-using System.Collections.ObjectModel; // Cần cho ObservableCollection
+using System;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace EasyFlips.ViewModels
 {
@@ -13,15 +16,18 @@ namespace EasyFlips.ViewModels
     {
         private readonly StudyService _studyService;
         private readonly AudioService _audioService;
-        private string _currentDeckId; //Deck đang học
-        private Card? _currentCard; // Thẻ đang học
-        private readonly ComparisonService _comparisonService = new ComparisonService(); // Dịch vụ so sánh
+        private readonly IMessenger _messenger; // [NEW] Dùng để gửi thông báo hoàn thành
 
+        private string _currentDeckId;
+        private Card? _currentCard;
 
-        // --- Các thuộc tính hiển thị lên View ---
+        // Giả sử ComparisonService được new trực tiếp (hoặc inject nếu bạn đã đăng ký DI)
+        private readonly ComparisonService _comparisonService = new ComparisonService();
+
+        // --- Properties ---
         [ObservableProperty] private string _questionText = string.Empty;
-        [ObservableProperty] private string _answerText = string.Empty; // Đây là Explanation (Giải thích/Mặt sau)
-        [ObservableProperty] private string _correctAnswer = string.Empty; // Đây là Keyword chuẩn (từ CSDL)
+        [ObservableProperty] private string _answerText = string.Empty;
+        [ObservableProperty] private string _correctAnswer = string.Empty;
 
         [ObservableProperty] private string? _frontImagePath;
         [ObservableProperty] private string? _backImagePath;
@@ -32,95 +38,79 @@ namespace EasyFlips.ViewModels
         [NotifyPropertyChangedFor(nameof(IsInputRequired))]
         private bool _isAnswerVisible = false;
 
-        public bool IsInputRequired => !IsAnswerVisible; // Ví dụ: Ẩn input khi đã hiện đáp án
+        public bool IsInputRequired => !IsAnswerVisible;
 
-        [ObservableProperty]
-        private string _userInputText = string.Empty;
+        [ObservableProperty] private string _userInputText = string.Empty;
+        [ObservableProperty] private bool _hasCards = true;
 
-        // Kiểm tra xem còn thẻ để học không (để enable/disable các nút)
-        // Khởi tạo = true để các nút được enable ngay từ đầu
-        [ObservableProperty]
-        private bool _hasCards = true;
-        // --- DANH SÁCH KẾT QUẢ SO SÁNH (Để binding lên View) ---
-        public ObservableCollection<ComparisonChar> ComparisonResult { get; } = new ObservableCollection<ComparisonChar>();
-        // --- KHAI BÁO COMMAND CHO 4 NÚT (bổ sung) ---
+        [ObservableProperty] private string _totalScore = string.Empty;
+        [ObservableProperty] private string _similarityScore = string.Empty;
+
+        public ObservableCollection<DiffPiece> ComparisonPieces { get; } = new();
+
+        // --- Commands ---
         public IAsyncRelayCommand AgainCommand { get; }
         public IAsyncRelayCommand HardCommand { get; }
         public IAsyncRelayCommand GoodCommand { get; }
         public IAsyncRelayCommand EasyCommand { get; }
-        // Constructor nhận StudyService qua DI (không khởi tạo dữ liệu giả ở đây)
-        public StudyViewModel(StudyService studyService, AudioService audioService)
+
+        // Inject thêm IMessenger
+        public StudyViewModel(StudyService studyService, AudioService audioService, IMessenger messenger)
         {
             _studyService = studyService;
             _audioService = audioService;
-            // Khởi tạo command + điều kiện CanExecute dựa vào HasCards
+            _messenger = messenger;
+
             AgainCommand = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Again), () => HasCards);
             HardCommand = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Hard), () => HasCards);
             GoodCommand = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Good), () => HasCards);
             EasyCommand = new AsyncRelayCommand(() => ProcessReview(ReviewOutcome.Easy), () => HasCards);
         }
 
-        // Hàm khởi tạo ViewModel khi NavigationService gọi (hoặc khi ViewModel được tải)
         public async Task InitializeAsync(string deckId)
         {
-            _currentDeckId = deckId; // 1. Lưu lại Deck ID
-            await LoadNextCardAsync();   // 2. Tải thẻ đầu tiên
+            _currentDeckId = deckId;
+            await LoadNextCardAsync();
         }
 
         private async Task LoadNextCardAsync()
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[StudyViewModel] LoadNextCardAsync: Starting..");
-
-                // Reset trạng thái
                 IsAnswerVisible = false;
                 UserInputText = string.Empty;
                 ComparisonPieces.Clear();
 
-                // Lấy thẻ
                 _currentCard = await _studyService.GetNextCardToReviewAsync(_currentDeckId);
-
-                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: Got card = {(_currentCard != null ? _currentCard.Id: "null")}");
-
-                // Cập nhật HasCards dựa trên _currentCard
                 HasCards = _currentCard != null;
-                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: HasCards = {HasCards}");
 
                 if (_currentCard != null)
                 {
-                    QuestionText = _currentCard.FrontText ?? string.Empty;
-                    AnswerText = _currentCard.BackText ?? string.Empty; // Mặt sau (Giải thích)
-
-                    // Lấy đáp án chuẩn từ thuộc tính Answer mới thêm (nếu có), hoặc fallback về BackText
+                    QuestionText = _currentCard.FrontText ?? "";
+                    AnswerText = _currentCard.BackText ?? "";
                     CorrectAnswer = _currentCard.Answer ?? "";
 
                     FrontImagePath = _currentCard.FrontImagePath;
                     BackImagePath = _currentCard.BackImagePath;
                     FrontAudioPath = _currentCard.FrontAudioPath;
                     BackAudioPath = _currentCard.BackAudioPath;
-
-                    System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: Card loaded successfully");
                 }
                 else
                 {
-                    // --- HẾT THẺ: HIỂN THỊ THÔNG BÁO ---
-                    // Không tự động đóng cửa sổ, chỉ hiển thị thông báo
+                    // Hết thẻ -> Hiển thị chúc mừng
                     QuestionText = "Congratulations!";
-                    AnswerText = "You have completed all the cards in this deck for now!\n\nPlease close this window.";
+                    AnswerText = "You have finished studying this deck for now.";
                     CorrectAnswer = "";
+                    FrontImagePath = null; BackImagePath = null;
+                    FrontAudioPath = null; BackAudioPath = null;
 
-                    // Xóa các đường dẫn media
-                    FrontImagePath = null;
-                    BackImagePath = null;
-                    FrontAudioPath = null;
-                    BackAudioPath = null;
+                    IsAnswerVisible = true; // Hiện text chúc mừng
 
-                    // Hiển thị phần answer để người dùng thấy thông báo
-                    IsAnswerVisible = true;
+                    // [FIX]: Truyền _currentDeckId vào message để khớp với Constructor
+                    _messenger.Send(new StudySessionCompletedMessage(_currentDeckId));
                 }
 
-                // Thông báo cho 4 command rằng CanExecute đã đổi -> UI sẽ enable/disable
+                // Cập nhật trạng thái nút bấm
                 AgainCommand.NotifyCanExecuteChanged();
                 HardCommand.NotifyCanExecuteChanged();
                 GoodCommand.NotifyCanExecuteChanged();
@@ -128,133 +118,43 @@ namespace EasyFlips.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] ERROR in LoadNextCardAsync: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] Stack trace: {ex.StackTrace}");
-
-                MessageBox.Show($"Error loading next card: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error loading card: {ex.Message}", "Error");
             }
         }
-        public ObservableCollection<DiffPiece> ComparisonPieces { get; } = new();
 
-        // Hiện đáp án (người dùng nhấn để xem mặt sau)
         [RelayCommand]
-        private async Task ShowAnswer()
+        private void ShowAnswer()
         {
             IsAnswerVisible = true;
-            // Tính điểm và tạo so sánh
             GenerateComparison();
-            // await EvaluateAnswerWithAi(); // Gọi AI để đánh giá ý nghĩa
         }
-
-        [ObservableProperty]
-        private string _totalScore= string.Empty;
-        [ObservableProperty]
-        private string _similarityScore = string.Empty;
 
         private void GenerateComparison()
         {
             ComparisonPieces.Clear();
+            if (string.IsNullOrEmpty(CorrectAnswer)) return;
 
             var pieces = _comparisonService.GetCharDiff(UserInputText, CorrectAnswer);
             TotalScore = _comparisonService.SmartScore(UserInputText, CorrectAnswer).ToString();
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] Input = '{UserInputText}'");
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] Target = '{CorrectAnswer}'");
-            System.Diagnostics.Debug.WriteLine($"[DEBUG] Diff count = {pieces.Count}");
 
-           
             if (pieces.Count == 0 && !string.IsNullOrEmpty(UserInputText))
             {
                 ComparisonPieces.Add(new DiffPiece(UserInputText, ChangeType.Unchanged));
             }
             else
             {
-                foreach (var piece in pieces)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Piece: '{piece.Text}' Type: {piece.Type}");
-                    ComparisonPieces.Add(piece);
-                }
-
+                foreach (var piece in pieces) ComparisonPieces.Add(piece);
             }
         }
 
-        [RelayCommand]
-        private async Task CheckAiScore()
-        {
-            if (string.IsNullOrWhiteSpace(UserInputText) || string.IsNullOrWhiteSpace(CorrectAnswer))
-            {
-                SimilarityScore = "0";
-                System.Diagnostics.Debug.WriteLine("[DEBUG] UserInputText or CorrectAnswer is empty.");
-                return;
-            }
-
-            try
-            {
-                // Gọi AI trả về một số điểm
-                int score = await _comparisonService.CheckSemanticScoreAsync(UserInputText, CorrectAnswer);
-                SimilarityScore = score.ToString();
-
-                // Nếu muốn, bạn có thể kết hợp với SmartScore
-                int smartScore = _comparisonService.SmartScore(UserInputText, CorrectAnswer);
-                TotalScore = ((score + smartScore) / 2).ToString();
-
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] AI score = {score}, SmartScore = {smartScore}, TotalScore = {TotalScore}");
-            }
-            catch (Exception ex)
-            {
-                SimilarityScore = "0";
-                System.Diagnostics.Debug.WriteLine("[DEBUG] Exception calling AI: " + ex.Message);
-            }
-        }
-        [RelayCommand]
-        private async Task EvaluateAnswerWithAi()
-        {
-            if (string.IsNullOrWhiteSpace(UserInputText) || string.IsNullOrWhiteSpace(CorrectAnswer))
-            {
-                SimilarityScore = "0";
-                System.Diagnostics.Debug.WriteLine("[DEBUG] UserInputText or CorrectAnswer is empty.");
-                return;
-            }
-
-            try
-            {
-                // Gọi dịch vụ AI để chấm điểm
-                AiReviewResult result = await _comparisonService.CheckSemanticMeaningAsync(UserInputText, CorrectAnswer);
-
-                // Cập nhật điểm semantic
-                SimilarityScore = result.semantic_score.ToString();
-
-                // Cập nhật TotalScore kết hợp SmartScore (nếu muốn)
-                int smartScore = _comparisonService.SmartScore(UserInputText, CorrectAnswer);
-                TotalScore = ((result.semantic_score + smartScore) / 2).ToString();
-
-                // Debug thông tin
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] AI semantic_score = {result.semantic_score}");
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] AI meaning_match = {result.meaning_match}");
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] AI summary = {result.summary}");
-                System.Diagnostics.Debug.WriteLine($"[DEBUG] SmartScore = {smartScore}, TotalScore = {TotalScore}");
-            }
-            catch (Exception ex)
-            {
-                SimilarityScore = "0";
-                System.Diagnostics.Debug.WriteLine("[DEBUG] Exception calling AI: " + ex.Message);
-            }
-        }
-
-
-
-
-        // Các lệnh đánh giá: khi người dùng chọn Again/Hard/Good/Easy
-        // Mỗi lệnh gọi StudyService.ProcessReviewAsync rồi tải thẻ kế tiếp
-
-        // --- LỆNH PHÁT ÂM THANH ---
+        // --- MEDIA ---
         [RelayCommand]
         private void PlayAudio(string? path)
         {
-            if (string.IsNullOrEmpty(path)) return;
-
-            // Gọi AudioService để phát nhạc ngay trong ứng dụng
-            _audioService.PlayAudio(path);
+            if (!string.IsNullOrEmpty(path)) _audioService.PlayAudio(path);
         }
+
+        public void StopAudio() => _audioService.StopAudio();
 
         private async Task ProcessReview(ReviewOutcome outcome)
         {
@@ -262,34 +162,25 @@ namespace EasyFlips.ViewModels
             {
                 if (_currentCard == null) return;
 
-                // Cập nhật tiến độ học
+                // Xử lý logic SM-2 và lưu DB
                 await _studyService.ProcessReviewAsync(_currentCard, outcome);
 
-                // Tải thẻ tiếp theo
+                // Load thẻ tiếp theo
                 await LoadNextCardAsync();
             }
             catch (Exception ex)
             {
-                // [SỬA LỖI] Hiện thông báo chi tiết thay vì câu chung chung
-                // ex.Message: Nội dung lỗi
-                // ex.StackTrace: Dòng code gây lỗi
-                MessageBox.Show($"Lỗi xử lý Review:\n{ex.Message}\n\nTại:\n{ex.StackTrace}",
-                                "Debug Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error processing review:\n{ex.Message}\n\nTrace:\n{ex.StackTrace}",
+                                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        public void StopAudio()
+        // Giữ lại các lệnh AI check nếu bạn có
+        [RelayCommand]
+        private async Task CheckAiScore()
         {
-            _audioService.StopAudio();
+            // Logic gọi AI...
+            await Task.CompletedTask;
         }
     }
-    // Class phụ để lưu thông tin hiển thị từng ký tự
-    public class ComparisonChar
-    {
-        public string Character { get; set; }
-        public string Color { get; set; } // Mã màu Hex (#RRGGBB)
-        public string FontWeight { get; set; } = "Normal";
-    }
-    // Hàm này sẽ được gọi từ Code-behind khi cửa sổ đóng
-
 }

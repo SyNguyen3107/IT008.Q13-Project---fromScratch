@@ -146,9 +146,10 @@ namespace EasyFlips.Services
             {
                 Debug.WriteLine("DeckChosenWindow.DataContext không phải là DeckChosenViewModel!");
             }
-
-            // Thiết lập cửa sổ cha và vị trí khởi động
-            window.Owner = Application.Current.MainWindow;
+            if (Application.Current.MainWindow != null && window != Application.Current.MainWindow)
+            {
+                window.Owner = Application.Current.MainWindow;
+            }
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             // Chặn cửa sổ chính khi cửa sổ con đang mở
             window.ShowDialog();
@@ -169,6 +170,15 @@ namespace EasyFlips.Services
         {
             var window = _serviceProvider.GetRequiredService<MainWindow>();
             window.Show();
+        }
+        public void OpenSyncWindow()
+        {
+            var syncWindow = _serviceProvider.GetRequiredService<SyncWindow>();
+            if (Application.Current.MainWindow != null)
+            {
+                syncWindow.Owner = Application.Current.MainWindow;
+            }
+            syncWindow.ShowDialog();
         }
     }
 }

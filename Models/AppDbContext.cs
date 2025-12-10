@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Supabase.Postgrest.Models;
+
 namespace EasyFlips.Models
 {
     public class AppDbContext : DbContext
@@ -11,9 +13,19 @@ namespace EasyFlips.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Deck
+            // =========================================================
+            // IGNORE ALL BASEMODEL PROPERTIES FROM SUPABASE
+            // =========================================================
+            // These properties are used by Supabase at runtime but should not be persisted
+
             modelBuilder.Entity<Deck>(e =>
             {
+                // Ignore BaseModel properties that Supabase uses internally
+                e.Ignore(d => d.BaseUrl);
+                e.Ignore(d => d.PrimaryKey);
+                e.Ignore(d => d.RequestClientOptions);
+                e.Ignore(d => d.TableName);
+
                 e.ToTable("Decks");
                 e.HasKey(d => d.Id);
                 e.Property(d => d.Name).IsRequired().HasMaxLength(200);
@@ -21,9 +33,14 @@ namespace EasyFlips.Models
                 e.Property(d => d.UserId).HasMaxLength(128);
             });
 
-            // Card
             modelBuilder.Entity<Card>(e =>
             {
+                // Ignore BaseModel properties
+                e.Ignore(c => c.BaseUrl);
+                e.Ignore(c => c.PrimaryKey);
+                e.Ignore(c => c.RequestClientOptions);
+                e.Ignore(c => c.TableName);
+
                 e.ToTable("Cards");
                 e.HasKey(c => c.Id);
 
@@ -35,19 +52,28 @@ namespace EasyFlips.Models
                 e.Property(c => c.BackImagePath).HasMaxLength(512);
                 e.Property(c => c.BackAudioPath).HasMaxLength(512);
 
+                // Quan hệ 1-N với Deck
                 e.HasOne(c => c.Deck)
-                    .WithMany(d => d.Cards)
-                    .HasForeignKey(c => c.DeckId)
-                    .OnDelete(DeleteBehavior.Cascade);
-                // [QUAN TRỌNG - THÊM MỚI]: Cấu hình quan hệ 1-1 với CardProgress
+                 .WithMany(d => d.Cards)
+                 .HasForeignKey(c => c.DeckId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                // Quan hệ 1-1 với CardProgress
                 e.HasOne(c => c.Progress)
-                    .WithOne(p => p.Card)
-                    .HasForeignKey<CardProgress>(p => p.CardId) // Chỉ định rõ CardProgress giữ khóa ngoại
-                    .OnDelete(DeleteBehavior.Cascade); // Xóa Card thì xóa luôn Progress
+                 .WithOne(p => p.Card)
+                 .HasForeignKey<CardProgress>(p => p.CardId)
+                 .OnDelete(DeleteBehavior.Cascade);
             });
+
             modelBuilder.Entity<CardProgress>(e =>
             {
-                e.ToTable("CardProgresses");// Tên bảng mới
+                // Ignore BaseModel properties
+                e.Ignore(p => p.BaseUrl);
+                e.Ignore(p => p.PrimaryKey);
+                e.Ignore(p => p.RequestClientOptions);
+                e.Ignore(p => p.TableName);
+
+                e.ToTable("CardProgresses");
                 e.HasKey(p => p.Id);
 
                 e.Property(p => p.DueDate).IsRequired();
@@ -56,8 +82,6 @@ namespace EasyFlips.Models
 
                 e.HasIndex(p => p.DueDate);
             });
-
         }
     }
 }
-
