@@ -1,43 +1,58 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Postgrest = Supabase.Postgrest.Attributes;
 
 namespace EasyFlips.Models
 {
+    [Postgrest.Table("card_progresses")]
     public class CardProgress
     {
-        // [QUAN TRỌNG]: Primary Key là String (UUID) & Tự sinh ID
         [Key]
+        [Postgrest.PrimaryKey("id", false)]
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
-        // [QUAN TRỌNG]: Foreign Key sang Card cũng là String
+        [Postgrest.Column("card_id")]
         public string CardId { get; set; }
 
-        // --- Thông tin ôn tập (SM2 Algorithm Parameters) ---
+        // [QUAN TRỌNG - MỚI THÊM]: Cần thiết để Sync đúng tiến độ của user hiện tại
+        [Postgrest.Column("user_id")]
+        public string UserId { get; set; }
 
+        // --- Thông tin ôn tập (SM2 Algorithm) ---
+
+        [Postgrest.Column("due_date")]
         public DateTime DueDate { get; set; }
 
-        public double Interval { get; set; }    // Khoảng cách ngày giữa các lần ôn
+        [Postgrest.Column("interval")]
+        public double Interval { get; set; }
 
-        public double EaseFactor { get; set; }  // Độ khó (Mặc định 2.5)
+        [Postgrest.Column("ease_factor")]
+        public double EaseFactor { get; set; }
 
-        // [THÊM MỚI]: Số lần ôn tập liên tiếp (Cần thiết cho thuật toán)
+        [Postgrest.Column("repetitions")]
         public int Repetitions { get; set; }
 
-        // [THÊM MỚI]: Ngày ôn tập gần nhất (Để tính toán trôi dạt thời gian)
+        [Postgrest.Column("last_review_date")]
         public DateTime LastReviewDate { get; set; }
 
-        // Quan hệ 1-1 ngược lại với Card
+        [Postgrest.Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Postgrest.Column("updated_at")]
+        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+        // Quan hệ 1-1 ngược lại với Card (EF Core)
         [ForeignKey(nameof(CardId))]
         public virtual Card? Card { get; set; }
 
-        // Constructor mặc định
+        // Constructor
         public CardProgress()
         {
-            DueDate = DateTime.Now; // Học ngay lập tức
+            DueDate = DateTime.Now;
             LastReviewDate = DateTime.Now;
             Interval = 0;
-            EaseFactor = 2.5; // Giá trị mặc định chuẩn của Anki/SM2
+            EaseFactor = 2.5;
             Repetitions = 0;
         }
     }

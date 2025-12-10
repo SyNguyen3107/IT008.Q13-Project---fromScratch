@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace EasyFlips.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate_v2_UUID : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,7 +19,9 @@ namespace EasyFlips.Migrations
                     Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
                     UserId = table.Column<string>(type: "TEXT", maxLength: 128, nullable: true),
-                    LastSyncedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    LastSyncedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -38,7 +40,9 @@ namespace EasyFlips.Migrations
                     FrontAudioPath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
                     BackText = table.Column<string>(type: "TEXT", nullable: false),
                     BackImagePath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
-                    BackAudioPath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true)
+                    BackAudioPath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -57,11 +61,14 @@ namespace EasyFlips.Migrations
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
                     CardId = table.Column<string>(type: "TEXT", nullable: false),
+                    UserId = table.Column<string>(type: "TEXT", nullable: false),
                     DueDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Interval = table.Column<double>(type: "REAL", precision: 18, scale: 6, nullable: false),
                     EaseFactor = table.Column<double>(type: "REAL", precision: 18, scale: 6, nullable: false),
                     Repetitions = table.Column<int>(type: "INTEGER", nullable: false),
-                    LastReviewDate = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    LastReviewDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
