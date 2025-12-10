@@ -15,14 +15,15 @@ namespace EasyFlips.ViewModels
         private readonly IAuthService _authService;
         private readonly INavigationService _navigationService;
 
-        [ObservableProperty]
-        private string email;
-
         // Username
         [ObservableProperty]
         private string userName;
 
-        // Lưu ý: Đang dùng Binding (Option B) cho Password ở Register
+        [ObservableProperty]
+        private string email;
+
+        // Lưu ý: PasswordBox thường binding qua cơ chế khác (như PasswordBoxHelper hoặc tham số), 
+        // nhưng ở đây tôi giữ nguyên pattern property nếu bạn đã dùng Helper
         [ObservableProperty]
         private string password;
 
@@ -31,6 +32,13 @@ namespace EasyFlips.ViewModels
 
         [ObservableProperty]
         private string errorMessage;
+
+        // Thuộc tính hiển thị mật khẩu
+        [ObservableProperty]
+        private bool isPasswordVisible;
+
+        [ObservableProperty]
+        private bool isConfirmPasswordVisible;
 
         public RegisterViewModel(IAuthService authService, INavigationService navigationService)
         {
@@ -46,52 +54,52 @@ namespace EasyFlips.ViewModels
             // Kiểm tra placeholder
             if (Password == "Enter Password" || ConfirmPassword == "Confirm Password")
             {
-                ShowErrorDialog("Vui lòng nhập mật khẩu hợp lệ!");
+                ShowErrorDialog("Please fill in all fields!");
                 return;
             }
 
             // Kiểm tra trường trống
             if (string.IsNullOrWhiteSpace(UserName) && string.IsNullOrWhiteSpace(Email) && string.IsNullOrWhiteSpace(Password) && string.IsNullOrWhiteSpace(ConfirmPassword))
             {
-                ShowErrorDialog("Email và mật khẩu không được để trống. Vui lòng nhập đầy đủ thông tin!");
+                ShowErrorDialog("Please fill in all fields!");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(UserName))
             {
-                ShowErrorDialog("Vui lòng nhập tên hiển thị!");
+                ShowErrorDialog("Please enter a Username!");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(Email))
             {
-                ShowErrorDialog("Email không được để trống. Vui lòng nhập email của bạn!");
+                ShowErrorDialog("Please fill in all fields!");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(Password))
             {
-                ShowErrorDialog("Mật khẩu không được để trống. Vui lòng nhập mật khẩu của bạn!");
+                ShowErrorDialog("Please fill in all fields.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(ConfirmPassword))
             {
-                ShowErrorDialog("Vui lòng xác nhận lại mật khẩu của bạn!");
+                ShowErrorDialog("Please fill in all fields.");
                 return;
             }
 
             // Kiểm tra mật khẩu có khớp không
             if (Password != ConfirmPassword)
             {
-                ShowErrorDialog("Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại!");
+                ShowErrorDialog("Your passwords do not match.");
                 return;
             }
 
             // Kiểm tra độ dài mật khẩu
             if (Password.Length < 6)
             {
-                ShowErrorDialog("Mật khẩu phải có ít nhất 6 ký tự. Vui lòng chọn mật khẩu mạnh hơn!");
+                ShowErrorDialog("Password must be at least 6 characters long. Please choose a stronger password!");
                 return;
             }
 
@@ -101,7 +109,14 @@ namespace EasyFlips.ViewModels
 
                 if (!string.IsNullOrEmpty(userId))
                 {
-                    MessageBox.Show("Tạo tài khoản thành công!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (userId == "CHECK_EMAIL")
+                    {
+                        MessageBox.Show("Registration successful! Please check your email to confirm your account.", "Check Email", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Successfully Registered!", "Account Created", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
 
                     _navigationService.ShowLoginWindow();
 
@@ -111,50 +126,50 @@ namespace EasyFlips.ViewModels
             }
             catch (Exception ex)
             {
-                // Xử lý các loại lỗi khác nhau từ Firebase
-                string errorMessage = GetUserFriendlyErrorMessage(ex);
-                ShowErrorDialog(errorMessage);
+                // Xử lý các loại lỗi khác nhau
+                string userFriendlyMessage = GetUserFriendlyErrorMessage(ex);
+                ShowErrorDialog(userFriendlyMessage);
             }
         }
 
         private string GetUserFriendlyErrorMessage(Exception ex)
         {
             string exceptionMessage = ex.Message.ToUpper();
-            
+
             // Lỗi email đã tồn tại
-            if (exceptionMessage.Contains("EMAIL_EXISTS") || 
+            if (exceptionMessage.Contains("EMAIL_EXISTS") ||
                 exceptionMessage.Contains("EMAIL_ALREADY_IN_USE") ||
                 exceptionMessage.Contains("ALREADY_EXISTS"))
             {
-                return "Email này đã được đăng ký. Vui lòng sử dụng email khác hoặc đăng nhập nếu bạn đã có tài khoản!";
+                return "This email is already registered. Please use a different email or log in if you already have an account!";
             }
-            
+
             // Lỗi định dạng email không hợp lệ
             if (exceptionMessage.Contains("INVALID_EMAIL"))
             {
-                return "Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại định dạng email!";
+                return "Invalid email address. Please check the email format!";
             }
-            
+
             // Lỗi mật khẩu yếu
             if (exceptionMessage.Contains("WEAK_PASSWORD"))
             {
-                return "Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn (ít nhất 6 ký tự)!";
+                return "Password is too weak. Please choose a stronger password (at least 6 characters)!";
             }
-            
+
             // Lỗi mạng
             if (exceptionMessage.Contains("NETWORK") || exceptionMessage.Contains("CONNECTION"))
             {
-                return "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet của bạn!";
+                return "Cannot connect to server. Please check your internet connection!";
             }
-            
+
             // Lỗi quá nhiều yêu cầu
             if (exceptionMessage.Contains("TOO_MANY_ATTEMPTS_TRY_LATER"))
             {
-                return "Bạn đã thử quá nhiều lần. Vui lòng thử lại sau!";
+                return "Too many attempts. Please try again later!";
             }
-            
+
             // Các lỗi khác
-            return "Đã xảy ra lỗi khi tạo tài khoản. Vui lòng thử lại sau!";
+            return $"An error occurred while creating the account: {ex.Message}";
         }
 
         private void ShowErrorDialog(string message)
@@ -181,10 +196,6 @@ namespace EasyFlips.ViewModels
                 }
             }
         }
-        [ObservableProperty]
-        private bool isPasswordVisible; // mặc định false
-        [ObservableProperty]
-        private bool isConfirmPasswordVisible;
 
         [RelayCommand]
         private void TogglePasswordVisibility()
