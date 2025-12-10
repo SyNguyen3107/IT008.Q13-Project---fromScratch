@@ -75,7 +75,7 @@ namespace EasyFlips.ViewModels
         // Xử lý khi thêm thẻ mới vào Deck (Card Added)
         public void Receive(CardAddedMessage message)
         {
-            int deckId = message.Value;
+            string deckId = message.Value;
 
             Application.Current.Dispatcher.Invoke(async () =>
             {
@@ -93,7 +93,7 @@ namespace EasyFlips.ViewModels
             Application.Current.Dispatcher.Invoke(() =>
             {
                 // 1. Tìm vị trí của Deck này trong danh sách hiện tại bằng ID
-                var existingDeck = Decks.FirstOrDefault(d => d.ID == updatedDeck.ID);
+                var existingDeck = Decks.FirstOrDefault(d => d.Id == updatedDeck.Id);
 
                 if (existingDeck != null)
                 {
@@ -113,7 +113,7 @@ namespace EasyFlips.ViewModels
         // Xử lý khi học xong
         public void Receive(StudySessionCompletedMessage message)
         {
-            int deckId = message.Value;
+            string deckId = message.Value;
 
             // Khi học xong, số liệu New/Learn/Due chắc chắn thay đổi.
             // Reload lại toàn bộ danh sách Deck từ DB để cập nhật số liệu chính xác
@@ -139,14 +139,14 @@ namespace EasyFlips.ViewModels
         private void ShowDeckChosen(Deck selectedDeck)
         {
             if (selectedDeck != null)
-                _navigationService.ShowDeckChosenWindow(selectedDeck.ID);
+                _navigationService.ShowDeckChosenWindow(selectedDeck.Id);
         }
 
         [RelayCommand]
         private void StartStudy(Deck selectedDeck)
         {
             if (selectedDeck == null) return;
-            _navigationService.ShowStudyWindow(selectedDeck.ID);
+            _navigationService.ShowStudyWindow(selectedDeck.Id);
         }
 
         [RelayCommand]
@@ -233,7 +233,7 @@ namespace EasyFlips.ViewModels
                     ? dlg.FileName
                     : dlg.FileName + ".zip";
 
-                await _exportService.ExportDeckToZipAsync(deck.ID, zipPath);
+                await _exportService.ExportDeckToZipAsync(deck.Id, zipPath);
                 MessageBox.Show("Successfully Exported!", "Notice");
             }
         }
@@ -255,11 +255,11 @@ namespace EasyFlips.ViewModels
             if (result == MessageBoxResult.Yes)
             {
                 // 3a. Xóa trong Database
-                await _deckRepository.DeleteAsync(deck.ID);
+                await _deckRepository.DeleteAsync(deck.Id);
 
                 // 3b. Xóa trên Giao diện (UI)
                 // Chúng ta tìm đối tượng trong list hiện tại bằng ID để đảm bảo xóa đúng cái đang hiển thị
-                var deckToRemove = Decks.FirstOrDefault(d => d.ID == deck.ID);
+                var deckToRemove = Decks.FirstOrDefault(d => d.Id == deck.Id);
                 if (deckToRemove != null)
                 {
                     Decks.Remove(deckToRemove);

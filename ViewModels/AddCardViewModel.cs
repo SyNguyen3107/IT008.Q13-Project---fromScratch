@@ -107,7 +107,7 @@ namespace EasyFlips.ViewModels
             {
                 var newCard = new Card
                 {
-                    DeckId = SelectedDeck.ID,
+                    DeckId = SelectedDeck.Id,
                     FrontText = this.FrontText,
                     Answer = this.Answer,
                     BackText = this.BackText ?? "",
@@ -121,7 +121,7 @@ namespace EasyFlips.ViewModels
                 };
 
                 await _cardRepository.AddAsync(newCard);
-                _messenger.Send(new CardAddedMessage(SelectedDeck.ID));
+                _messenger.Send(new CardAddedMessage(SelectedDeck.Id));
 
                 // Reset Form
                 FrontText = string.Empty; Answer = string.Empty; BackText = string.Empty;

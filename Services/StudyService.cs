@@ -24,7 +24,7 @@ namespace EasyFlips.Services
         }
 
         // --- 1. LOGIC LẤY THẺ CẦN HỌC ---
-        public async Task<Card?> GetNextCardToReviewAsync(int deckId)
+        public async Task<Card?> GetNextCardToReviewAsync(string deckId)
         {
             var allCards = await _cardRepository.GetCardsByDeckIdAsync(deckId);
             var now = DateTime.Now;
@@ -62,7 +62,7 @@ namespace EasyFlips.Services
 
             if (dueCard != null)
             {
-                Debug.WriteLine($"[StudyService] Found card: {dueCard.FrontText} (ID: {dueCard.ID})");
+                Debug.WriteLine($"[StudyService] Found card: {dueCard.FrontText} (ID: {dueCard.Id})");
             }
             else
             {
@@ -73,7 +73,7 @@ namespace EasyFlips.Services
         }
 
         // --- 2. LOGIC TÍNH TOÁN THỐNG KÊ ---
-        public async Task<DeckStats> GetDeckStatsAsync(int deckId)
+        public async Task<DeckStats> GetDeckStatsAsync(string deckId)
         {
             var deck = await _deckRepository.GetByIdAsync(deckId);
             var cards = await _cardRepository.GetCardsByDeckIdAsync(deckId);
@@ -110,7 +110,7 @@ namespace EasyFlips.Services
             if (card.Progress == null)
             {
                 card.Progress = new CardProgress();
-                card.Progress.CardId = card.ID; // gán khóa ngoại để EF khỏi lỗi
+                card.Progress.CardId = card.Id; // gán khóa ngoại để EF khỏi lỗi
             }
             var p = card.Progress;
 

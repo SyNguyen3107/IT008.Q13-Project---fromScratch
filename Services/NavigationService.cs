@@ -61,7 +61,7 @@ namespace EasyFlips.Services
         }
 
         // Thực thi việc mở cửa sổ Học
-        public void ShowStudyWindow(int deckId)
+        public void ShowStudyWindow(string deckId)
         {
             var window = _serviceProvider.GetRequiredService<StudyWindow>();
 
@@ -119,7 +119,7 @@ namespace EasyFlips.Services
             window.ShowDialog();
         }
 
-        public void ShowDeckChosenWindow(int deckId)
+        public void ShowDeckChosenWindow(string deckId)
         {
             // Dùng GetRequiredService để phát hiện lỗi cấu hình DI sớm nếu thiếu đăng ký
             var window = _serviceProvider.GetRequiredService<DeckChosenWindow>();

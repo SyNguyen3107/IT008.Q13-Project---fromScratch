@@ -21,7 +21,7 @@ namespace EasyFlips.Services
             _cardRepository = cardRepository;
         }
 
-        public async Task ExportDeckToZipAsync(int deckId, string filePath)
+        public async Task ExportDeckToZipAsync(string deckId, string filePath)
         {
             var deck = await _deckRepository.GetByIdAsync(deckId);
             var cards = await _cardRepository.GetCardsByDeckIdAsync(deckId);

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace EasyFlips.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialCreate_v2_UUID : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,27 +15,23 @@ namespace EasyFlips.Migrations
                 name: "Decks",
                 columns: table => new
                 {
-                    ID = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: false),
-                    NewCount = table.Column<int>(type: "INTEGER", nullable: false),
-                    LearnCount = table.Column<int>(type: "INTEGER", nullable: false),
-                    DueCount = table.Column<int>(type: "INTEGER", nullable: false),
-                    UserId = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false)
+                    Description = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    UserId = table.Column<string>(type: "TEXT", maxLength: 128, nullable: true),
+                    LastSyncedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Decks", x => x.ID);
+                    table.PrimaryKey("PK_Decks", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Cards",
                 columns: table => new
                 {
-                    ID = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    DeckId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    DeckId = table.Column<string>(type: "TEXT", nullable: false),
                     Answer = table.Column<string>(type: "TEXT", nullable: false),
                     FrontText = table.Column<string>(type: "TEXT", nullable: false),
                     FrontImagePath = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
@@ -46,12 +42,12 @@ namespace EasyFlips.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Cards", x => x.ID);
+                    table.PrimaryKey("PK_Cards", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Cards_Decks_DeckId",
                         column: x => x.DeckId,
                         principalTable: "Decks",
-                        principalColumn: "ID",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -59,21 +55,22 @@ namespace EasyFlips.Migrations
                 name: "CardProgresses",
                 columns: table => new
                 {
-                    ID = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    CardId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    CardId = table.Column<string>(type: "TEXT", nullable: false),
                     DueDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Interval = table.Column<double>(type: "REAL", precision: 18, scale: 6, nullable: false),
-                    EaseFactor = table.Column<double>(type: "REAL", precision: 18, scale: 6, nullable: false)
+                    EaseFactor = table.Column<double>(type: "REAL", precision: 18, scale: 6, nullable: false),
+                    Repetitions = table.Column<int>(type: "INTEGER", nullable: false),
+                    LastReviewDate = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CardProgresses", x => x.ID);
+                    table.PrimaryKey("PK_CardProgresses", x => x.Id);
                     table.ForeignKey(
                         name: "FK_CardProgresses_Cards_CardId",
                         column: x => x.CardId,
                         principalTable: "Cards",
-                        principalColumn: "ID",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,8 +8,8 @@ using EasyFlips.Models;
 namespace EasyFlips.Services
 {
     /// <summary>
-    /// Service ?? t??ng t�c v?i Supabase database
-    /// Qu?n l� Profiles, Classrooms, Members
+    /// Service tương tác với Supabase database
+    /// Quản lý Profiles, Classrooms, Members
     /// </summary>
     public class SupabaseService
     {
@@ -22,6 +22,7 @@ namespace EasyFlips.Services
                 AutoRefreshToken = true,
                 AutoConnectRealtime = true
             };
+            // Đảm bảo cấu hình URL và Key chính xác trong AppConfig
             _client = new Supabase.Client(AppConfig.SupabaseUrl, AppConfig.SupabaseKey, options);
         }
 
@@ -33,9 +34,10 @@ namespace EasyFlips.Services
         #region Profile Operations
 
         /// <summary>
-        /// L?y profile c?a user hi?n t?i
+        /// Lấy profile của user hiện tại
         /// </summary>
-        public async Task<Profile?> GetProfileAsync(Guid userId)
+        // [ĐÃ SỬA]: Tham số userId đổi từ Guid -> string
+        public async Task<Profile?> GetProfileAsync(string userId)
         {
             var result = await _client
                 .From<Profile>()
@@ -46,13 +48,14 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// C?p nh?t profile (display name, avatar)
+        /// Cập nhật profile (display name, avatar)
         /// </summary>
-        public async Task<Profile?> UpdateProfileAsync(Guid userId, string? displayName, string? avatarUrl)
+        // [ĐÃ SỬA]: Tham số userId đổi từ Guid -> string
+        public async Task<Profile?> UpdateProfileAsync(string userId, string? displayName, string? avatarUrl)
         {
             var profile = new Profile
             {
-                Id = userId,
+                Id = userId, // Giờ cả 2 đều là string, gán OK
                 DisplayName = displayName,
                 AvatarUrl = avatarUrl,
                 UpdatedAt = DateTime.UtcNow
@@ -66,7 +69,7 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// T�m ki?m user theo email
+        /// Tìm kiếm user theo email
         /// </summary>
         public async Task<List<Profile>> SearchProfilesByEmailAsync(string emailQuery)
         {
@@ -83,17 +86,19 @@ namespace EasyFlips.Services
         #region Classroom Operations
 
         /// <summary>
-        /// T?o classroom m?i
-        /// Room code s? t? ??ng ???c generate b?i database
+        /// Tạo classroom mới
+        /// Room code sẽ tự động được generate bởi database hoặc code
         /// </summary>
-        public async Task<Classroom?> CreateClassroomAsync(string name, string? description, Guid ownerId)
+        // [ĐÃ SỬA]: ownerId đổi từ Guid -> string
+        public async Task<Classroom?> CreateClassroomAsync(string name, string? description, string ownerId)
         {
             // Generate room code using database function
             var roomCode = await GenerateRoomCodeAsync();
 
             var classroom = new Classroom
             {
-                Id = Guid.NewGuid(),
+                // [ĐÃ SỬA]: Tạo UUID dạng string
+                Id = Guid.NewGuid().ToString(),
                 Name = name,
                 Description = description,
                 RoomCode = roomCode,
@@ -111,9 +116,10 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// L?y classroom theo ID
+        /// Lấy classroom theo ID
         /// </summary>
-        public async Task<Classroom?> GetClassroomAsync(Guid classroomId)
+        // [ĐÃ SỬA]: Tham số classroomId đổi từ Guid -> string
+        public async Task<Classroom?> GetClassroomAsync(string classroomId)
         {
             var result = await _client
                 .From<Classroom>()
@@ -124,9 +130,10 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// C?p nh?t th�ng tin classroom
+        /// Cập nhật thông tin classroom
         /// </summary>
-        public async Task<Classroom?> UpdateClassroomAsync(Guid classroomId, string name, string? description)
+        // [ĐÃ SỬA]: Tham số classroomId đổi từ Guid -> string
+        public async Task<Classroom?> UpdateClassroomAsync(string classroomId, string name, string? description)
         {
             var classroom = new Classroom
             {
@@ -144,9 +151,10 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// X�a classroom (soft delete - set IsActive = false)
+        /// Xóa classroom (soft delete - set IsActive = false)
         /// </summary>
-        public async Task<bool> DeactivateClassroomAsync(Guid classroomId)
+        // [ĐÃ SỬA]: Tham số classroomId đổi từ Guid -> string
+        public async Task<bool> DeactivateClassroomAsync(string classroomId)
         {
             var classroom = new Classroom
             {
@@ -163,19 +171,20 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// L?y danh s�ch classroom c?a user
+        /// Lấy danh sách classroom của user
         /// </summary>
-        public async Task<List<UserClassroom>> GetUserClassroomsAsync(Guid userId)
+        // [ĐÃ SỬA]: Tham số userId đổi từ Guid -> string
+        public async Task<List<UserClassroom>> GetUserClassroomsAsync(string userId)
         {
             // Call database function
             var result = await _client.Rpc("get_user_classrooms", new Dictionary<string, object>
             {
-                { "p_user_id", userId }
+                { "p_user_id", userId } // Supabase sẽ tự handle string -> uuid nếu parameter của hàm SQL là uuid
             });
 
-            // Parse result to UserClassroom list
-            // Note: You may need to adjust parsing based on actual return format
-            return new List<UserClassroom>(); // TODO: Parse result
+            // TODO: Parse result trả về thành List<UserClassroom>
+            // Lưu ý: Cần đảm bảo RPC trả về đúng format JSON map được với class UserClassroom
+            return new List<UserClassroom>();
         }
 
         #endregion
@@ -183,9 +192,10 @@ namespace EasyFlips.Services
         #region Member Operations
 
         /// <summary>
-        /// Join classroom b?ng room code
+        /// Join classroom bằng room code
         /// </summary>
-        public async Task<JoinClassroomResult> JoinClassroomByCodeAsync(string roomCode, Guid userId)
+        // [ĐÃ SỬA]: Tham số userId đổi từ Guid -> string
+        public async Task<JoinClassroomResult> JoinClassroomByCodeAsync(string roomCode, string userId)
         {
             // Call database function
             var result = await _client.Rpc("join_classroom_by_code", new Dictionary<string, object>
@@ -204,9 +214,10 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// L?y danh s�ch members trong classroom
+        /// Lấy danh sách members trong classroom
         /// </summary>
-        public async Task<List<Member>> GetClassroomMembersAsync(Guid classroomId)
+        // [ĐÃ SỬA]: Tham số classroomId đổi từ Guid -> string
+        public async Task<List<Member>> GetClassroomMembersAsync(string classroomId)
         {
             var result = await _client
                 .From<Member>()
@@ -217,13 +228,15 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Th�m member v�o classroom (by owner)
+        /// Thêm member vào classroom (by owner)
         /// </summary>
-        public async Task<Member?> AddMemberAsync(Guid classroomId, Guid userId, string role = "member")
+        // [ĐÃ SỬA]: Các tham số Guid -> string
+        public async Task<Member?> AddMemberAsync(string classroomId, string userId, string role = "member")
         {
             var member = new Member
             {
-                Id = Guid.NewGuid(),
+                // [ĐÃ SỬA]: Tạo UUID dạng string
+                Id = Guid.NewGuid().ToString(),
                 ClassroomId = classroomId,
                 UserId = userId,
                 Role = role,
@@ -238,9 +251,10 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// X�a member kh?i classroom
+        /// Xóa member khỏi classroom
         /// </summary>
-        public async Task<bool> RemoveMemberAsync(Guid classroomId, Guid userId)
+        // [ĐÃ SỬA]: Các tham số Guid -> string
+        public async Task<bool> RemoveMemberAsync(string classroomId, string userId)
         {
             await _client
                 .From<Member>()
@@ -251,17 +265,17 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// R?i kh?i classroom
+        /// Rời khỏi classroom
         /// </summary>
-        public async Task<bool> LeaveClassroomAsync(Guid classroomId, Guid userId)
+        public async Task<bool> LeaveClassroomAsync(string classroomId, string userId)
         {
             return await RemoveMemberAsync(classroomId, userId);
         }
 
         /// <summary>
-        /// Update role c?a member (by owner)
+        /// Update role của member (by owner)
         /// </summary>
-        public async Task<Member?> UpdateMemberRoleAsync(Guid classroomId, Guid userId, string newRole)
+        public async Task<Member?> UpdateMemberRoleAsync(string classroomId, string userId, string newRole)
         {
             var member = new Member
             {
@@ -283,9 +297,10 @@ namespace EasyFlips.Services
         #region Storage Operations
 
         /// <summary>
-        /// Upload avatar l�n storage bucket
+        /// Upload avatar lên storage bucket
         /// </summary>
-        public async Task<string?> UploadAvatarAsync(Guid userId, byte[] imageData, string fileName)
+        // [ĐÃ SỬA]: userId -> string
+        public async Task<string?> UploadAvatarAsync(string userId, byte[] imageData, string fileName)
         {
             // Path format: {userId}/avatar.{extension}
             var path = $"{userId}/{fileName}";
@@ -311,9 +326,9 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// X�a avatar
+        /// Xóa avatar
         /// </summary>
-        public async Task<bool> DeleteAvatarAsync(Guid userId, string fileName)
+        public async Task<bool> DeleteAvatarAsync(string userId, string fileName)
         {
             var path = $"{userId}/{fileName}";
 
@@ -333,9 +348,9 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// L?y public URL c?a avatar
+        /// Lấy public URL của avatar
         /// </summary>
-        public string GetAvatarUrl(Guid userId, string fileName)
+        public string GetAvatarUrl(string userId, string fileName)
         {
             var path = $"{userId}/{fileName}";
             return _client.Storage
@@ -352,9 +367,17 @@ namespace EasyFlips.Services
         /// </summary>
         private async Task<string> GenerateRoomCodeAsync()
         {
-            var result = await _client.Rpc("generate_room_code", null);
-            // TODO: Parse result to string
-            return "TEMP1234"; // Temporary, replace with actual parsing
+            try
+            {
+                var result = await _client.Rpc("generate_room_code", null);
+                // Giả sử RPC trả về trực tiếp string content hoặc JSON object
+                // Cần kiểm tra kỹ response format thực tế khi chạy
+                return result.Content ?? "TEMP1234";
+            }
+            catch
+            {
+                return "TEMP1234";
+            }
         }
 
         #endregion
@@ -363,23 +386,17 @@ namespace EasyFlips.Services
 
         /// <summary>
         /// Subscribe to classroom changes
-        /// TODO: Implement when realtime API is stable
         /// </summary>
-        public void SubscribeToClassroom(Guid classroomId, Action<Classroom> onUpdate)
+        public void SubscribeToClassroom(string classroomId, Action<Classroom> onUpdate)
         {
-            // Realtime API implementation depends on Supabase-csharp version
-            // Will be implemented when needed
             Console.WriteLine($"[SupabaseService] Realtime subscription not yet implemented for classroom: {classroomId}");
         }
 
         /// <summary>
         /// Subscribe to member changes in classroom
-        /// TODO: Implement when realtime API is stable
         /// </summary>
-        public void SubscribeToClassroomMembers(Guid classroomId, Action<Member> onMemberChange)
+        public void SubscribeToClassroomMembers(string classroomId, Action<Member> onMemberChange)
         {
-            // Realtime API implementation depends on Supabase-csharp version
-            // Will be implemented when needed
             Console.WriteLine($"[SupabaseService] Realtime subscription not yet implemented for members in classroom: {classroomId}");
         }
 

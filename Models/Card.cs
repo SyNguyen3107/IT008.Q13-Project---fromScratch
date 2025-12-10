@@ -1,9 +1,14 @@
-﻿namespace EasyFlips.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace EasyFlips.Models
 {
     public class Card
     {
-        public int ID { get; private set; }
-        public int DeckId { get; set; }
+        [Key]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        // Khóa ngoại trỏ về Deck cũng phải đổi sang string
+        public string DeckId { get; set; }
 
         //Câu trả lời cho card này
         public string Answer { get; set; } = string.Empty;

@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EasyFlips.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251130155242_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251210093203_InitialCreate_v2_UUID")]
+    partial class InitialCreate_v2_UUID
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -22,9 +22,8 @@ namespace EasyFlips.Migrations
 
             modelBuilder.Entity("EasyFlips.Models.Card", b =>
                 {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Answer")
                         .IsRequired()
@@ -42,8 +41,9 @@ namespace EasyFlips.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("DeckId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("DeckId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("FrontAudioPath")
                         .HasMaxLength(512)
@@ -57,7 +57,7 @@ namespace EasyFlips.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.HasKey("ID");
+                    b.HasKey("Id");
 
                     b.HasIndex("DeckId");
 
@@ -66,12 +66,12 @@ namespace EasyFlips.Migrations
 
             modelBuilder.Entity("EasyFlips.Models.CardProgress", b =>
                 {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("CardId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("CardId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("TEXT");
@@ -84,7 +84,13 @@ namespace EasyFlips.Migrations
                         .HasPrecision(18, 6)
                         .HasColumnType("REAL");
 
-                    b.HasKey("ID");
+                    b.Property<DateTime>("LastReviewDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Repetitions")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("CardId")
                         .IsUnique();
@@ -96,35 +102,26 @@ namespace EasyFlips.Migrations
 
             modelBuilder.Entity("EasyFlips.Models.Deck", b =>
                 {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("DueCount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("LearnCount")
-                        .HasColumnType("INTEGER");
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("NewCount")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("TEXT");
 
-                    b.HasKey("ID");
+                    b.HasKey("Id");
 
                     b.ToTable("Decks", (string)null);
                 });

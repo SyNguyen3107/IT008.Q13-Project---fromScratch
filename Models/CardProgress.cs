@@ -1,24 +1,44 @@
-﻿namespace EasyFlips.Models
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace EasyFlips.Models
 {
     public class CardProgress
     {
-        public int ID { get; private set; }
-        public int CardId { get; set; } // Foreign key
+        // [QUAN TRỌNG]: Primary Key là String (UUID) & Tự sinh ID
+        [Key]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
 
-        //Thông tin ôn tập
+        // [QUAN TRỌNG]: Foreign Key sang Card cũng là String
+        public string CardId { get; set; }
+
+        // --- Thông tin ôn tập (SM2 Algorithm Parameters) ---
+
         public DateTime DueDate { get; set; }
-        public double Interval { get; set; }    // Tính bằng ngày
-        public double EaseFactor { get; set; }  // Thường bắt đầu từ 2.5 (250%)
+
+        public double Interval { get; set; }    // Khoảng cách ngày giữa các lần ôn
+
+        public double EaseFactor { get; set; }  // Độ khó (Mặc định 2.5)
+
+        // [THÊM MỚI]: Số lần ôn tập liên tiếp (Cần thiết cho thuật toán)
+        public int Repetitions { get; set; }
+
+        // [THÊM MỚI]: Ngày ôn tập gần nhất (Để tính toán trôi dạt thời gian)
+        public DateTime LastReviewDate { get; set; }
 
         // Quan hệ 1-1 ngược lại với Card
-        public Card Card { get; set; }
+        [ForeignKey(nameof(CardId))]
+        public virtual Card? Card { get; set; }
 
-        // Constructor để set giá trị mặc định khi thẻ mới được tạo
+        // Constructor mặc định
         public CardProgress()
         {
             DueDate = DateTime.Now; // Học ngay lập tức
-            Interval = 0; // Ban đầu = 0, sẽ được set khi chọn option lần đầu
-            EaseFactor = 2.5; // Giá trị mặc định của Anki
+            LastReviewDate = DateTime.Now;
+            Interval = 0;
+            EaseFactor = 2.5; // Giá trị mặc định chuẩn của Anki/SM2
+            Repetitions = 0;
         }
     }
 }

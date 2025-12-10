@@ -13,7 +13,7 @@ namespace EasyFlips.ViewModels
     {
         private readonly StudyService _studyService;
         private readonly AudioService _audioService;
-        private int _currentDeckId; //Deck đang học
+        private string _currentDeckId; //Deck đang học
         private Card? _currentCard; // Thẻ đang học
         private readonly ComparisonService _comparisonService = new ComparisonService(); // Dịch vụ so sánh
 
@@ -61,7 +61,7 @@ namespace EasyFlips.ViewModels
         }
 
         // Hàm khởi tạo ViewModel khi NavigationService gọi (hoặc khi ViewModel được tải)
-        public async Task InitializeAsync(int deckId)
+        public async Task InitializeAsync(string deckId)
         {
             _currentDeckId = deckId; // 1. Lưu lại Deck ID
             await LoadNextCardAsync();   // 2. Tải thẻ đầu tiên
@@ -81,7 +81,7 @@ namespace EasyFlips.ViewModels
                 // Lấy thẻ
                 _currentCard = await _studyService.GetNextCardToReviewAsync(_currentDeckId);
 
-                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: Got card = {(_currentCard != null ? _currentCard.ID.ToString() : "null")}");
+                System.Diagnostics.Debug.WriteLine($"[StudyViewModel] LoadNextCardAsync: Got card = {(_currentCard != null ? _currentCard.Id: "null")}");
 
                 // Cập nhật HasCards dựa trên _currentCard
                 HasCards = _currentCard != null;
@@ -260,13 +260,21 @@ namespace EasyFlips.ViewModels
         {
             try
             {
-                if (_currentCard == null) return; // Không có thẻ
-                await _studyService.ProcessReviewAsync(_currentCard, outcome); // Cập nhật tiến trình thẻ
-                await LoadNextCardAsync(); // Tải thẻ kế tiếp
+                if (_currentCard == null) return;
+
+                // Cập nhật tiến độ học
+                await _studyService.ProcessReviewAsync(_currentCard, outcome);
+
+                // Tải thẻ tiếp theo
+                await LoadNextCardAsync();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Unidentified Error(s) occurred", "Error");
+                // [SỬA LỖI] Hiện thông báo chi tiết thay vì câu chung chung
+                // ex.Message: Nội dung lỗi
+                // ex.StackTrace: Dòng code gây lỗi
+                MessageBox.Show($"Lỗi xử lý Review:\n{ex.Message}\n\nTại:\n{ex.StackTrace}",
+                                "Debug Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
