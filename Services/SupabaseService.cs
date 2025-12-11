@@ -1,14 +1,21 @@
-﻿using System;
+﻿using EasyFlips.Models;
+using Newtonsoft.Json;
+using Supabase;
+using Supabase.Gotrue;
+using Supabase.Gotrue.Interfaces;
+using Supabase.Realtime; // Đảm bảo namespace này có mặt
+using Supabase.Realtime.Interfaces; // Đảm bảo namespace này có mặt
+using Supabase.Realtime.PostgresChanges;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Supabase;
-using EasyFlips.Models;
-using Newtonsoft.Json;
-using Supabase.Gotrue;
-using Supabase.Gotrue.Interfaces;
-using System.Diagnostics; // Dùng Debug.WriteLine thay cho MessageBox
+using static Supabase.Realtime.Constants;
+using static Supabase.Realtime.PostgresChanges.PostgresChangesOptions;
+using RealtimeConstants = Supabase.Realtime.Constants;
+using Supabase.Realtime.Presence;
 
 namespace EasyFlips.Services
 {
@@ -16,12 +23,12 @@ namespace EasyFlips.Services
     {
         private readonly Supabase.Client _client;
         private readonly CustomFileSessionHandler _sessionHandler;
-
+        // [NEW]: Quản lý các kênh presence đang active
+        private readonly Dictionary<string, RealtimeChannel> _activeChannels = new Dictionary<string, RealtimeChannel>();
         public Supabase.Client Client => _client;
 
         public SupabaseService()
         {
-            // Thiết lập đường dẫn lưu cache tại %AppData%/EasyFlips
             var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EasyFlips");
             if (!Directory.Exists(cacheDir)) Directory.CreateDirectory(cacheDir);
 
@@ -200,10 +207,278 @@ namespace EasyFlips.Services
         }
         #endregion
 
-        #region Realtime Subscriptions (Optional)
-        public void SubscribeToClassroom(string classroomId, Action<Classroom> onUpdate) { }
-        public void SubscribeToClassroomMembers(string classroomId, Action<Member> onMemberChange) { }
+        #region Realtime Subscriptions
+
+        /// <summary>
+        /// Lắng nghe sự kiện có thành viên mới tham gia vào phòng
+        /// </summary>
+        /// <param name="classroomId">ID phòng học</param>
+        /// <param name="onMemberJoined">Hàm callback xử lý khi có user mới</param>
+        public async Task SubscribeToClassroomMembersAsync(string classroomId, Action<Member> onMemberJoined)
+        {
+            try
+            {
+                // 1. Đảm bảo kết nối Socket
+                await _client.Realtime.ConnectAsync();
+
+                // 2. Tạo kênh (Channel) riêng cho phòng này
+                var channel = _client.Realtime.Channel($"room:{classroomId}");
+
+                // 3. Đăng ký lắng nghe sự kiện INSERT trên bảng 'members'
+                var options = new PostgresChangesOptions("public", "members")
+                {
+                    Filter = $"classroom_id=eq.{classroomId}"
+                };
+
+                channel.Register(options);
+
+                channel.AddPostgresChangeHandler(ListenType.Inserts, (sender, change) =>
+                {
+                    try
+                    {
+                        // change.Model sẽ tự động deserialize thành Member
+                        var member = change.Model<Member>();
+
+                        if (member != null)
+                        {
+                            // Gọi callback để UI cập nhật
+                            onMemberJoined?.Invoke(member);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[Realtime Error] Parse member failed: {ex.Message}");
+                    }
+                });
+
+                // 4. Bắt đầu lắng nghe
+                await channel.Subscribe();
+                Debug.WriteLine($"[SupabaseService] Subscribed to members of room {classroomId}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Realtime subscription failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Hủy đăng ký lắng nghe (khi thoát phòng)
+        /// </summary>
+        public async Task UnsubscribeFromClassroomAsync(string classroomId)
+        {
+            try
+            {
+                var channel = _client.Realtime.Channel($"room:{classroomId}");
+                if (channel != null)
+                {
+                    channel.Unsubscribe();
+                }
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Unsubscribe failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Lắng nghe cập nhật thông tin phòng học
+        /// </summary>
+        public async Task SubscribeToClassroomAsync(string classroomId, Action<Classroom> onUpdate)
+        {
+            try
+            {
+                await _client.Realtime.ConnectAsync();
+
+                var channel = _client.Realtime.Channel($"classroom:{classroomId}");
+
+                var options = new PostgresChangesOptions("public", "classrooms")
+                {
+                    Filter = $"id=eq.{classroomId}"
+                };
+
+                channel.Register(options);
+
+                channel.AddPostgresChangeHandler(ListenType.Updates, (sender, change) =>
+                {
+                    try
+                    {
+                        var classroom = change.Model<Classroom>();
+                        if (classroom != null)
+                        {
+                            onUpdate?.Invoke(classroom);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[Realtime Error] Parse classroom failed: {ex.Message}");
+                    }
+                });
+
+                await channel.Subscribe();
+                Debug.WriteLine($"[SupabaseService] Subscribed to classroom {classroomId}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Classroom subscription failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Lắng nghe nhiều loại sự kiện cho một bảng (Insert, Update, Delete)
+        /// </summary>
+        public async Task SubscribeToClassroomMembersAllEventsAsync(
+            string classroomId,
+            Action<Member>? onInsert = null,
+            Action<Member>? onUpdate = null,
+            Action<Member>? onDelete = null)
+        {
+            try
+            {
+                await _client.Realtime.ConnectAsync();
+
+                var channel = _client.Realtime.Channel($"room-all:{classroomId}");
+
+                var options = new PostgresChangesOptions("public", "members")
+                {
+                    Filter = $"classroom_id=eq.{classroomId}"
+                };
+
+                channel.Register(options);
+
+                // Lắng nghe tất cả các sự kiện
+                channel.AddPostgresChangeHandler(ListenType.All, (sender, change) =>
+                {
+                    try
+                    {
+                        var member = change.Model<Member>();
+                        if (member == null) return;
+
+                        switch (change.Event)
+                        {
+                            case RealtimeConstants.EventType.Insert:
+                                onInsert?.Invoke(member);
+                                break;
+                            case RealtimeConstants.EventType.Update:
+                                onUpdate?.Invoke(member);
+                                break;
+                            case RealtimeConstants.EventType.Delete:
+                                onDelete?.Invoke(member);
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[Realtime Error] Parse member failed: {ex.Message}");
+                    }
+                });
+
+                await channel.Subscribe();
+                Debug.WriteLine($"[SupabaseService] Subscribed to all member events for room {classroomId}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] All events subscription failed: {ex.Message}");
+            }
+        }
+        public async Task JoinRoomPresenceAsync(string classroomId, string userId, string? displayName, Action<List<string>> onPresenceSync)
+        {
+            try
+            {
+                await _client.Realtime.ConnectAsync();
+
+                string channelName = $"presence:{classroomId}";
+
+                // Cleanup old channel if exists
+                if (_activeChannels.TryGetValue(channelName, out var oldChannel))
+                {
+                    oldChannel.Unsubscribe();
+                    _activeChannels.Remove(channelName);
+                }
+
+                var channel = _client.Realtime.Channel(channelName);
+                _activeChannels[channelName] = channel;
+
+                // Register presence with unique key (userId to identify per user)
+                string presenceKey = userId;
+                var presence = channel.Register<UserPresence>(presenceKey);
+
+                // Add handler for Sync event
+                presence.AddPresenceEventHandler(IRealtimePresence.EventType.Sync, (sender, args) =>
+                {
+                    try
+                    {
+                        var onlineUserIds = new List<string>();
+
+                        foreach (var presences in presence.CurrentState.Values)
+                        {
+                            foreach (var p in presences)
+                            {
+                                if (!string.IsNullOrEmpty(p.UserId))
+                                {
+                                    onlineUserIds.Add(p.UserId);
+                                }
+                            }
+                        }
+
+                        onPresenceSync?.Invoke(onlineUserIds.Distinct().ToList());
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[Presence Error] Sync handler: {ex.Message}");
+                    }
+                });
+
+                // Subscribe and check state using the original channel (avoids type issues)
+                await channel.Subscribe();
+                if (channel.State != ChannelState.Joined)
+                {
+                    Debug.WriteLine("[Presence] Subscribe failed");
+                    return;
+                }
+
+                // Track payload
+                var payload = new UserPresence
+                {
+                    UserId = userId,
+                    DisplayName = displayName ?? "Unknown"
+                };
+                await presence.Track(payload);
+
+                Debug.WriteLine($"[Presence] Joined room {classroomId} as {userId}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Presence] Join failed: {ex.Message}");
+            }
+        }
+
+        public async Task LeaveRoomPresenceAsync(string classroomId, string userId)
+        {
+            string channelName = $"presence:{classroomId}";
+            if (_activeChannels.TryGetValue(channelName, out var channel))
+            {
+                try
+                {
+                    // Re-register with same key to untrack
+                    var presence = channel.Register<UserPresence>(userId);
+
+                    await presence.Untrack();
+                    channel.Unsubscribe();
+
+                    _activeChannels.Remove(channelName);
+
+                    Debug.WriteLine($"[Presence] Left room {classroomId}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[Presence] Leave error: {ex.Message}");
+                }
+            }
+        }
+
         #endregion
+
     }
 
     public class CustomFileSessionHandler : IGotrueSessionPersistence<Session>
