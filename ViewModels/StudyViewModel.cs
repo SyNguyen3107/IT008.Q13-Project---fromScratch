@@ -44,7 +44,6 @@ namespace EasyFlips.ViewModels
         [ObservableProperty] private bool _hasCards = true;
 
         [ObservableProperty] private string _totalScore = string.Empty;
-        [ObservableProperty] private string _similarityScore = string.Empty;
 
         public ObservableCollection<DiffPiece> ComparisonPieces { get; } = new();
 
@@ -134,8 +133,18 @@ namespace EasyFlips.ViewModels
             ComparisonPieces.Clear();
             if (string.IsNullOrEmpty(CorrectAnswer)) return;
 
-            var pieces = _comparisonService.GetCharDiff(UserInputText, CorrectAnswer);
-            TotalScore = _comparisonService.SmartScore(UserInputText, CorrectAnswer).ToString();
+            int score = _comparisonService.SmartScore(UserInputText, CorrectAnswer);
+            TotalScore = score.ToString();
+
+            List<DiffPiece> pieces;
+            if (score < 50)
+            {
+                pieces = _comparisonService.GetWordDiff(UserInputText, CorrectAnswer);
+            }
+            else
+            {
+                pieces = _comparisonService.GetCharDiff(UserInputText, CorrectAnswer);
+            }
 
             if (pieces.Count == 0 && !string.IsNullOrEmpty(UserInputText))
             {
@@ -146,6 +155,8 @@ namespace EasyFlips.ViewModels
                 foreach (var piece in pieces) ComparisonPieces.Add(piece);
             }
         }
+        
+
 
         // --- MEDIA ---
         [RelayCommand]
@@ -175,12 +186,6 @@ namespace EasyFlips.ViewModels
             }
         }
 
-        // Giữ lại các lệnh AI check nếu bạn có
-        [RelayCommand]
-        private async Task CheckAiScore()
-        {
-            // Logic gọi AI...
-            await Task.CompletedTask;
-        }
+       
     }
 }
