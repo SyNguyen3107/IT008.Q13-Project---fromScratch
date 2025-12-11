@@ -1,6 +1,7 @@
 ﻿using System;
 using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
+using Newtonsoft.Json;
 
 namespace EasyFlips.Models
 {
@@ -54,6 +55,9 @@ namespace EasyFlips.Models
         // [ĐÃ SỬA]: Chuyển từ Guid sang string
         [Column("owner_id")]
         public string OwnerId { get; set; }
+        // Thêm thuộc tính MaxMembers với giá trị mặc định 50
+        [Column("max_members")]
+        public int MaxMembers { get; set; } = 50;
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
@@ -92,14 +96,19 @@ namespace EasyFlips.Models
     }
 
     /// <summary>
-    /// DTO cho kết quả join classroom by code
+    /// DTO cho kết quả join classroom từ RPC
     /// </summary>
     public class JoinClassroomResult
     {
+        // [FIX]: Thêm JsonProperty để map với kết quả từ SQL function (snake_case)
+        
+        [JsonProperty("success")]
         public bool Success { get; set; }
+        
+        [JsonProperty("message")]
         public string Message { get; set; } = string.Empty;
 
-        // [ĐÃ SỬA]: Chuyển từ Guid? sang string?
+        [JsonProperty("classroom_id")]
         public string? ClassroomId { get; set; }
     }
 
@@ -108,16 +117,20 @@ namespace EasyFlips.Models
     /// </summary>
     public class UserClassroom
     {
-        // [ĐÃ SỬA]: Chuyển từ Guid sang string
+        // ... (Giữ nguyên hoặc thêm JsonProperty nếu cần dùng RPC get_user_classrooms)
+        [JsonProperty("classroom_id")]
         public string ClassroomId { get; set; }
-        public string ClassroomName { get; set; } = string.Empty;
-        public string RoomCode { get; set; } = string.Empty;
-        public string Role { get; set; } = string.Empty;
-
-        // [ĐÃ SỬA]: Chuyển từ Guid sang string
+        [JsonProperty("classroom_name")]
+        public string ClassroomName { get; set; }
+        [JsonProperty("room_code")]
+        public string RoomCode { get; set; }
+        [JsonProperty("role")]
+        public string Role { get; set; }
+        [JsonProperty("owner_id")]
         public string OwnerId { get; set; }
-
+        [JsonProperty("member_count")]
         public long MemberCount { get; set; }
+        [JsonProperty("joined_at")]
         public DateTime JoinedAt { get; set; }
     }
 }
