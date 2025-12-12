@@ -12,7 +12,6 @@ namespace EasyFlips.Views
         {
             InitializeComponent();
             // ... code khởi tạo session ...
-            var session = new UserSession();
             var viewModel = new EditProfileViewModel(session);
 
                 // 3. Setup nút Cancel/Close
@@ -30,4 +29,3 @@ namespace EasyFlips.Views
             }
         }
     }
-}

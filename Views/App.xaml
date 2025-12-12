@@ -17,7 +17,7 @@
             <converters:BoolToTextConverter x:Key="BoolToTextConverter"/>
             <converters:BoolToBrushConverter x:Key="BoolToBrushConverter"/>
             <Style TargetType="Window">
-                <Setter Property="Icon" Value="/Resources/easyflips.icon"/>
+            <Setter Property="Icon" Value="/Resources/easyflips.ico"/>
             </Style>
             <Style x:Key="ReviewButtonStyle" TargetType="Button">
                 <Setter Property="Width" Value="80"/>

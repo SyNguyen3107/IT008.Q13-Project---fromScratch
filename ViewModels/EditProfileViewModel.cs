@@ -17,7 +17,7 @@ namespace EasyFlips.ViewModels
         // Cần Client để gọi lệnh Update lên Server
         private readonly Supabase.Client _supabaseClient;
 
-        public Action CloseAction { get; set; }
+
 
         [ObservableProperty] private string userName;
         [ObservableProperty] private string email;

@@ -58,6 +58,7 @@ namespace EasyFlips.ViewModels
             }
         }
 
+       
         [RelayCommand]
         private async Task LoginAsync(object parameter)
         {
@@ -74,63 +75,62 @@ namespace EasyFlips.ViewModels
 
             try
             {
-                bool isSuccess = await _authService.LoginAsync(Email, Password);
+                // Đăng nhập qua Supabase
+                var result = await _supabaseClient.Auth.SignIn(email: Email, password: Password);
 
-                if (isSuccess)
+                // Kiểm tra kết quả đăng nhập
+                var session = _supabaseClient.Auth.CurrentSession;
+                if (result == null || result.User == null || session == null || session.User == null)
                 {
-                    // Lấy Session hiện tại từ Supabase Client (Chứa đầy đủ Token)
-                    var session = _supabaseClient.Auth.CurrentSession;
-                   // string userId = _authService.CurrentUserId;
-                    if (session != null && session.User != null)
-                    {
-                        string userId = session.User.Id;
-                        string accessToken = session.AccessToken;
-                        string refreshToken = session.RefreshToken;
-                        
-                        // Lấy metadata (Tên, Avatar)
-                        string name = session.User.UserMetadata.ContainsKey("full_name") 
-                                      ? session.User.UserMetadata["full_name"]?.ToString() 
-                                      : "User";
-                        
-                        string avatar = session.User.UserMetadata.ContainsKey("avatar_url") 
-                                        ? session.User.UserMetadata["avatar_url"]?.ToString() 
-                                        : "";
+                    ShowErrorDialog("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!");
+                    return;
+                }
 
-                        // 1. CẬP NHẬT SESSION (RAM) - QUAN TRỌNG ĐỂ FIX LỖI "NOT LOGGED IN"
-                        _userSession.SetUser(userId, Email, accessToken, refreshToken, name, avatar);
+                // Lấy thông tin người dùng
+                string userId = session.User.Id;
+                string accessToken = session.AccessToken;
+                string refreshToken = session.RefreshToken;
 
-                        // 2. LƯU SETTINGS (Ổ CỨNG) - NẾU CHỌN REMEMBER ME
-                    if (IsRememberMe)
-                    {
-                        // Lưu thông tin để lần sau Auto-Login
-                        Settings.Default.UserId = userId;
-                        Settings.Default.UserEmail = Email;
-                        Settings.Default.UserToken = accessToken;     // Lưu Access Token thật
-                        Settings.Default.RefreshToken = refreshToken;
-                        Settings.Default.Save();
-                    }
-                    else
-                    {
-                        // Nếu không chọn Remember Me, xóa sạch settings
-                        Settings.Default.UserId = string.Empty;
-                        Settings.Default.UserToken = string.Empty;
-                        Settings.Default.RefreshToken = string.Empty;
-                        Settings.Default.UserEmail = string.Empty;
-                        Settings.Default.Save();
-                    }
+                string name = session.User.UserMetadata.TryGetValue("full_name", out var fullName)
+                              ? fullName?.ToString() ?? "User"
+                              : "User";
 
-                    _navigationService.ShowMainWindow();
-                    CloseCurrentWindow();
+                string avatar = session.User.UserMetadata.TryGetValue("avatar_url", out var avatarUrl)
+                                ? avatarUrl?.ToString() ?? ""
+                                : "";
+
+                // Cập nhật session trong RAM
+                _userSession.SetUser(userId, Email, accessToken, refreshToken, name, avatar);
+
+                // Lưu vào Settings nếu Remember Me
+                if (IsRememberMe && !string.IsNullOrEmpty(refreshToken))
+                {
+                    Settings.Default.UserId = userId;
+                    Settings.Default.UserEmail = Email;
+                    Settings.Default.UserToken = accessToken;
+                    Settings.Default.RefreshToken = refreshToken;
+                    Settings.Default.Save();
                 }
                 else
                 {
-                    ShowErrorDialog("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!");
+                    Settings.Default.UserId = string.Empty;
+                    Settings.Default.UserEmail = string.Empty;
+                    Settings.Default.UserToken = string.Empty;
+                    Settings.Default.RefreshToken = string.Empty;
+                    Settings.Default.Save();
                 }
+
+                // Mở giao diện chính
+                _navigationService.ShowMainWindow();
+                CloseCurrentWindow();
+            }
+            catch (Supabase.Gotrue.Exceptions.GotrueException ex)
+            {
+                ShowErrorDialog(GetUserFriendlyErrorMessage(ex));
             }
             catch (Exception ex)
             {
-                string errorMessage = GetUserFriendlyErrorMessage(ex);
-                ShowErrorDialog(errorMessage);
+                ShowErrorDialog("Đã xảy ra lỗi: " + ex.Message);
             }
         }
 
