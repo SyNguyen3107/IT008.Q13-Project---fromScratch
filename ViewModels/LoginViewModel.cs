@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Navigation;
 
 namespace EasyFlips.ViewModels
 {
@@ -57,6 +58,7 @@ namespace EasyFlips.ViewModels
             }
         }
 
+       
         [RelayCommand]
         private async Task LoginAsync(object parameter)
         {
@@ -97,21 +99,20 @@ namespace EasyFlips.ViewModels
                         Settings.Default.UserEmail = string.Empty;
                         Settings.Default.Save();
                     }
-
-                    // 4. Chuyển màn hình
-                    _navigationService.ShowMainWindow();
-                    CloseCurrentWindow();
-                }
-                else
-                {
-                    // Nếu Service trả về false mà không throw exception (trường hợp hiếm)
-                    ShowErrorDialog("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!");
+                    }
+                // Mở giao diện chính
+                _navigationService.ShowMainWindow();
+                CloseCurrentWindow();
+            }
+            catch (Supabase.Gotrue.Exceptions.GotrueException ex)
+            {
+                ShowErrorDialog(GetUserFriendlyErrorMessage(ex));
+            }
                 }
             }
             catch (Exception ex)
             {
-                string errorMessage = GetUserFriendlyErrorMessage(ex);
-                ShowErrorDialog(errorMessage);
+                ShowErrorDialog("Đã xảy ra lỗi: " + ex.Message);
             }
         }
 
@@ -159,6 +160,49 @@ namespace EasyFlips.ViewModels
         private void TogglePasswordVisibility()
         {
             IsPasswordVisible = !IsPasswordVisible;
+        }
+
+        [RelayCommand]
+        private async Task ForgotPassword()
+        {
+            if (string.IsNullOrWhiteSpace(Email))
+            {
+                MessageBox.Show("Vui lòng nhập email!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Hỏi xác nhận trước khi gửi OTP
+            var result = MessageBox.Show(
+                $"Bạn có chắc muốn gửi OTP tới email {Email}?",
+                "Xác nhận",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Question
+            );
+
+            if (result != MessageBoxResult.OK)
+            {
+                // Người dùng bấm Cancel → không gửi OTP
+                return;
+            }
+
+            // Người dùng bấm OK → tiến hành gửi OTP
+            var success = await _authService.SendOtpAsync(Email);
+            if (success)
+            {
+                MessageBox.Show("Mã OTP đã được gửi tới email của bạn.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Mở cửa sổ nhập OTP
+                var otpWindow = new OtpWindow
+                {
+                    DataContext = new OtpViewModel(_authService, _navigationService, Email)
+                };
+                otpWindow.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show("Không thể gửi OTP. Vui lòng thử lại.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
         }
     }
 }

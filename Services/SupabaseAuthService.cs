@@ -138,5 +138,103 @@ namespace EasyFlips.Services
 
             return false;
         }
+        public async Task<bool> ForgotPasswordAsync(string email)
+        {
+            try
+            {
+                await _supabaseService.Client.Auth.ResetPasswordForEmail(email);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> SendMagicLinkAsync(string email)
+        {
+            try
+            {
+                await _supabaseService.Client.Auth.SignIn(email);
+                // Supabase sẽ gửi magic link qua email
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> UpdatePasswordAsync(string newPassword)
+        {
+            try
+            {
+                var authClient = _supabaseService.Client.Auth as Supabase.Gotrue.Client;
+                if (authClient == null || authClient.CurrentSession == null)
+                    return false;
+
+                var user = await authClient.Update(new Supabase.Gotrue.UserAttributes
+                {
+                    Password = newPassword
+                });
+
+                return user != null;
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi để debug
+                MessageBox.Show($"Update password error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+        public bool IsRecoverySession()
+        {
+            var session = _supabaseService.Client.Auth.CurrentSession;
+            return session != null && session.User != null && string.IsNullOrEmpty(CurrentUserId);
+        }
+
+        public async Task<bool> SendOtpAsync(string email)
+        {
+            try
+            {
+                await _supabaseService.Client.Auth.ResetPasswordForEmail(email);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
+
+
+        public async Task<bool> VerifyOtpAsync(string email, string token)
+        {
+            try
+            {
+                var session = await _supabaseService.Client.Auth.VerifyOTP(
+                    email,
+                    token,
+                    Supabase.Gotrue.Constants.EmailOtpType.Recovery
+                );
+
+                if (session?.User != null)
+                {
+                    CurrentUserId = session.User.Id;
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            return false;
+        }
+
+
+
     }
 }

@@ -180,5 +180,24 @@ namespace EasyFlips.Services
             }
             syncWindow.ShowDialog();
         }
+        public void ShowOtpWindow(string email)
+        {
+            var window = _serviceProvider.GetRequiredService<OtpWindow>();
+            if (window.DataContext is OtpViewModel viewModel)
+            {
+                // Giả sử OtpViewModel có một phương thức Initialize để nhận email
+                viewModel = new OtpViewModel(
+                    _serviceProvider.GetRequiredService<IAuthService>(),
+                    this,
+                    email);
+                window.DataContext = viewModel;
+            }
+            window.ShowDialog();
+        }
+        public void ShowResetPasswordWindow()
+        {
+            var window = _serviceProvider.GetRequiredService<ResetPasswordWindow>();
+            window.Show();
+        }
     }
 }

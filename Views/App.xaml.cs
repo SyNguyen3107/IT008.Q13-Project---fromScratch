@@ -107,6 +107,10 @@ namespace EasyFlips
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();
             services.AddTransient<SyncWindow>();
+            services.AddTransient<OtpViewModel>();
+            services.AddTransient<OtpWindow>();
+            services.AddTransient<ResetPasswordViewModel>();
+            services.AddTransient<ResetPasswordWindow>();
 
             services.AddTransient<TestRealtimeWindow>();
 
