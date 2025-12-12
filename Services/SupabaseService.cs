@@ -186,11 +186,11 @@ namespace EasyFlips.Services
             try
             {
                 // Upload với option upsert để ghi đè nếu đã tồn tại
-                await _client.Storage.From("profile-avatars").Upload(imageData, path, new Supabase.Storage.FileOptions
+                await _client.Storage.From("avatars").Upload(imageData, path, new Supabase.Storage.FileOptions
                 {
                     Upsert = true
                 });
-                return _client.Storage.From("profile-avatars").GetPublicUrl(path);
+                return _client.Storage.From("avatars").GetPublicUrl(path);
             }
             catch (Exception ex)
             {
@@ -300,7 +300,7 @@ namespace EasyFlips.Services
             var path = $"{userId}/{fileName}";
             try
             {
-                await _client.Storage.From("profile-avatars").Remove(new List<string> { path });
+                await _client.Storage.From("avatars").Remove(new List<string> { path });
                 return true;
             }
             catch (Exception ex)
@@ -318,13 +318,13 @@ namespace EasyFlips.Services
             try
             {
                 // 1. Lấy danh sách file cũ trong folder của user
-                var existingFiles = await _client.Storage.From("profile-avatars").List(userId);
+                var existingFiles = await _client.Storage.From("avatars").List(userId);
 
                 // 2. Xóa tất cả file cũ
                 if (existingFiles != null && existingFiles.Any())
                 {
                     var pathsToDelete = existingFiles.Select(f => $"{userId}/{f.Name}").ToList();
-                    await _client.Storage.From("profile-avatars").Remove(pathsToDelete);
+                    await _client.Storage.From("avatars").Remove(pathsToDelete);
                     Debug.WriteLine($"[SupabaseService] Deleted {pathsToDelete.Count} old avatar(s)");
                 }
 
@@ -344,7 +344,7 @@ namespace EasyFlips.Services
         public string GetAvatarUrl(string userId, string fileName)
         {
             var path = $"{userId}/{fileName}";
-            return _client.Storage.From("profile-avatars").GetPublicUrl(path);
+            return _client.Storage.From("avatars").GetPublicUrl(path);
         }
 
         /// <summary>
