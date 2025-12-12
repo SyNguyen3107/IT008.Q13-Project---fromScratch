@@ -60,11 +60,10 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private async Task LoginAsync(object parameter)
         {
-            if (parameter is PasswordBox pwBox)
-                Password = pwBox.Password;
-
+            if (parameter is PasswordBox pwBox) Password = pwBox.Password;
             ErrorMessage = "";
 
+            // 1. Kiểm tra input
             if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
                 ShowErrorDialog("Vui lòng nhập đầy đủ Email và Mật khẩu!");
@@ -73,44 +72,25 @@ namespace EasyFlips.ViewModels
 
             try
             {
+                // 2. Gọi Service đăng nhập
+                // Service này đã tự động cập nhật _userSession nếu thành công
                 bool isSuccess = await _authService.LoginAsync(Email, Password);
 
                 if (isSuccess)
                 {
-                    // Lấy Session hiện tại từ Supabase Client (Chứa đầy đủ Token)
-                    var session = _supabaseClient.Auth.CurrentSession;
-                   // string userId = _authService.CurrentUserId;
-                    if (session != null && session.User != null)
-                    {
-                        string userId = session.User.Id;
-                        string accessToken = session.AccessToken;
-                        string refreshToken = session.RefreshToken;
-                        
-                        // Lấy metadata (Tên, Avatar)
-                        string name = session.User.UserMetadata.ContainsKey("full_name") 
-                                      ? session.User.UserMetadata["full_name"]?.ToString() 
-                                      : "User";
-                        
-                        string avatar = session.User.UserMetadata.ContainsKey("avatar_url") 
-                                        ? session.User.UserMetadata["avatar_url"]?.ToString() 
-                                        : "";
+                    // [FIX QUAN TRỌNG]: XOÁ BỎ ĐOẠN CHECK SESSION CŨ
+                    // Không cần gọi _supabaseClient.Auth.CurrentSession nữa (vì nó đang bị null do lỗi DI)
 
-                        // 1. CẬP NHẬT SESSION (RAM) - QUAN TRỌNG ĐỂ FIX LỖI "NOT LOGGED IN"
-                        _userSession.SetUser(userId, Email, accessToken, refreshToken, name, avatar);
-
-                        // 2. LƯU SETTINGS (Ổ CỨNG) - NẾU CHỌN REMEMBER ME
+                    // 3. Lưu Settings (Lấy dữ liệu từ UserSession đã được Service nạp)
                     if (IsRememberMe)
                     {
-                        // Lưu thông tin để lần sau Auto-Login
-                        Settings.Default.UserId = userId;
-                        Settings.Default.UserEmail = Email;
-                        Settings.Default.UserToken = accessToken;     // Lưu Access Token thật
-                        Settings.Default.RefreshToken = refreshToken;
+                        Settings.Default.UserId = _userSession.UserId;
+                        Settings.Default.UserEmail = _userSession.Email;
+                        Settings.Default.RefreshToken = _userSession.RefreshToken; // Đảm bảo UserSession có trường này
                         Settings.Default.Save();
                     }
                     else
                     {
-                        // Nếu không chọn Remember Me, xóa sạch settings
                         Settings.Default.UserId = string.Empty;
                         Settings.Default.UserToken = string.Empty;
                         Settings.Default.RefreshToken = string.Empty;
@@ -118,11 +98,13 @@ namespace EasyFlips.ViewModels
                         Settings.Default.Save();
                     }
 
+                    // 4. Chuyển màn hình
                     _navigationService.ShowMainWindow();
                     CloseCurrentWindow();
                 }
                 else
                 {
+                    // Nếu Service trả về false mà không throw exception (trường hợp hiếm)
                     ShowErrorDialog("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!");
                 }
             }
@@ -138,7 +120,7 @@ namespace EasyFlips.ViewModels
             string exceptionMessage = ex.Message.ToUpper();
 
             if (exceptionMessage.Contains("INVALID_PASSWORD") ||
-                exceptionMessage.Contains("INVALID_LOGIN_CREDENTIALS") ||
+                exceptionMessage.Contains("INVALID_CREDENTIALS") || 
                 exceptionMessage.Contains("USER_NOT_FOUND") ||
                 exceptionMessage.Contains("EMAIL_NOT_FOUND") ||
                 exceptionMessage.Contains("INVALID_EMAIL"))

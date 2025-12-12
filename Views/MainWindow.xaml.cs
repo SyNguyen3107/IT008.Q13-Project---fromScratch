@@ -33,10 +33,10 @@ namespace EasyFlips
             {
                 // 2. Hiện Frame lên (QUAN TRỌNG: Phải set Visible thì mới đè lên được)
                 MainFrame.Visibility = Visibility.Visible;
-
+                var editViewModel = new EditProfileViewModel(_viewModel.UserSession);
                 // 3. Truyền Session thật vào trang Edit
                 // Lưu ý: Đảm bảo _viewModel.UserSession là public
-                var editPage = new EditProfilePage(_viewModel.UserSession);
+                var editPage = new EditProfilePage(editViewModel);
 
                 MainFrame.Navigate(editPage);
             }

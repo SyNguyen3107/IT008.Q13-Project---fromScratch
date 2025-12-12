@@ -8,12 +8,13 @@ namespace EasyFlips.Views
 {
     public partial class EditProfilePage : Page
     {
-        public EditProfilePage(UserSession session)
+        public EditProfilePage(EditProfileViewModel viewModel)
         {
             InitializeComponent();
             // ... code khởi tạo session ...
-            var session = new UserSession();
-            var viewModel = new EditProfileViewModel(session);
+
+
+            this.DataContext = viewModel;
 
                 // 3. Setup nút Cancel/Close
                 viewModel.CloseAction = () =>
@@ -25,9 +26,6 @@ namespace EasyFlips.Views
                         mainWindow.MainFrame.Content = null;
                     }
                 };
-
-                this.DataContext = viewModel;
-            }
         }
     }
 }

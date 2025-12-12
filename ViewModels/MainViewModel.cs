@@ -33,8 +33,6 @@ namespace EasyFlips.ViewModels
 
         // [FIX] Expose UserSession để UI có thể binding đến AvatarURL
         public UserSession UserSession { get; }
-
-        public UserSession UserSession { get; private set; }
         public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>();
 
         public MainViewModel(IDeckRepository deckRepository,
