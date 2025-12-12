@@ -11,16 +11,9 @@ namespace EasyFlips.Views
         public EditProfilePage(UserSession session)
         {
             InitializeComponent();
-
-            if (session != null)
-            {
-                // 1. Lấy Supabase Client trực tiếp từ thùng chứa Service của App
-                // (Không cần truyền từ MainWindow sang nữa)
-                var supabaseClient = EasyFlips.App.ServiceProvider.GetRequiredService<Supabase.Client>();
-
-                // 2. Truyền cả Session và Client vào ViewModel
-                // (Đảm bảo ViewModel đã cập nhật Constructor nhận 2 tham số như hướng dẫn trước)
-                var viewModel = new EditProfileViewModel(session, supabaseClient);
+            // ... code khởi tạo session ...
+            var session = new UserSession();
+            var viewModel = new EditProfileViewModel(session);
 
                 // 3. Setup nút Cancel/Close
                 viewModel.CloseAction = () =>
