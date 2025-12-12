@@ -172,31 +172,223 @@ namespace EasyFlips.Services
         #endregion
 
         #region Storage Operations
+
+        /// <summary>
+        /// Upload ảnh avatar từ byte array
+        /// </summary>
+        /// <param name="userId">ID của user</param>
+        /// <param name="imageData">Dữ liệu ảnh dạng byte[]</param>
+        /// <param name="fileName">Tên file (vd: avatar.png)</param>
+        /// <returns>Public URL của ảnh hoặc null nếu thất bại</returns>
         public async Task<string?> UploadAvatarAsync(string userId, byte[] imageData, string fileName)
         {
             var path = $"{userId}/{fileName}";
             try
             {
-                await _client.Storage.From("avatars").Upload(imageData, path);
+                // Upload với option upsert để ghi đè nếu đã tồn tại
+                await _client.Storage.From("avatars").Upload(imageData, path, new Supabase.Storage.FileOptions
+                {
+                    Upsert = true
+                });
                 return _client.Storage.From("avatars").GetPublicUrl(path);
             }
-            catch (Exception ex) { Debug.WriteLine($"[SupabaseService] Upload avatar error: {ex.Message}"); return null; }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Upload avatar error: {ex.Message}");
+                return null;
+            }
         }
+
+        /// <summary>
+        /// Upload ảnh avatar từ file path và tự động cập nhật vào bảng profiles
+        /// </summary>
+        /// <param name="userId">ID của user</param>
+        /// <param name="filePath">Đường dẫn file ảnh trên máy</param>
+        /// <returns>Public URL của ảnh hoặc null nếu thất bại</returns>
+        public async Task<string?> UploadAvatarFromFileAsync(string userId, string filePath)
+        {
+            try
+            {
+                // 1. Validate file
+                if (!File.Exists(filePath))
+                {
+                    Debug.WriteLine($"[SupabaseService] File not found: {filePath}");
+                    return null;
+                }
+
+                // 2. Đọc file thành byte array
+                var imageData = await File.ReadAllBytesAsync(filePath);
+
+                // 3. Tạo tên file unique (tránh cache browser)
+                var extension = Path.GetExtension(filePath).ToLower();
+                var uniqueFileName = $"avatar_{DateTime.UtcNow.Ticks}{extension}";
+
+                // 4. Upload lên Storage
+                var avatarUrl = await UploadAvatarAsync(userId, imageData, uniqueFileName);
+
+                if (avatarUrl != null)
+                {
+                    // 5. Cập nhật URL vào bảng profiles
+                    await UpdateProfileAvatarAsync(userId, avatarUrl);
+                    Debug.WriteLine($"[SupabaseService] Avatar uploaded and profile updated: {avatarUrl}");
+                }
+
+                return avatarUrl;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Upload avatar from file error: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Upload ảnh avatar từ Stream (dùng cho clipboard, camera...)
+        /// </summary>
+        public async Task<string?> UploadAvatarFromStreamAsync(string userId, Stream imageStream, string extension = ".png")
+        {
+            try
+            {
+                using var memoryStream = new MemoryStream();
+                await imageStream.CopyToAsync(memoryStream);
+                var imageData = memoryStream.ToArray();
+
+                var uniqueFileName = $"avatar_{DateTime.UtcNow.Ticks}{extension}";
+                var avatarUrl = await UploadAvatarAsync(userId, imageData, uniqueFileName);
+
+                if (avatarUrl != null)
+                {
+                    await UpdateProfileAvatarAsync(userId, avatarUrl);
+                }
+
+                return avatarUrl;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Upload avatar from stream error: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Cập nhật avatar_url vào bảng profiles
+        /// </summary>
+        public async Task<bool> UpdateProfileAvatarAsync(string userId, string avatarUrl)
+        {
+            try
+            {
+                var result = await _client.From<Profile>()
+                    .Where(x => x.Id == userId)
+                    .Set(x => x.AvatarUrl, avatarUrl)
+                    .Set(x => x.UpdatedAt, DateTime.UtcNow)
+                    .Update();
+
+                return result.Models.Any();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Update profile avatar error: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Xóa avatar cũ khỏi Storage
+        /// </summary>
         public async Task<bool> DeleteAvatarAsync(string userId, string fileName)
         {
             var path = $"{userId}/{fileName}";
             try
             {
-                await _client.Storage.From("avatars").Remove(path);
+                await _client.Storage.From("avatars").Remove(new List<string> { path });
                 return true;
             }
-            catch (Exception ex) { Debug.WriteLine($"[SupabaseService] Delete avatar error: {ex.Message}"); return false; }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Delete avatar error: {ex.Message}");
+                return false;
+            }
         }
+
+        /// <summary>
+        /// Xóa tất cả avatar cũ của user và upload avatar mới
+        /// </summary>
+        public async Task<string?> ReplaceAvatarAsync(string userId, string newFilePath)
+        {
+            try
+            {
+                // 1. Lấy danh sách file cũ trong folder của user
+                var existingFiles = await _client.Storage.From("avatars").List(userId);
+
+                // 2. Xóa tất cả file cũ
+                if (existingFiles != null && existingFiles.Any())
+                {
+                    var pathsToDelete = existingFiles.Select(f => $"{userId}/{f.Name}").ToList();
+                    await _client.Storage.From("avatars").Remove(pathsToDelete);
+                    Debug.WriteLine($"[SupabaseService] Deleted {pathsToDelete.Count} old avatar(s)");
+                }
+
+                // 3. Upload file mới
+                return await UploadAvatarFromFileAsync(userId, newFilePath);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Replace avatar error: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Lấy public URL của avatar
+        /// </summary>
         public string GetAvatarUrl(string userId, string fileName)
         {
             var path = $"{userId}/{fileName}";
             return _client.Storage.From("avatars").GetPublicUrl(path);
         }
+
+        /// <summary>
+        /// Upload ảnh flashcard lên Storage
+        /// </summary>
+        public async Task<string?> UploadFlashcardImageAsync(string classroomId, string setId, byte[] imageData, string fileName)
+        {
+            var path = $"{classroomId}/{setId}/{fileName}";
+            try
+            {
+                await _client.Storage.From("flashcard-images").Upload(imageData, path, new Supabase.Storage.FileOptions
+                {
+                    Upsert = true
+                });
+                return _client.Storage.From("flashcard-images").GetPublicUrl(path);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Upload flashcard image error: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Upload audio flashcard lên Storage
+        /// </summary>
+        public async Task<string?> UploadFlashcardAudioAsync(string classroomId, string setId, byte[] audioData, string fileName)
+        {
+            var path = $"{classroomId}/{setId}/{fileName}";
+            try
+            {
+                await _client.Storage.From("flashcard-audios").Upload(audioData, path, new Supabase.Storage.FileOptions
+                {
+                    Upsert = true
+                });
+                return _client.Storage.From("flashcard-audios").GetPublicUrl(path);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Upload flashcard audio error: {ex.Message}");
+                return null;
+            }
+        }
+
         #endregion
 
         #region Helper Methods

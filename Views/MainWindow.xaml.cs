@@ -28,10 +28,17 @@ namespace EasyFlips
         // ---------------------------------------------------------
         private void OpenEditProfile_Click(object sender, RoutedEventArgs e)
         {
-            // Điều hướng Frame (lớp phủ) sang trang EditProfilePage
-            if (MainFrame != null)
+            // 1. Kiểm tra MainFrame và ViewModel
+            if (MainFrame != null && _viewModel != null)
             {
-                MainFrame.Navigate(new EditProfilePage());
+                // 2. Hiện Frame lên (QUAN TRỌNG: Phải set Visible thì mới đè lên được)
+                MainFrame.Visibility = Visibility.Visible;
+
+                // 3. Truyền Session thật vào trang Edit
+                // Lưu ý: Đảm bảo _viewModel.UserSession là public
+                var editPage = new EditProfilePage(_viewModel.UserSession);
+
+                MainFrame.Navigate(editPage);
             }
         }
         private async void MainWindowLoaded(object sender, RoutedEventArgs e)

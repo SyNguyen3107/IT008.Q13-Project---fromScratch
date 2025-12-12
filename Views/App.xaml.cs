@@ -121,6 +121,34 @@ namespace EasyFlips
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            // [BƯỚC 0]: Migrate Database SQLite Local
+            try
+            {
+                using (var scope = ServiceProvider.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    db.Database.Migrate();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Nếu file DB bị hỏng -> Xóa đi làm lại
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string dbPath = Path.Combine(appData, "EasyFlips", "EasyFlipsAppDB.db");
+
+                // Xóa cả file trong project root (Debug mode)
+                string projectDbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../../../", "EasyFlipsAppDB.db");
+
+                try { if (File.Exists(dbPath)) File.Delete(dbPath); } catch { }
+                try { if (File.Exists(projectDbPath)) File.Delete(projectDbPath); } catch { }
+
+                MessageBox.Show($"Cơ sở dữ liệu đã được làm mới.\nVui lòng khởi động lại ứng dụng.\n\nChi tiết: {ex.Message}",
+                                "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                Current.Shutdown();
+                return;
+            }
+
             // Kích hoạt NetworkService để bắt đầu theo dõi mạng
             NetworkService.Instance.Initialize();
             // [BƯỚC 1]: Khởi tạo Supabase

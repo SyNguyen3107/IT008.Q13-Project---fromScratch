@@ -9,14 +9,16 @@ namespace EasyFlips.Services
     public class SupabaseAuthService : IAuthService
     {
         private readonly SupabaseService _supabaseService;
+        private readonly UserSession _userSession;
 
         public string CurrentUserId { get; private set; }
 
         public bool IsLoggedIn => !string.IsNullOrEmpty(CurrentUserId);
 
-        public SupabaseAuthService(SupabaseService supabaseService)
+        public SupabaseAuthService(SupabaseService supabaseService, UserSession userSession)
         {
             _supabaseService = supabaseService;
+            _userSession = userSession;
         }
 
         public async Task<bool> LoginAsync(string email, string password)
@@ -27,6 +29,23 @@ namespace EasyFlips.Services
                 if (session?.User != null)
                 {
                     CurrentUserId = session.User.Id;
+                    
+                    // [FIX] Cập nhật UserSession sau khi đăng nhập thành công
+                    var displayName = session.User.UserMetadata?.ContainsKey("display_name") == true 
+                        ? session.User.UserMetadata["display_name"]?.ToString() 
+                        : "";
+                    var avatarUrl = session.User.UserMetadata?.ContainsKey("avatar_url") == true 
+                        ? session.User.UserMetadata["avatar_url"]?.ToString() 
+                        : "";
+                    
+                    _userSession.SetUser(
+                        session.User.Id,
+                        session.User.Email ?? email,
+                        session.AccessToken ?? "",
+                        displayName ?? "",
+                        avatarUrl ?? ""
+                    );
+                    
                     return true;
                 }
             }
@@ -46,6 +65,16 @@ namespace EasyFlips.Services
                 if (session?.User != null)
                 {
                     CurrentUserId = session.User.Id;
+                    
+                    // [FIX] Cập nhật UserSession sau khi đăng ký thành công
+                    _userSession.SetUser(
+                        session.User.Id,
+                        session.User.Email ?? email,
+                        session.AccessToken ?? "",
+                        username,
+                        ""
+                    );
+                    
                     return true;
                 }
             }
@@ -61,6 +90,9 @@ namespace EasyFlips.Services
 
             await _supabaseService.Client.Auth.SignOut();
             CurrentUserId = null;
+            
+            // [FIX] Xóa UserSession khi đăng xuất
+            _userSession.Clear();
         }
 
         public bool RestoreSession()
@@ -97,6 +129,23 @@ namespace EasyFlips.Services
             if (string.Equals(session.User.Id, Settings.Default.UserId, System.StringComparison.OrdinalIgnoreCase))
             {
                 CurrentUserId = session.User.Id;
+                
+                // [FIX] Cập nhật UserSession khi khôi phục session
+                var displayName = session.User.UserMetadata?.ContainsKey("display_name") == true 
+                    ? session.User.UserMetadata["display_name"]?.ToString() 
+                    : "";
+                var avatarUrl = session.User.UserMetadata?.ContainsKey("avatar_url") == true 
+                    ? session.User.UserMetadata["avatar_url"]?.ToString() 
+                    : "";
+                
+                _userSession.SetUser(
+                    session.User.Id,
+                    session.User.Email ?? "",
+                    session.AccessToken ?? "",
+                    displayName ?? "",
+                    avatarUrl ?? ""
+                );
+                
                 return true;
             }
             else

@@ -110,60 +110,83 @@
             </MenuItem>-->
         </Menu>
         <!-- Bên trái: trạng thái mạng -->
-            <StackPanel Grid.Row="1" Orientation="Horizontal"
+        <StackPanel Grid.Row="1" Orientation="Horizontal"
                 HorizontalAlignment="Left" Margin="10">
-                <!-- Nút tròn -->
-                <Ellipse Width="14" Height="14"
+            <!-- Nút tròn -->
+            <Ellipse Width="14" Height="14"
                  Fill="{Binding IsConnected, Converter={StaticResource BoolToBrushConverter}}"
                  Stroke="White" StrokeThickness="1"
                  VerticalAlignment="Center"/>
 
-                <!-- Text trạng thái -->
-                <TextBlock Text="{Binding IsConnected, Converter={StaticResource BoolToTextConverter}}"
+            <!-- Text trạng thái -->
+            <TextBlock Text="{Binding IsConnected, Converter={StaticResource BoolToTextConverter}}"
                    Foreground="White"
                    FontSize="14"
                    Margin="5,0,0,0"
                    VerticalAlignment="Center"/>
-            </StackPanel>
-            <StackPanel Grid.Row="1" 
+        </StackPanel>
+        <StackPanel Grid.Row="1" 
             Orientation="Horizontal" 
             HorizontalAlignment="Right" 
             VerticalAlignment="Center"
-            Margin="0,0,15,0">
+            Margin="0,0,20,0">
 
-            <Border Width="30" Height="30" CornerRadius="15" 
-            BorderBrush="#999" BorderThickness="1" Margin="0,0,10,0">
+            <Border Width="46" Height="46" CornerRadius="23" 
+            BorderBrush="#777" BorderThickness="1" 
+            Margin="0,0,12,0">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+                </Border.Effect>
                 <Border.Background>
-                    <ImageBrush ImageSource="{Binding AvatarURL, FallbackValue='pack://application:,,,/Images/default_user.png'}" 
+                    <ImageBrush ImageSource="{Binding UserSession.AvatarURL, TargetNullValue='pack://application:,,,/Images/default_user.png'}" 
                         Stretch="UniformToFill"/>
                 </Border.Background>
             </Border>
 
-            <Button Content="Edit Profile" 
-                    Click="OpenEditProfile_Click"
-                    Background="#434343" 
-                    Foreground="White" 
-                    BorderThickness="0"
-                    FontWeight="SemiBold"
-                    Cursor="Hand">
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}">
-                            <ContentPresenter VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
+            <StackPanel Orientation="Vertical" VerticalAlignment="Center">
 
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#3498DB"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                <TextBlock Text="{Binding UserSession.UserName, TargetNullValue='Guest User'}" 
+                       Foreground="White" 
+                       FontWeight="Bold" 
+                       FontSize="15" 
+                       Margin="0,0,0,2"/>
+
+                <Button Content="Edit Profile" 
+                        Click="OpenEditProfile_Click"
+                        Background="Transparent" 
+                        Foreground="White"
+                        FontSize="11"
+                        Cursor="Hand"
+                        Margin="0,2,0,0"
+                        HorizontalAlignment="Left">
+
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="border" 
+                                                Background="#3498DB" 
+                                                BorderThickness="0" 
+                                                CornerRadius="10" 
+                                                Padding="10,2">
+                                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        </Border>
+
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="border" Property="BorderBrush" Value="#3498DB"/>
+                                                <Setter TargetName="border" Property="Background" Value="#1A3498DB"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
 
         </StackPanel>
         <!-- Thanh Deck/Add/Browse/Stats/Sync (Giữ nguyên) -->
@@ -178,8 +201,8 @@
             </StackPanel>
         </Border>
         <!-- Thêm hiển thị trạng thái mạng -->
-     
-            <!-- Bảng hiển thị Deck -->
+
+        <!-- Bảng hiển thị Deck -->
         <!-- BỎ MouseDown Ở ĐÂY VÌ ĐÃ GÁN CHO GRID -->
         <Border Grid.Row="2" Height="Auto" Width="800" Background="#363636" CornerRadius="15" Margin="30">
 
@@ -306,7 +329,7 @@
                 </ListView.View>
             </ListView>
         </Border>
-        
+
 
         <!-- Thanh nút dưới (Giữ nguyên) -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20">
@@ -324,7 +347,9 @@
         <Frame x:Name="MainFrame" 
                Grid.Row="0" 
                Grid.RowSpan="4" 
-               NavigationUIVisibility="Hidden"/>
-               <!--Background="{x:Null}" Navigated="MainFrame_Navigated"-->
+               NavigationUIVisibility="Hidden"
+               Visibility="Hidden"
+               Background="#2c2c2c" 
+               Navigated="MainFrame_Navigated"/>
     </Grid>
 </Window>

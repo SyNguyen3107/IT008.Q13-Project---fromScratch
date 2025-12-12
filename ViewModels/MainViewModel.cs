@@ -31,6 +31,10 @@ namespace EasyFlips.ViewModels
         [ObservableProperty] private string currentEmail;
         [ObservableProperty] private bool _isConnected;
 
+        // [FIX] Expose UserSession để UI có thể binding đến AvatarURL
+        public UserSession UserSession { get; }
+
+        public UserSession UserSession { get; private set; }
         public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>();
 
         public MainViewModel(IDeckRepository deckRepository,
@@ -49,7 +53,9 @@ namespace EasyFlips.ViewModels
             _authService = authService;
 
             _messenger.RegisterAll(this);
+            UserSession = userSession;
             CurrentEmail = userSession.Email;
+            UserSession = userSession;
 
             IsConnected = NetworkService.Instance.IsConnected;
             NetworkService.Instance.ConnectivityChanged += OnConnectivityChanged;

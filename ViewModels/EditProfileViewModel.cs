@@ -6,23 +6,25 @@ using System.Windows;
 
 namespace EasyFlips.ViewModels
 {
+    public record UserUpdatedMessage(string NewName, string NewAvatar);
+
     public partial class EditProfileViewModel : ObservableObject
     {
         private readonly UserSession _userSession;
         // Hành động để báo cho View biết là cần đóng cửa sổ (dùng cho nút Cancel)
         public Action CloseAction { get; set; }
 
-        [ObservableProperty]
-        private string userName;
+        // Cần Client để gọi lệnh Update lên Server
+        private readonly Supabase.Client _supabaseClient;
+
+        public Action CloseAction { get; set; }
+
+        [ObservableProperty] private string userName;
+        [ObservableProperty] private string email;
+        [ObservableProperty] private string avatarURL;
 
         [ObservableProperty]
-        private string email;
-
-        [ObservableProperty]
-        private string avatarURL;
-
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsNotBusy))] // Để disable nút khi đang lưu
+        [NotifyPropertyChangedFor(nameof(IsNotBusy))]
         private bool isBusy;
         public bool IsNotBusy => !IsBusy;
 
@@ -36,6 +38,7 @@ namespace EasyFlips.ViewModels
 
             LoadUserData();
         }
+
         private void LoadUserData()
         {
             if (_userSession != null)
@@ -52,16 +55,18 @@ namespace EasyFlips.ViewModels
             }
             _selectedLocalImagePath = null; // Reset ảnh chọn tạm
         }
+
         [RelayCommand]
         public void ChangeAvatar()
         {
-            // Mở hộp thoại chọn file của Windows
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png) | *.jpg; *.jpeg; *.png";
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Image files (*.jpg, *.jpeg, *.png) | *.jpg; *.jpeg; *.png"
+            };
 
             if (openFileDialog.ShowDialog() == true)
             {
-                // 1. Lưu đường dẫn file để tí nữa upload
+                // Lưu đường dẫn file local để lát nữa upload
                 _selectedLocalImagePath = openFileDialog.FileName;
 
                 // 2. Hiển thị ngay lên giao diện (Preview)
@@ -69,19 +74,20 @@ namespace EasyFlips.ViewModels
                 AvatarURL = _selectedLocalImagePath;
             }
         }
+
         [RelayCommand]
         public async Task SaveProfile()
         {
             if (IsBusy) return; // Chặn bấm liên tục
             IsBusy = true;
+
             try
             {
                 // Cập nhật lại Session cục bộ để hiển thị ngay
                 _userSession.UpdateUserInfo(UserName, AvatarURL);
 
-                MessageBox.Show($"Đã lưu thành công!\nTên mới: {UserName}", "Thông báo");
+                MessageBox.Show($"Đã lưu thành công!", "Thông báo");
 
-                // Reset đường dẫn tạm
                 _selectedLocalImagePath = null;
             }
             catch (Exception ex)
@@ -97,7 +103,6 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         public void Cancel()
         {
-            // 1. Khôi phục lại dữ liệu gốc (Hoàn tác những gì vừa gõ)
             LoadUserData();
 
             // 2. Gọi hành động đóng cửa sổ (Code-behind sẽ xử lý việc này)
