@@ -134,7 +134,7 @@
             <Border Width="30" Height="30" CornerRadius="15" 
             BorderBrush="#999" BorderThickness="1" Margin="0,0,10,0">
                 <Border.Background>
-                    <ImageBrush ImageSource="{Binding AvatarURL, FallbackValue='pack://application:,,,/Images/default_user.png'}" 
+                    <ImageBrush ImageSource="{Binding UserSession.AvatarURL, TargetNullValue='pack://application:,,,/Images/default_user.png', FallbackValue='pack://application:,,,/Images/default_user.png'}" 
                         Stretch="UniformToFill"/>
                 </Border.Background>
             </Border>

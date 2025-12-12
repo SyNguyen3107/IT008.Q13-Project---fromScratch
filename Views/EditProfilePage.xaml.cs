@@ -14,6 +14,7 @@ using System.Windows.Shapes;
 using EasyFlips.ViewModels;
 using Supabase.Gotrue;
 using System.Windows.Controls;
+using Microsoft.Extensions.DependencyInjection;
 
 using EasyFlips.Services;
 
@@ -27,8 +28,8 @@ namespace EasyFlips.Views
         public EditProfilePage()
         {
             InitializeComponent();
-            // ... code khởi tạo session ...
-            var session = new UserSession();
+            // [FIX] Lấy UserSession từ DI container thay vì tạo mới
+            var session = App.ServiceProvider.GetRequiredService<UserSession>();
             var viewModel = new EditProfileViewModel(session);
 
             // THÊM ĐOẠN NÀY:
