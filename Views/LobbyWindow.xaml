@@ -5,87 +5,204 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:EasyFlips.ViewModels"
         mc:Ignorable="d"
-        Title="Waiting Lobby" Height="600" Width="900"
+        Title="EasyFlips Lobby" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
-        Background="#2C3E50">
+        Foreground="White">
 
-    <Grid>
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <LinearGradientBrush x:Key="MainBackground" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#141E30" Offset="0.0"/>
+            <GradientStop Color="#243B55" Offset="1.0"/>
+        </LinearGradientBrush>
+
+        <Style x:Key="GlassCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#1AFFFFFF"/>
+            <Setter Property="BorderBrush" Value="#30FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="15"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="10" Color="Black" Opacity="0.3" ShadowDepth="4"/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#25FFFFFF"/>
+                    <Setter Property="BorderBrush" Value="#4CD137"/>
+                    <Setter Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect BlurRadius="20" Color="#4CD137" Opacity="0.6" ShadowDepth="0"/>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="Cursor" Value="Hand"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ModernButtonStyle" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" CornerRadius="25" Background="{TemplateBinding Background}" 
+                                BorderThickness="0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.9"/>
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="1.05" ScaleY="1.05"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="3" Opacity="0.3"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{StaticResource MainBackground}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header: Room Code -->
-        <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,30,0,20">
-            <TextBlock Text="JOIN WITH CODE" Foreground="#BDC3C7" FontSize="16" HorizontalAlignment="Center"/>
-            <Border Background="White" CornerRadius="10" Padding="40,10" Margin="0,10">
-                <TextBlock Text="{Binding RoomCode}" FontSize="60" FontWeight="Bold" Foreground="#2C3E50"/>
+        <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,40,0,20">
+            <TextBlock Text="ROOM CODE" Foreground="#7F8FA6" FontSize="14" FontWeight="Bold" 
+                       HorizontalAlignment="Center" Margin="0,0,0,5"/>
+
+            <Border Background="#20000000" CornerRadius="20" BorderBrush="#20FFFFFF" BorderThickness="1" Padding="60,15">
+                <TextBlock Text="{Binding RoomId, TargetNullValue='LOADING'}" 
+                           FontSize="56" FontWeight="Black" Foreground="White"
+                           HorizontalAlignment="Center">
+                    <TextBlock.Effect>
+                        <DropShadowEffect Color="White" BlurRadius="15" Opacity="0.6" ShadowDepth="0"/>
+                    </TextBlock.Effect>
+                </TextBlock>
             </Border>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10">
-                <TextBlock Text="{Binding PlayerCount, StringFormat='Total: {0}'}" Foreground="White" FontSize="18" Margin="10,0"/>
-                <TextBlock Text=" | " Foreground="Gray" FontSize="18"/>
-                <TextBlock Text="{Binding OnlineCount, StringFormat='Online: {0}'}" Foreground="#2ECC71" FontSize="18" FontWeight="Bold" Margin="10,0"/>
-            </StackPanel>
+
+            <Border Background="#30000000" CornerRadius="15" HorizontalAlignment="Center" Margin="0,20,0,0" Padding="20,8">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="10" Height="10" Fill="#4CD137" Margin="0,0,8,0"/>
+                    <TextBlock Text="ONLINE: " Foreground="#BDC3C7" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Players.Count}" Foreground="White" FontWeight="Bold" Margin="5,0,0,0"/>
+                    <TextBlock Text="/ 30" Foreground="#7F8FA6"/>
+                </StackPanel>
+            </Border>
         </StackPanel>
 
-        <!-- Players Grid -->
-        <ScrollViewer Grid.Row="1" Margin="20">
+        <ScrollViewer Grid.Row="1" Margin="20,10" VerticalScrollBarVisibility="Hidden">
             <ItemsControl ItemsSource="{Binding Players}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <WrapPanel HorizontalAlignment="Center"/>
+                        <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
+
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Width="120" Height="140" Margin="10" Background="#34495E" CornerRadius="8">
-                            <StackPanel VerticalAlignment="Center">
-                                <!-- Avatar -->
-                                <Ellipse Width="60" Height="60" Margin="0,0,0,10">
-                                    <Ellipse.Fill>
-                                        <ImageBrush ImageSource="{Binding AvatarUrl}"/>
-                                    </Ellipse.Fill>
-                                </Ellipse>
-                                <!-- Name -->
-                                <TextBlock Text="{Binding Name}" Foreground="White" 
-                                           HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" 
-                                           FontWeight="SemiBold" Margin="5,0"/>
+                        <Border Width="140" Height="180" Margin="15" Style="{StaticResource GlassCardStyle}"
+                                RenderTransformOrigin="0.5,0.5">
 
-                                <!-- Host Badge -->
-                                <Border Background="#F1C40F" CornerRadius="4" HorizontalAlignment="Center" 
-                                        Margin="0,5,0,0" Padding="5,2"
-                                        Visibility="{Binding IsHost, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                    <TextBlock Text="HOST" FontSize="10" FontWeight="Bold" Foreground="Black"/>
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <Border.Triggers>
+                                <EventTrigger RoutedEvent="Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.4"/>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                             From="0.3" To="1" Duration="0:0:0.6">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <ElasticEase EasingMode="EaseOut" Oscillations="1" Springiness="5"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                             From="0.3" To="1" Duration="0:0:0.6">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <ElasticEase EasingMode="EaseOut" Oscillations="1" Springiness="5"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Border.Triggers>
+
+                            <Grid>
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Grid Margin="0,0,0,15">
+                                        <Ellipse Width="84" Height="84" Stroke="#40FFFFFF" StrokeThickness="4"/>
+                                        <Ellipse Width="80" Height="80">
+                                            <Ellipse.Fill>
+                                                <ImageBrush ImageSource="{Binding AvatarUrl, TargetNullValue='https://i.imgur.com/KkrzQ83.png'}" 
+                                                            Stretch="UniformToFill"/>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                    </Grid>
+
+                                    <TextBlock Text="{Binding Name}" Foreground="White" 
+                                               HorizontalAlignment="Center" TextAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="120"
+                                               FontSize="16" FontWeight="Bold"/>
+                                </StackPanel>
+
+                                <Border Background="#FFD700" CornerRadius="0,15,0,10" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Visibility="{Binding IsHost, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="👑" FontSize="16" Margin="8,4"/>
                                 </Border>
-                            </StackPanel>
+                            </Grid>
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
 
-        <!-- Footer: Buttons -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="20">
-            <Button Content="Leave" Command="{Binding LeaveLobbyCommand}"
-                    Width="120" Height="40" Margin="10" Background="#E74C3C" Foreground="White" 
-                    FontSize="16" FontWeight="Bold" BorderThickness="0">
-                <Button.Resources>
-                    <Style TargetType="Border">
-                        <Setter Property="CornerRadius" Value="5"/>
-                    </Style>
-                </Button.Resources>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,40">
+
+            <Button Command="{Binding LeaveRoomCommand}" Content="LEAVE"
+                    Width="160" Height="55" Margin="20"
+                    Style="{StaticResource ModernButtonStyle}"
+                    FontSize="18" FontWeight="Bold" Foreground="White">
+                <Button.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#EB3349" Offset="0"/>
+                        <GradientStop Color="#F45C43" Offset="1"/>
+                    </LinearGradientBrush>
+                </Button.Background>
             </Button>
 
-            <Button Content="Start Game" Command="{Binding StartGameCommand}"
-                    Width="200" Height="50" Margin="10" Background="#2ECC71" Foreground="White" 
-                    FontSize="20" FontWeight="Bold" BorderThickness="0">
-                <Button.Resources>
-                    <Style TargetType="Border">
-                        <Setter Property="CornerRadius" Value="5"/>
-                    </Style>
-                </Button.Resources>
+            <Button Command="{Binding StartGameCommand}" Content="START GAME"
+                    Visibility="{Binding IsHost, Converter={StaticResource BoolToVis}}"
+                    Width="240" Height="55" Margin="20"
+                    Style="{StaticResource ModernButtonStyle}"
+                    FontSize="20" FontWeight="ExtraBold" Foreground="White">
+                <Button.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#11998e" Offset="0"/>
+                        <GradientStop Color="#38ef7d" Offset="1"/>
+                    </LinearGradientBrush>
+                </Button.Background>
             </Button>
+
         </StackPanel>
     </Grid>
 </Window>

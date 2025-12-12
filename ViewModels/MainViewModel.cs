@@ -30,7 +30,7 @@ namespace EasyFlips.ViewModels
 
         [ObservableProperty] private string currentEmail;
         [ObservableProperty] private bool _isConnected;
-
+        public UserSession UserSession { get; private set; }
         public ObservableCollection<Deck> Decks { get; } = new ObservableCollection<Deck>();
 
         public MainViewModel(IDeckRepository deckRepository,
@@ -50,6 +50,7 @@ namespace EasyFlips.ViewModels
 
             _messenger.RegisterAll(this);
             CurrentEmail = userSession.Email;
+            UserSession = userSession;
 
             IsConnected = NetworkService.Instance.IsConnected;
             NetworkService.Instance.ConnectivityChanged += OnConnectivityChanged;

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EasyFlips.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251210122938_InitialCreate")]
+    [Migration("20251212163902_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

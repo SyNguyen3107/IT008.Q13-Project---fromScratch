@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Firebase.Auth;
+using Firebase.Auth.Requests;
 using Newtonsoft.Json.Linq;
 
 namespace EasyFlips.Services
@@ -24,13 +25,15 @@ namespace EasyFlips.Services
         [ObservableProperty]
         private string? avatarURL;
         public bool IsLoggedIn => !string.IsNullOrEmpty(UserId);
-
+        [ObservableProperty]
+        private string? refreshToken;
         // Hàm set thông tin khi đăng nhập thành công
-        public void SetUser(string userId, string email, string token, string name = "", string photo = "")
+        public void SetUser(string userId, string email, string token, string refreshToken, string name = "", string photo = "")
         {
             UserId = userId;
             Email = email;
             Token = token;
+            RefreshToken = refreshToken;
             UserName = name;
             AvatarURL = photo;
         }
@@ -42,6 +45,7 @@ namespace EasyFlips.Services
             UserId = null;
             Email = null;
             Token = null;
+            RefreshToken = null;
             UserName = null;
             AvatarURL = null;
         }
