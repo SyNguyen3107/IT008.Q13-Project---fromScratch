@@ -2,10 +2,13 @@
 using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Services; 
 using Microsoft.Win32;    // Dùng cho OpenFileDialog của WPF
-using System.Windows;    
+using System.Windows;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace EasyFlips.ViewModels
 {
+    // Tạo một tin nhắn chứa thông tin cập nhật (Bạn có thể để class này ở file riêng hoặc cuối file này)
+    public record UserUpdatedMessage(string NewName, string NewAvatar);
     public partial class EditProfileViewModel : ObservableObject
     {
         private readonly UserSession _userSession;
@@ -78,11 +81,12 @@ namespace EasyFlips.ViewModels
             {
                 // Cập nhật lại Session cục bộ để hiển thị ngay
                 _userSession.UpdateUserInfo(UserName, AvatarURL);
-
+                WeakReferenceMessenger.Default.Send(new UserUpdatedMessage(UserName, AvatarURL));
                 MessageBox.Show($"Đã lưu thành công!\nTên mới: {UserName}", "Thông báo");
 
                 // Reset đường dẫn tạm
                 _selectedLocalImagePath = null;
+                CloseAction?.Invoke();
             }
             catch (Exception ex)
             {
