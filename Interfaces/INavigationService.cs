@@ -16,6 +16,8 @@ namespace EasyFlips.Interfaces
         void ShowRegisterWindow();
         void ShowMainWindow();
         void OpenSyncWindow();
+        void ShowResetPasswordWindow();
+        void ShowOtpWindow(string email);
 
     }
 }

@@ -24,5 +24,22 @@ namespace EasyFlips.Interfaces
 
         // [FIX]: Thêm hàm khôi phục phiên đăng nhập
         bool RestoreSession();
+
+        // [NEW]: Gửi email reset mật khẩu
+        Task<bool> ForgotPasswordAsync(string email);
+
+        // [NEW]: Gửi magic link đăng nhập
+        Task<bool> SendMagicLinkAsync(string email);
+
+        // [NEW]: Đổi mật khẩu sau khi đăng nhập bằng magic link
+        Task<bool> UpdatePasswordAsync(string newPassword);
+
+        bool IsRecoverySession();
+        // [NEW]: Gửi mã OTP qua email
+        Task<bool> SendOtpAsync(string email);
+
+        // [NEW]: Xác thực mã OTP
+        Task<bool> VerifyOtpAsync(string email, string token);
+
     }
 }

@@ -85,12 +85,30 @@
 
             </Grid>
             <!-- Remember Me Checkbox -->
-            <CheckBox Content="Remember me" 
+            <!-- Remember Me + Forgot Password -->
+            <Grid Margin="0,5,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Remember Me Checkbox -->
+                <CheckBox Content="Remember me" 
               IsChecked="{Binding IsRememberMe}"
               Foreground="White"
-              Margin="0,0,5,0"
-              HorizontalAlignment="Right"
-              FontSize="12"/>
+              FontSize="12"
+              HorizontalAlignment="Left"
+              Grid.Column="0"/>
+
+                <!-- Forgot Password Link -->
+                <TextBlock Grid.Column="1" HorizontalAlignment="Right" Margin="10,0,0,0">
+        <Hyperlink Foreground="Red" FontSize="12"
+                   Command="{Binding ForgotPasswordCommand}">
+            Forgot password
+        </Hyperlink>
+                </TextBlock>
+            </Grid>
+
 
             <!-- Error Message -->
             <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
