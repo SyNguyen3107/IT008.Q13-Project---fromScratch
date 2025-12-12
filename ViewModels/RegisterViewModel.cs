@@ -15,22 +15,13 @@ namespace EasyFlips.ViewModels
         private readonly IAuthService _authService;
         private readonly INavigationService _navigationService;
 
-        [ObservableProperty]
-        private string email;
-
-        // Username
-        [ObservableProperty]
-        private string userName;
-
-        // Lưu ý: Đang dùng Binding (Option B) cho Password ở Register
-        [ObservableProperty]
-        private string password;
-
-        [ObservableProperty]
-        private string confirmPassword;
-
-        [ObservableProperty]
-        private string errorMessage;
+        [ObservableProperty] private string userName;
+        [ObservableProperty] private string email;
+        [ObservableProperty] private string password;
+        [ObservableProperty] private string confirmPassword;
+        [ObservableProperty] private string errorMessage;
+        [ObservableProperty] private bool isPasswordVisible;
+        [ObservableProperty] private bool isConfirmPasswordVisible;
 
         public RegisterViewModel(IAuthService authService, INavigationService navigationService)
         {
@@ -43,118 +34,56 @@ namespace EasyFlips.ViewModels
         {
             ErrorMessage = "";
 
-            // Kiểm tra placeholder
-            if (Password == "Enter Password" || ConfirmPassword == "Confirm Password")
+            if (string.IsNullOrWhiteSpace(UserName) || string.IsNullOrWhiteSpace(Email) ||
+                string.IsNullOrWhiteSpace(Password) || string.IsNullOrWhiteSpace(ConfirmPassword))
             {
-                ShowErrorDialog("Vui lòng nhập mật khẩu hợp lệ!");
+                ShowErrorDialog("Please fill in all fields!");
                 return;
             }
 
-            // Kiểm tra trường trống
-            if (string.IsNullOrWhiteSpace(UserName) && string.IsNullOrWhiteSpace(Email) && string.IsNullOrWhiteSpace(Password) && string.IsNullOrWhiteSpace(ConfirmPassword))
-            {
-                ShowErrorDialog("Email và mật khẩu không được để trống. Vui lòng nhập đầy đủ thông tin!");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(UserName))
-            {
-                ShowErrorDialog("Vui lòng nhập tên hiển thị!");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(Email))
-            {
-                ShowErrorDialog("Email không được để trống. Vui lòng nhập email của bạn!");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(Password))
-            {
-                ShowErrorDialog("Mật khẩu không được để trống. Vui lòng nhập mật khẩu của bạn!");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(ConfirmPassword))
-            {
-                ShowErrorDialog("Vui lòng xác nhận lại mật khẩu của bạn!");
-                return;
-            }
-
-            // Kiểm tra mật khẩu có khớp không
             if (Password != ConfirmPassword)
             {
-                ShowErrorDialog("Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại!");
+                ShowErrorDialog("Passwords do not match.");
                 return;
             }
 
-            // Kiểm tra độ dài mật khẩu
             if (Password.Length < 6)
             {
-                ShowErrorDialog("Mật khẩu phải có ít nhất 6 ký tự. Vui lòng chọn mật khẩu mạnh hơn!");
+                ShowErrorDialog("Password must be at least 6 characters.");
                 return;
             }
 
             try
             {
-                var userId = await _authService.RegisterAsync(Email, Password, UserName);
+                // [FIX]: Xử lý kết quả bool trả về từ RegisterAsync
+                bool isSuccess = await _authService.RegisterAsync(Email, Password, UserName);
 
-                if (!string.IsNullOrEmpty(userId))
+                if (isSuccess)
                 {
-                    MessageBox.Show("Tạo tài khoản thành công!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Successfully Registered!", "Account Created", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     _navigationService.ShowLoginWindow();
-
-                    // Đóng cửa sổ hiện tại
                     CloseCurrentWindow();
+                }
+                else
+                {
+                    ShowErrorDialog("Registration failed. Please try again.");
                 }
             }
             catch (Exception ex)
             {
-                // Xử lý các loại lỗi khác nhau từ Firebase
-                string errorMessage = GetUserFriendlyErrorMessage(ex);
-                ShowErrorDialog(errorMessage);
+                string userFriendlyMessage = GetUserFriendlyErrorMessage(ex);
+                ShowErrorDialog(userFriendlyMessage);
             }
         }
 
         private string GetUserFriendlyErrorMessage(Exception ex)
         {
-            string exceptionMessage = ex.Message.ToUpper();
-            
-            // Lỗi email đã tồn tại
-            if (exceptionMessage.Contains("EMAIL_EXISTS") || 
-                exceptionMessage.Contains("EMAIL_ALREADY_IN_USE") ||
-                exceptionMessage.Contains("ALREADY_EXISTS"))
-            {
-                return "Email này đã được đăng ký. Vui lòng sử dụng email khác hoặc đăng nhập nếu bạn đã có tài khoản!";
-            }
-            
-            // Lỗi định dạng email không hợp lệ
-            if (exceptionMessage.Contains("INVALID_EMAIL"))
-            {
-                return "Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại định dạng email!";
-            }
-            
-            // Lỗi mật khẩu yếu
-            if (exceptionMessage.Contains("WEAK_PASSWORD"))
-            {
-                return "Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn (ít nhất 6 ký tự)!";
-            }
-            
-            // Lỗi mạng
-            if (exceptionMessage.Contains("NETWORK") || exceptionMessage.Contains("CONNECTION"))
-            {
-                return "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet của bạn!";
-            }
-            
-            // Lỗi quá nhiều yêu cầu
-            if (exceptionMessage.Contains("TOO_MANY_ATTEMPTS_TRY_LATER"))
-            {
-                return "Bạn đã thử quá nhiều lần. Vui lòng thử lại sau!";
-            }
-            
-            // Các lỗi khác
-            return "Đã xảy ra lỗi khi tạo tài khoản. Vui lòng thử lại sau!";
+            string msg = ex.Message.ToUpper();
+            if (msg.Contains("EMAIL_EXISTS") || msg.Contains("ALREADY_IN_USE")) return "Email already exists!";
+            if (msg.Contains("WEAK_PASSWORD")) return "Password is too weak!";
+            if (msg.Contains("NETWORK")) return "Network error!";
+            return $"Error: {ex.Message}";
         }
 
         private void ShowErrorDialog(string message)
@@ -181,21 +110,11 @@ namespace EasyFlips.ViewModels
                 }
             }
         }
-        [ObservableProperty]
-        private bool isPasswordVisible; // mặc định false
-        [ObservableProperty]
-        private bool isConfirmPasswordVisible;
 
         [RelayCommand]
-        private void TogglePasswordVisibility()
-        {
-            IsPasswordVisible = !IsPasswordVisible;
-        }
+        private void TogglePasswordVisibility() => IsPasswordVisible = !IsPasswordVisible;
 
         [RelayCommand]
-        private void ToggleConfirmPasswordVisibility()
-        {
-            IsConfirmPasswordVisible = !IsConfirmPasswordVisible;
-        }
+        private void ToggleConfirmPasswordVisibility() => IsConfirmPasswordVisible = !IsConfirmPasswordVisible;
     }
 }

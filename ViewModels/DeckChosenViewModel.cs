@@ -13,7 +13,7 @@ namespace EasyFlips.ViewModels
         private readonly INavigationService _navigationService;
 
         // Lưu deckId để dùng khi người dùng nhấn Study Now
-        private int _deckId;
+        private string _deckId;
 
         private string _deckName = "Loading..";
 
@@ -58,7 +58,7 @@ namespace EasyFlips.ViewModels
 
         // Hàm khởi tạo bất đồng bộ: lấy thống kê từ StudyService
         // Ghi chú: gọi từ NavigationService khi mở cửa sổ
-        public async Task InitializeAsync(int deckId)
+        public async Task InitializeAsync(string deckId)
         {
             _deckId = deckId; // lưu lại deckId để dùng cho StudyNowCommand
 
@@ -85,7 +85,6 @@ namespace EasyFlips.ViewModels
                 // Có thẻ -> Mở cửa sổ học
                 _navigationService.ShowStudyWindow(_deckId);
 
-                // --- TỰ ĐỘNG ĐÓNG CỬA SỔ HIỆN TẠI ---
                 if (window != null)
                 {
                     window.Close();

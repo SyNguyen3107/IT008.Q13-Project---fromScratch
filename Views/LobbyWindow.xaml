@@ -1,0 +1,91 @@
+﻿<Window x:Class="EasyFlips.Views.LobbyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:EasyFlips.ViewModels"
+        mc:Ignorable="d"
+        Title="Waiting Lobby" Height="600" Width="900"
+        WindowStartupLocation="CenterScreen"
+        Background="#2C3E50">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header: Room Code -->
+        <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,30,0,20">
+            <TextBlock Text="JOIN WITH CODE" Foreground="#BDC3C7" FontSize="16" HorizontalAlignment="Center"/>
+            <Border Background="White" CornerRadius="10" Padding="40,10" Margin="0,10">
+                <TextBlock Text="{Binding RoomCode}" FontSize="60" FontWeight="Bold" Foreground="#2C3E50"/>
+            </Border>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10">
+                <TextBlock Text="{Binding PlayerCount, StringFormat='Total: {0}'}" Foreground="White" FontSize="18" Margin="10,0"/>
+                <TextBlock Text=" | " Foreground="Gray" FontSize="18"/>
+                <TextBlock Text="{Binding OnlineCount, StringFormat='Online: {0}'}" Foreground="#2ECC71" FontSize="18" FontWeight="Bold" Margin="10,0"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Players Grid -->
+        <ScrollViewer Grid.Row="1" Margin="20">
+            <ItemsControl ItemsSource="{Binding Players}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel HorizontalAlignment="Center"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="120" Height="140" Margin="10" Background="#34495E" CornerRadius="8">
+                            <StackPanel VerticalAlignment="Center">
+                                <!-- Avatar -->
+                                <Ellipse Width="60" Height="60" Margin="0,0,0,10">
+                                    <Ellipse.Fill>
+                                        <ImageBrush ImageSource="{Binding AvatarUrl}"/>
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                                <!-- Name -->
+                                <TextBlock Text="{Binding Name}" Foreground="White" 
+                                           HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" 
+                                           FontWeight="SemiBold" Margin="5,0"/>
+
+                                <!-- Host Badge -->
+                                <Border Background="#F1C40F" CornerRadius="4" HorizontalAlignment="Center" 
+                                        Margin="0,5,0,0" Padding="5,2"
+                                        Visibility="{Binding IsHost, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <TextBlock Text="HOST" FontSize="10" FontWeight="Bold" Foreground="Black"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Footer: Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="20">
+            <Button Content="Leave" Command="{Binding LeaveLobbyCommand}"
+                    Width="120" Height="40" Margin="10" Background="#E74C3C" Foreground="White" 
+                    FontSize="16" FontWeight="Bold" BorderThickness="0">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="5"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+
+            <Button Content="Start Game" Command="{Binding StartGameCommand}"
+                    Width="200" Height="50" Margin="10" Background="#2ECC71" Foreground="White" 
+                    FontSize="20" FontWeight="Bold" BorderThickness="0">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="5"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

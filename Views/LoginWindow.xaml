@@ -52,7 +52,7 @@
                Background="#40444B" Foreground="White"
                 Visibility="{Binding IsPasswordVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
                VerticalContentAlignment="Center"></PasswordBox>
-          
+
 
                 <!-- Nút con mắt -->
                 <Button Grid.Column="1"
@@ -84,10 +84,6 @@
                 </Button>
 
             </Grid>
-
-
-
-
             <!-- Remember Me Checkbox -->
             <CheckBox Content="Remember me" 
               IsChecked="{Binding IsRememberMe}"

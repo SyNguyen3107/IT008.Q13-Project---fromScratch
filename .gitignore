@@ -9,6 +9,10 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.db
+*.db-shm
+*.db-wal
+EasyFlipsAppDB.db
 AppConfig.cs
 
 # User-specific files (MonoDevelop/Xamarin Studio)
@@ -362,3 +366,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/EasyFlipsAppDB.db

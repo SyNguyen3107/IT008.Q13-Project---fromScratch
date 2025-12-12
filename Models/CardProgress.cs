@@ -1,24 +1,58 @@
-﻿namespace EasyFlips.Models
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json; // Cần thêm
+using Supabase.Postgrest.Models;
+using Postgrest = Supabase.Postgrest.Attributes;
+
+namespace EasyFlips.Models
 {
-    public class CardProgress
+    [Postgrest.Table("card_progresses")]
+    public class CardProgress : BaseModel
     {
-        public int ID { get; private set; }
-        public int CardId { get; set; } // Foreign key
+        [Key]
+        // true để gửi ID local lên server (đồng bộ ID)
+        [Postgrest.PrimaryKey("id", true)]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
 
-        //Thông tin ôn tập
+        [Postgrest.Column("card_id")]
+        public string CardId { get; set; }
+
+        [Postgrest.Column("user_id")]
+        public string UserId { get; set; }
+
+        [Postgrest.Column("due_date")]
         public DateTime DueDate { get; set; }
-        public double Interval { get; set; }    // Tính bằng ngày
-        public double EaseFactor { get; set; }  // Thường bắt đầu từ 2.5 (250%)
 
-        // Quan hệ 1-1 ngược lại với Card
-        public Card Card { get; set; }
+        [Postgrest.Column("interval")]
+        public double Interval { get; set; }
 
-        // Constructor để set giá trị mặc định khi thẻ mới được tạo
+        [Postgrest.Column("ease_factor")]
+        public double EaseFactor { get; set; }
+
+        [Postgrest.Column("repetitions")]
+        public int Repetitions { get; set; }
+
+        [Postgrest.Column("last_review_date")]
+        public DateTime LastReviewDate { get; set; }
+
+        [Postgrest.Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Postgrest.Column("updated_at")]
+        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+        [ForeignKey(nameof(CardId))]
+        [JsonIgnore] // [FIX]: Bỏ qua khi sync để tránh lỗi vòng lặp
+        public virtual Card? Card { get; set; }
+
         public CardProgress()
         {
-            DueDate = DateTime.Now; // Học ngay lập tức
-            Interval = 0; // Ban đầu = 0, sẽ được set khi chọn option lần đầu
-            EaseFactor = 2.5; // Giá trị mặc định của Anki
+            DueDate = DateTime.Now;
+            LastReviewDate = DateTime.Now;
+            Interval = 0;
+            EaseFactor = 2.5;
+            Repetitions = 0;
         }
     }
 }

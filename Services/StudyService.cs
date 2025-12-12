@@ -1,6 +1,9 @@
 ﻿using EasyFlips.Interfaces;
 using EasyFlips.Models;
-using System.Diagnostics; // Để in log debug
+using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace EasyFlips.Services
 {
@@ -16,16 +19,20 @@ namespace EasyFlips.Services
     {
         private readonly ICardRepository _cardRepository;
         private readonly IDeckRepository _deckRepository;
+        private readonly IAuthService _authService; // [NEW] Cần Auth để lấy UserId
 
-        public StudyService(ICardRepository cardRepository, IDeckRepository deckRepository)
+        // Inject AuthService
+        public StudyService(ICardRepository cardRepository, IDeckRepository deckRepository, IAuthService authService)
         {
             _cardRepository = cardRepository;
             _deckRepository = deckRepository;
+            _authService = authService;
         }
 
         // --- 1. LOGIC LẤY THẺ CẦN HỌC ---
-        public async Task<Card?> GetNextCardToReviewAsync(int deckId)
+        public async Task<Card?> GetNextCardToReviewAsync(string deckId)
         {
+            // CardRepository đã dùng AsNoTracking() nên dữ liệu ở đây luôn mới
             var allCards = await _cardRepository.GetCardsByDeckIdAsync(deckId);
             var now = DateTime.Now;
 
@@ -34,61 +41,44 @@ namespace EasyFlips.Services
             var dueCard = allCards
                 .Where(c =>
                 {
-                    // CASE 1: Thẻ mới tinh (Chưa xem bao giờ, Progress = null) -> LẤY NGAY
+                    // CASE 1: Thẻ mới (New)
                     if (c.Progress == null) return true;
 
-                    // CASE 2: Thẻ đang học (0 < Interval < 1) -> LẤY NGAY
-                    // Bao gồm thẻ Again (Interval = 0.01) và Hard (Interval < 1)
+                    // CASE 2: Thẻ đang học (Learn: 0 < Interval < 1)
                     if (c.Progress.Interval > 0 && c.Progress.Interval < 1) return true;
 
-                    // CASE 3: Thẻ ôn tập (Interval >= 1) đã đến hạn -> LẤY
+                    // CASE 3: Thẻ đến hạn (Review: Interval >= 1)
+                    // Thêm buffer 1 phút để tránh lệch giờ
                     if (c.Progress.Interval >= 1 && c.Progress.DueDate <= now.AddMinutes(1)) return true;
 
                     return false;
                 })
-                // Sắp xếp ưu tiên:
-                // 1. Thẻ chưa có Progress (New) -> Rank 0
-                // 2. Thẻ Learn (0 < Interval < 1) -> Rank 1
-                // 3. Thẻ Review (Interval >= 1) -> Rank 2
                 .OrderBy(c =>
                 {
+                    // Ưu tiên: New (0) -> Learn (1) -> Review (2)
                     if (c.Progress == null) return 0;
                     if (c.Progress.Interval > 0 && c.Progress.Interval < 1) return 1;
                     return 2;
                 })
-                // Nếu cùng nhóm ưu tiên, lấy thẻ có DueDate cũ nhất trước
                 .ThenBy(c => c.Progress == null ? DateTime.MinValue : c.Progress.DueDate)
                 .FirstOrDefault();
-
-            if (dueCard != null)
-            {
-                Debug.WriteLine($"[StudyService] Found card: {dueCard.FrontText} (ID: {dueCard.ID})");
-            }
-            else
-            {
-                Debug.WriteLine("[StudyService] No due card found.");
-            }
 
             return dueCard;
         }
 
         // --- 2. LOGIC TÍNH TOÁN THỐNG KÊ ---
-        public async Task<DeckStats> GetDeckStatsAsync(int deckId)
+        public async Task<DeckStats> GetDeckStatsAsync(string deckId)
         {
             var deck = await _deckRepository.GetByIdAsync(deckId);
             var cards = await _cardRepository.GetCardsByDeckIdAsync(deckId);
             var now = DateTime.Now;
 
-            // Đếm số thẻ New (CHƯA CÓ PROGRESS - chưa xem bao giờ)
             var newCount = cards.Count(c => c.Progress == null);
 
-            // Đếm số thẻ Learn (ĐÃ XEM nhưng chưa hoàn thành: 0 < Interval < 1)
-            // Chỉ đếm card có Interval > 0 (đã học) và < 1 (chưa hoàn thành)
             var learningCount = cards.Count(c => c.Progress != null &&
                                                  c.Progress.Interval > 0 &&
                                                  c.Progress.Interval < 1);
 
-            // Đếm số thẻ Due/Review (Đã hoàn thành: Interval >= 1 VÀ đã đến hạn)
             var reviewCount = cards.Count(c => c.Progress != null &&
                                                c.Progress.Interval >= 1 &&
                                                c.Progress.DueDate <= now);
@@ -107,37 +97,70 @@ namespace EasyFlips.Services
         {
             if (card == null) return;
 
+            // Nếu thẻ chưa có Progress (lần đầu học), tạo mới
             if (card.Progress == null)
             {
                 card.Progress = new CardProgress();
-                card.Progress.CardId = card.ID; // gán khóa ngoại để EF khỏi lỗi
+                card.Progress.CardId = card.Id;
+
+                // [FIX CRITICAL ERROR]: Gán UserId bắt buộc cho Database Supabase
+                if (_authService.IsLoggedIn)
+                {
+                    card.Progress.UserId = _authService.CurrentUserId;
+                }
+                else
+                {
+                    // Nếu app cho phép học offline/guest, cần xử lý logic ID ảo hoặc throw error
+                    // Hiện tại assume user đã login
+                    throw new Exception("Bạn phải đăng nhập để lưu tiến độ học tập.");
+                }
+
+                // Ngắt tham chiếu vòng để tránh lỗi EF Core insert lại Card
+                card.Progress.Card = null;
             }
+
             var p = card.Progress;
 
+            // Logic SM-2 cơ bản
             switch (outcome)
             {
                 case ReviewOutcome.Again:
-                    p.Interval = 0.01;
+                    p.Interval = 0.01; // Reset về 0 (hoặc rất nhỏ)
                     p.EaseFactor = Math.Max(1.3, p.EaseFactor - 0.2);
-                    p.DueDate = DateTime.Now;
+                    p.DueDate = DateTime.Now; // Học lại ngay
+                    p.Repetitions = 0; // Reset số lần lặp
                     break;
+
                 case ReviewOutcome.Hard:
                     if (p.Interval < 0.01) p.Interval = 0.01;
                     else if (p.Interval < 1) p.Interval = Math.Min(p.Interval * 1.5, 0.9);
-                    else p.Interval = 0.5;
+                    else p.Interval = 0.5; // Hard thường giảm interval hoặc giữ nguyên ngắn
+
                     p.EaseFactor = Math.Max(1.3, p.EaseFactor - 0.15);
                     p.DueDate = DateTime.Now.AddDays(p.Interval);
                     break;
+
                 case ReviewOutcome.Good:
-                    if (p.Interval < 1) p.Interval = 1.0; else p.Interval = p.Interval * p.EaseFactor;
+                    if (p.Interval < 1) p.Interval = 1.0; // Tốt nghiệp giai đoạn học
+                    else p.Interval = p.Interval * p.EaseFactor;
+
+                    p.Repetitions++;
                     p.DueDate = DateTime.Now.AddDays(p.Interval);
                     break;
+
                 case ReviewOutcome.Easy:
-                    if (p.Interval < 1) p.Interval = 4.0; else p.Interval = p.Interval * p.EaseFactor * 1.3;
+                    if (p.Interval < 1) p.Interval = 4.0; // Nhảy cóc
+                    else p.Interval = p.Interval * p.EaseFactor * 1.3;
+
                     p.EaseFactor += 0.15;
+                    p.Repetitions++;
                     p.DueDate = DateTime.Now.AddDays(p.Interval);
                     break;
             }
+
+            p.LastReviewDate = DateTime.Now;
+
+            // Lưu xuống DB
             await _cardRepository.UpdateAsync(card);
         }
     }

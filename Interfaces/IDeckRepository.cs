@@ -9,11 +9,11 @@ namespace EasyFlips.Interfaces
         // Lấy danh sách tất cả deck
         Task<IEnumerable<Deck>> GetAllAsync();
         // Lấy 1 deck theo ID
-        Task<Deck> GetByIdAsync(int id);
+        Task<Deck> GetByIdAsync(string id);
         // Cập nhật thông tin deck
         Task UpdateAsync(Deck deck);
         // Xóa deck theo ID
-        Task DeleteAsync(int id);
+        Task DeleteAsync(string id);
         //Kiểm tra tên deck đã tồn tại chưa
         Task<Deck?> GetByNameAsync(string name);
     }

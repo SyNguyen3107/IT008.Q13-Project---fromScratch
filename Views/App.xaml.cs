@@ -61,14 +61,30 @@ namespace EasyFlips
                 options.UseSqlite($"Data Source={dbPath}");
             });
 
+            // --- ĐĂNG KÝ SUPABASE CLIENT (SINGLETON) ---
+            services.AddSingleton<Supabase.Client>(provider =>
+            {
+                var options = new Supabase.SupabaseOptions
+                {
+                    AutoRefreshToken = true,
+                    AutoConnectRealtime = true,
+                    // [Gợi ý cho Lỗi 2]: Đảm bảo SessionPersistanceEnabled mặc định là true
+                };
+                var client = new Supabase.Client(AppConfig.SupabaseUrl, AppConfig.SupabaseKey, options);
+                return client;
+            });
+
             services.AddScoped<IDeckRepository, DeckRepository>();
             services.AddScoped<ICardRepository, CardRepository>();
+
             services.AddScoped<StudyService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddTransient<ExportService>();
             services.AddTransient<ImportService>();
             services.AddSingleton<AudioService>();
-            services.AddSingleton<IAuthService, FirebaseAuthService>();
+            services.AddSingleton<SupabaseService>();
+            services.AddSingleton<IAuthService, SupabaseAuthService>();
+            services.AddTransient<SyncService>();
 
             services.AddTransient<MainViewModel>();
             services.AddTransient<StudyViewModel>();
@@ -79,6 +95,7 @@ namespace EasyFlips
             services.AddTransient<ChooseDeckViewModel>();
             services.AddTransient<LoginViewModel>();
             services.AddTransient<RegisterViewModel>();
+            services.AddTransient<SyncViewModel>();
 
             services.AddTransient<MainWindow>();
             services.AddTransient<StudyWindow>();
@@ -87,9 +104,9 @@ namespace EasyFlips
             services.AddTransient<DeckChosenWindow>();
             services.AddTransient<DeckRenameWindow>();
             services.AddTransient<ChooseDeckWindow>();
-            services.AddTransient<SyncWindow>();
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();
+            services.AddTransient<SyncWindow>();
 
             services.AddTransient<TestRealtimeWindow>();
 
@@ -97,48 +114,24 @@ namespace EasyFlips
             services.AddSingleton<UserSession>();
         }
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            var networkService = Services.NetworkService.Instance;
-            // --- 1. KHÔI PHỤC LOGIC MIGRATE DATABASE (ĐỂ TRÁNH CRASH) ---
-            try
+            // Kích hoạt NetworkService để bắt đầu theo dõi mạng
+            NetworkService.Instance.Initialize();
+            // [BƯỚC 1]: Khởi tạo Supabase
+            var supabaseService = ServiceProvider.GetRequiredService<SupabaseService>();
+            await supabaseService.InitializeAsync();
+
+            // [BƯỚC 2]: Khôi phục session thông qua Interface
+            var authService = ServiceProvider.GetRequiredService<IAuthService>();
+            bool isLoggedIn = authService.RestoreSession(); // Gọi trực tiếp từ Interface
+
+            // [BƯỚC 3]: Điều hướng
+            if (isLoggedIn)
             {
-                using (var scope = ServiceProvider.CreateScope())
-                {
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    db.Database.Migrate();
-                }
-            }
-            catch (Exception ex)
-            {
-                // Nếu file DB bị hỏng quá nặng (lỗi cấu trúc cũ) -> Xóa đi làm lại
-                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string dbPath = Path.Combine(appData, "EasyFlips", "EasyFlipsAppDB.db");
-
-                if (File.Exists(dbPath))
-                {
-                    try { File.Delete(dbPath); } catch { }
-                }
-
-                MessageBox.Show($"Cơ sở dữ liệu đã được làm mới do phiên bản cũ không tương thích.\nVui lòng khởi động lại ứng dụng.",
-                                "Thông báo cập nhật", MessageBoxButton.OK, MessageBoxImage.Information);
-                Current.Shutdown();
-                return;
-            }
-
-            // --- 2. CHẾ ĐỘ TEST REALTIME ---
-            // Đã comment logic Login/Main cũ để vào thẳng Test
-            
-            string savedId = Settings.Default.UserId;
-            string savedToken = Settings.Default.UserToken; 
-            string savedEmail = Settings.Default.UserEmail;
-
-            if (!string.IsNullOrEmpty(savedId) && !string.IsNullOrEmpty(savedToken))
-            {
-                var userSession = ServiceProvider.GetRequiredService<UserSession>();
-                userSession.SetUser(savedId, savedEmail, savedToken);
                 var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+                mainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
                 mainWindow.Show();
             }
             else
@@ -146,11 +139,6 @@ namespace EasyFlips
                 var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
                 loginWindow.Show();
             }
-            
-
-            //// --- 3. MỞ CỬA SỔ TEST ---
-            //var testWindow = new Views.TestRealtimeWindow();
-            //testWindow.Show();
         }
     }
 }

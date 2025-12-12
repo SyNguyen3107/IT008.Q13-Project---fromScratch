@@ -4,6 +4,12 @@
 * text=auto
 
 ###############################################################################
+# SQL files are PostgreSQL syntax (not T-SQL)
+###############################################################################
+*.sql linguist-language=PLpgSQL
+Database/*.md linguist-documentation
+
+###############################################################################
 # Set default behavior for command prompt diff.
 #
 # This is need for earlier builds of msysgit that does not have it on by

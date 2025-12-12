@@ -13,7 +13,7 @@ namespace EasyFlips.Services
     {
         private readonly IDeckRepository _deckRepository;
         private readonly ICardRepository _cardRepository;
-        private readonly IAuthService _authService; // ✅ Cần để biết Deck này của ai
+        private readonly IAuthService _authService;
 
         public ImportService(IDeckRepository deckRepository, ICardRepository cardRepository, IAuthService authService)
         {
@@ -57,7 +57,7 @@ namespace EasyFlips.Services
                 {
                     Name = finalDeckName,
                     Description = exportData.Description ?? "",
-                    UserId = _authService.CurrentUserId // ✅ Gán cho User hiện tại (hoặc null nếu là Khách)
+                    UserId = _authService.CurrentUserId 
                 };
                 await _deckRepository.AddAsync(newDeck);
 
@@ -106,7 +106,7 @@ namespace EasyFlips.Services
                     {
                         var newCard = new Card
                         {
-                            DeckId = newDeck.ID,
+                            DeckId = newDeck.Id,
                             FrontText = cardModel.FrontText,
                             BackText = cardModel.BackText,
                             Answer = cardModel.Answer ?? "",
@@ -123,7 +123,7 @@ namespace EasyFlips.Services
                     }
                 }
 
-                var reloadedDeck = await _deckRepository.GetByIdAsync(newDeck.ID);
+                var reloadedDeck = await _deckRepository.GetByIdAsync(newDeck.Id);
                 return reloadedDeck ?? newDeck;
             }
             finally

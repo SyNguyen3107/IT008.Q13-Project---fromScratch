@@ -170,7 +170,7 @@
         <Border Grid.Row="1" Background="#434343" CornerRadius="15" HorizontalAlignment="Center" VerticalAlignment="Top" BorderBrush="#444" BorderThickness="1" Padding="5,0" Margin="0,0,0,0" Height="34">
             <!-- .. (Nội dung thanh nút cũ) .. -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Button Content="Decks" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
+                <Button Content="Decks" Command="{Binding ReloadDecksCommand}" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
                 <Button Content="Add" Style="{StaticResource NavButtonStyle}" Margin="10,0" Command="{Binding AddCardCommand}" />
                 <!--<Button Content="Browse" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>-->
                 <Button Content="Stats" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
