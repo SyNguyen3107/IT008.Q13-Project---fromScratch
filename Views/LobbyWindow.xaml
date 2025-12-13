@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         Title="EasyFlips Lobby" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing"
         Foreground="White">
 
     <Window.Resources>
@@ -76,6 +77,28 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="IconButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="#BDC3C7"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="5" Padding="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Background" Value="#20FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid Background="{StaticResource MainBackground}">
@@ -99,14 +122,29 @@
                 </TextBlock>
             </Border>
 
-            <Border Background="#30000000" CornerRadius="15" HorizontalAlignment="Center" Margin="0,20,0,0" Padding="20,8">
-                <StackPanel Orientation="Horizontal">
-                    <Ellipse Width="10" Height="10" Fill="#4CD137" Margin="0,0,8,0"/>
-                    <TextBlock Text="ONLINE: " Foreground="#BDC3C7" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding Players.Count}" Foreground="White" FontWeight="Bold" Margin="5,0,0,0"/>
-                    <TextBlock Text="/ 30" Foreground="#7F8FA6"/>
-                </StackPanel>
-            </Border>
+
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
+                <Border Background="#30000000" CornerRadius="15" HorizontalAlignment="Center" Margin="0,20,0,0" Padding="20,8">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="10" Height="10" Fill="#4CD137" Margin="0,0,8,0"/>
+                        <TextBlock Text="ONLINE: " Foreground="#BDC3C7" FontWeight="Bold" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Players.Count}" Foreground="White" FontWeight="Bold" Margin="5,0,0,0"/>
+                        <TextBlock Text="/ 30" Foreground="#7F8FA6" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#30000000" CornerRadius="15" HorizontalAlignment="Center" Margin="0,20,0,0" Padding="20,8"
+            Visibility="{Binding IsTimerRunning, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⏳ STARTING IN: " Foreground="#FF6B6B" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding TimeRemainingString}" Foreground="#FF6B6B" FontWeight="ExtraBold" FontSize="20" Margin="5,0,0,0">
+                            <TextBlock.Effect>
+                                <DropShadowEffect Color="#FF6B6B" BlurRadius="10" ShadowDepth="0"/>
+                            </TextBlock.Effect>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </StackPanel>
 
         <ScrollViewer Grid.Row="1" Margin="20,10" VerticalScrollBarVisibility="Hidden">
@@ -176,33 +214,66 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,40">
+        <Grid Grid.Row="2" Margin="30,0,30,30">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-            <Button Command="{Binding LeaveRoomCommand}" Content="LEAVE"
-                    Width="160" Height="55" Margin="20"
-                    Style="{StaticResource ModernButtonStyle}"
-                    FontSize="18" FontWeight="Bold" Foreground="White">
-                <Button.Background>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                        <GradientStop Color="#EB3349" Offset="0"/>
-                        <GradientStop Color="#F45C43" Offset="1"/>
-                    </LinearGradientBrush>
-                </Button.Background>
-            </Button>
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <Button Command="{Binding LeaveRoomCommand}" Content="LEAVE"
+                Width="140" Height="50"
+                Style="{StaticResource ModernButtonStyle}"
+                        Margin="0,0,10,0"
+                FontSize="16" FontWeight="Bold" Foreground="White"
+                Visibility="{Binding IsStudent, Converter={StaticResource BoolToVis}}">
+                    <Button.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#34495e" Offset="0"/>
+                            <GradientStop Color="#2c3e50" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Button.Background>
+                </Button>
 
-            <Button Command="{Binding StartGameCommand}" Content="START GAME"
-                    Visibility="{Binding IsHost, Converter={StaticResource BoolToVis}}"
-                    Width="240" Height="55" Margin="20"
-                    Style="{StaticResource ModernButtonStyle}"
-                    FontSize="20" FontWeight="ExtraBold" Foreground="White">
-                <Button.Background>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                        <GradientStop Color="#11998e" Offset="0"/>
-                        <GradientStop Color="#38ef7d" Offset="1"/>
-                    </LinearGradientBrush>
-                </Button.Background>
-            </Button>
+                <Button Command="{Binding CloseRoomCommand}" Content="CLOSE ROOM"
+                Width="160" Height="50"
+                Style="{StaticResource ModernButtonStyle}"
+                FontSize="16" FontWeight="Bold" Foreground="White"
+                Visibility="{Binding IsHost, Converter={StaticResource BoolToVis}}">
+                    <Button.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#EB3349" Offset="0"/>
+                            <GradientStop Color="#F45C43" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Button.Background>
+                </Button>
+            </StackPanel>
 
-        </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" 
+                Visibility="{Binding IsHost, Converter={StaticResource BoolToVis}}">
+
+                <Button Command="{Binding OpenSettingsCommand}" Content="⚙️ SETTINGS"
+                Margin="0,0,20,0"
+                Style="{StaticResource IconButtonStyle}"
+                Foreground="White" FontWeight="SemiBold"/>
+
+                <Button Command="{Binding StartGameCommand}" Content="START GAME"
+                Width="180" Height="50"
+                Style="{StaticResource ModernButtonStyle}"
+                        Margin="20, 0, 0, 0"
+                FontSize="18" FontWeight="ExtraBold" Foreground="White">
+                    <Button.Effect>
+                        <DropShadowEffect Color="#38ef7d" BlurRadius="15" Opacity="0.4" ShadowDepth="0"/>
+                    </Button.Effect>
+                    <Button.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#11998e" Offset="0"/>
+                            <GradientStop Color="#38ef7d" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Button.Background>
+                </Button>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

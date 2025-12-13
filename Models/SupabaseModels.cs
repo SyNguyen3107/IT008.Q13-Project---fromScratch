@@ -7,12 +7,11 @@ namespace EasyFlips.Models
 {
     /// <summary>
     /// Profile model - Thông tin người dùng
-    /// Tương ứng với bảng public.profiles trong Supabase
+    /// Tương ứng với bảng public.profiles
     /// </summary>
     [Table("profiles")]
     public class Profile : BaseModel
     {
-        // [ĐÃ SỬA]: Chuyển từ Guid sang string để đồng bộ với Deck/Card local
         [PrimaryKey("id", false)]
         public string Id { get; set; }
 
@@ -34,17 +33,18 @@ namespace EasyFlips.Models
 
     /// <summary>
     /// Classroom model - Thông tin lớp học
-    /// Tương ứng với bảng public.classrooms trong Supabase
+    /// Tương ứng với bảng public.classrooms
     /// </summary>
     [Table("classrooms")]
     public class Classroom : BaseModel
     {
-        // [ĐÃ SỬA]: Chuyển từ Guid sang string
         [PrimaryKey("id", false)]
         public string Id { get; set; }
 
+        // [QUAN TRỌNG]: Database yêu cầu Name NOT NULL.
+        // Ta set mặc định để không bị lỗi khi tạo phòng nhanh.
         [Column("name")]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; set; } = "Phòng học mới";
 
         [Column("description")]
         public string? Description { get; set; }
@@ -52,39 +52,46 @@ namespace EasyFlips.Models
         [Column("room_code")]
         public string RoomCode { get; set; } = string.Empty;
 
-        // [ĐÃ SỬA]: Chuyển từ Guid sang string
+        // [QUAN TRỌNG]: Đổi tên Property thành HostId để khớp với ViewModel
+        // Nhưng vẫn map vào cột "owner_id" của Database
         [Column("owner_id")]
-        public string OwnerId { get; set; }
-        // Thêm thuộc tính MaxMembers với giá trị mặc định 50
+        public string HostId { get; set; }
+
+        // [FIX]: Đổi tên Property thành MaxPlayers cho đồng bộ ViewModel
         [Column("max_members")]
-        public int MaxMembers { get; set; } = 50;
+        public int MaxPlayers { get; set; } = 30;
+
+        // [MỚI]: Thêm cột Status (WAITING, PLAYING, CLOSED)
+        [Column("status")]
+        public string Status { get; set; } = "WAITING";
+
+        // [MỚI]: Thêm cột DeckId để biết phòng đang học bộ bài nào
+        [Column("deck_id")]
+        public string? DeckId { get; set; }
+
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
 
         [Column("updated_at")]
         public DateTime UpdatedAt { get; set; }
-
-        [Column("is_active")]
-        public bool IsActive { get; set; } = true;
     }
 
     /// <summary>
     /// Member model - Thành viên trong lớp học
-    /// Tương ứng với bảng public.members trong Supabase
+    /// Tương ứng với bảng public.members
     /// </summary>
     [Table("members")]
     public class Member : BaseModel
     {
-        // [ĐÃ SỬA]: Chuyển từ Guid sang string
         [PrimaryKey("id", false)]
         public string Id { get; set; }
 
-        // [ĐÃ SỬA]: Chuyển từ Guid sang string
         [Column("classroom_id")]
         public string ClassroomId { get; set; }
 
-        // [ĐÃ SỬA]: Chuyển từ Guid sang string
         [Column("user_id")]
         public string UserId { get; set; }
 
@@ -93,18 +100,20 @@ namespace EasyFlips.Models
 
         [Column("joined_at")]
         public DateTime JoinedAt { get; set; }
+
+        // [MỚI] Thêm thuộc tính này để hứng dữ liệu từ bảng Profile khi Join
+        [Reference(typeof(Profile))]
+        public Profile Profile { get; set; }
     }
 
     /// <summary>
-    /// DTO cho kết quả join classroom từ RPC
+    /// DTO: Kết quả trả về từ RPC join_classroom_by_code
     /// </summary>
     public class JoinClassroomResult
     {
-        // [FIX]: Thêm JsonProperty để map với kết quả từ SQL function (snake_case)
-        
         [JsonProperty("success")]
         public bool Success { get; set; }
-        
+
         [JsonProperty("message")]
         public string Message { get; set; } = string.Empty;
 
@@ -113,23 +122,28 @@ namespace EasyFlips.Models
     }
 
     /// <summary>
-    /// DTO cho danh sách classroom của user
+    /// DTO: Kết quả trả về từ RPC get_user_classrooms
     /// </summary>
     public class UserClassroom
     {
-        // ... (Giữ nguyên hoặc thêm JsonProperty nếu cần dùng RPC get_user_classrooms)
         [JsonProperty("classroom_id")]
         public string ClassroomId { get; set; }
+
         [JsonProperty("classroom_name")]
         public string ClassroomName { get; set; }
+
         [JsonProperty("room_code")]
         public string RoomCode { get; set; }
+
         [JsonProperty("role")]
         public string Role { get; set; }
+
         [JsonProperty("owner_id")]
         public string OwnerId { get; set; }
+
         [JsonProperty("member_count")]
         public long MemberCount { get; set; }
+
         [JsonProperty("joined_at")]
         public DateTime JoinedAt { get; set; }
     }

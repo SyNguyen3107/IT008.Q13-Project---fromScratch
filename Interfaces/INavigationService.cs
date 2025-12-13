@@ -18,6 +18,9 @@ namespace EasyFlips.Interfaces
         void OpenSyncWindow();
         void ShowResetPasswordWindow();
         void ShowOtpWindow(string email);
+        void ShowLobbyWindow(string roomId, bool isHost, Deck deck = null);
+        void ShowJoinWindow();
+        void ShowCreateRoomWindow();
 
     }
 }

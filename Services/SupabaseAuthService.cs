@@ -93,47 +93,50 @@ namespace EasyFlips.Services
 
         public bool RestoreSession()
         {
-            if (_supabaseService.Client == null) return false;
-
-            // 1. Kiểm tra Settings
-            if (string.IsNullOrEmpty(Settings.Default.UserId))
+            // 1. Nếu Client đã tự động nhận diện được Session (do tính năng AutoSave của thư viện) -> OK
+            if (_supabaseService.Client.Auth.CurrentSession != null &&
+                !string.IsNullOrEmpty(_supabaseService.Client.Auth.CurrentSession.AccessToken))
             {
-                if (_supabaseService.Client.Auth.CurrentSession != null)
+                // Đồng bộ lại thông tin vào UserSession (RAM)
+                var user = _supabaseService.Client.Auth.CurrentUser;
+                if (user != null)
                 {
-                    _ = _supabaseService.Client.Auth.SignOut();
+                    CurrentUserId = user.Id;
+                    _userSession.SetUser(user.Id, user.Email, _supabaseService.Client.Auth.CurrentSession.AccessToken, "", "", "");
+                    return true;
                 }
-                return false;
             }
 
-            // 2. Kiểm tra Session hiện tại của Client
-            var session = _supabaseService.Client.Auth.CurrentSession;
-            if (session == null || session.User == null)
+            // 2. [QUAN TRỌNG] Nếu Client quên, nhưng Settings (Local Storage) vẫn còn lưu
+            var savedAccessToken = Settings.Default.UserToken;
+            var savedRefreshToken = Settings.Default.RefreshToken;
+
+            if (!string.IsNullOrEmpty(savedAccessToken))
             {
-                return false;
-            }
+                try
+                {
+                    // [FIX]: Ép buộc Supabase Client sử dụng Token cũ
+                    _supabaseService.Client.Auth.SetSession(savedAccessToken, savedRefreshToken);
 
-            // 3. So khớp ID
-            if (string.Equals(session.User.Id, Settings.Default.UserId, System.StringComparison.OrdinalIgnoreCase))
-            {
-                CurrentUserId = session.User.Id;
+                    // Cập nhật lại UserSession (RAM)
+                    CurrentUserId = Settings.Default.UserId;
+                    _userSession.SetUser(
+                        Settings.Default.UserId,
+                        Settings.Default.UserEmail,
+                        savedAccessToken,
+                        savedRefreshToken,
+                        "", "" // Tạm thời bỏ qua display name/avatar nếu chưa fetch
+                    );
 
-                var displayName = session.User.UserMetadata?.ContainsKey("display_name") == true
-                    ? session.User.UserMetadata["display_name"]?.ToString()
-                    : "";
-                var avatarUrl = session.User.UserMetadata?.ContainsKey("avatar_url") == true
-                    ? session.User.UserMetadata["avatar_url"]?.ToString()
-                    : "";
-
-                _userSession.SetUser(
-                    session.User.Id,
-                    session.User.Email ?? "",
-                    session.AccessToken ?? "",
-                    session.RefreshToken ?? "",
-                    displayName ?? "",
-                    avatarUrl ?? ""
-                );
-
-                return true;
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Lỗi khôi phục Session: {ex.Message}");
+                    // Token lỗi hoặc hết hạn -> Xóa sạch để bắt đăng nhập lại
+                    LogoutAsync().Wait();
+                    return false;
+                }
             }
 
             return false;
@@ -182,8 +185,6 @@ namespace EasyFlips.Services
             }
             catch (Exception ex)
             {
-                // Log lỗi để debug
-                MessageBox.Show($"Update password error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }

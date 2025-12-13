@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
+using EasyFlips.Views;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace EasyFlips.ViewModels
 {
@@ -18,220 +20,390 @@ namespace EasyFlips.ViewModels
         private readonly RealtimeService _realtimeService;
         private readonly IAuthService _authService;
         private readonly INavigationService _navigationService;
-        private readonly UserSession _userSession; // Cần để lấy Email làm tên tạm
+        private readonly UserSession _userSession;
+        private readonly IDeckRepository _deckRepository;
+        private readonly IClassroomRepository _classroomRepository;
 
-        // --- Properties ---
-        [ObservableProperty] private string _roomId;
+        [ObservableProperty] private string _roomId; // Đây là CODE (ví dụ RN63Q3)
+        private string _realClassroomIdUUID;         // Đây là UUID thật trong DB
+
         [ObservableProperty] private string _currentUserName;
+        [ObservableProperty] private string _currentUserAvatar;
+        [ObservableProperty][NotifyPropertyChangedFor(nameof(IsStudent))] private bool _isHost = false;
+        public bool IsStudent => !IsHost;
+        public bool CanCloseWindow { get; set; } = false;
 
-        // Trạng thái giao diện
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsNotInLobby))]
-        private bool _isInLobby = false; // False: Hiện menu nhập mã, True: Hiện danh sách
+        private DispatcherTimer _timer;
+        [ObservableProperty] private bool _isTimerRunning;
+        [ObservableProperty] private int _timeRemaining;
+        [ObservableProperty] private string _timeRemainingString = "00:00";
 
-        public bool IsNotInLobby => !IsInLobby;
+        public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
+        [ObservableProperty] private Deck _selectedDeck;
+        [ObservableProperty] private int _maxPlayers = 30;
 
-        [ObservableProperty] private bool _isHost = false;    // True: Hiện nút Bắt đầu
-
-        // Danh sách hiển thị lên UI
         public ObservableCollection<PlayerInfo> Players { get; } = new ObservableCollection<PlayerInfo>();
 
-        public LobbyViewModel(RealtimeService realtimeService, IAuthService authService, INavigationService navigationService, UserSession userSession)
+        private Dictionary<string, DateTime> _lastSeenMap = new Dictionary<string, DateTime>();
+        private DispatcherTimer _heartbeatTimer;
+        public ObservableCollection<string> DebugLogs { get; } = new ObservableCollection<string>();
+
+        private void AddLog(string message)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                string time = DateTime.Now.ToString("HH:mm:ss");
+                DebugLogs.Insert(0, $"[{time}] {message}");
+                if (DebugLogs.Count > 50) DebugLogs.RemoveAt(DebugLogs.Count - 1);
+            });
+        }
+
+        public LobbyViewModel(
+            RealtimeService realtimeService,
+            IAuthService authService,
+            INavigationService navigationService,
+            UserSession userSession,
+            IDeckRepository deckRepository,
+            IClassroomRepository classroomRepository)
         {
             _realtimeService = realtimeService;
             _authService = authService;
             _navigationService = navigationService;
             _userSession = userSession;
+            _deckRepository = deckRepository;
+            _classroomRepository = classroomRepository;
 
-            // Tạm thời lấy Email hoặc ID cắt ngắn làm tên hiển thị
-            // Sau này Database xong sẽ thay bằng _supabaseService.GetProfile().DisplayName
-            string email = _userSession.Email ?? "User";
-            CurrentUserName = email.Contains("@") ? email.Split('@')[0] : email;
+            CurrentUserName = !string.IsNullOrEmpty(_userSession.UserName) ? _userSession.UserName : "Guest";
 
-            // Đăng ký nhận tin nhắn
+            _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _timer.Tick += Timer_Tick;
+
+            _heartbeatTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+            _heartbeatTimer.Tick += Heartbeat_Tick;
+
             _realtimeService.OnMessageReceived += HandleRealtimeMessage;
         }
 
-        // --- XỬ LÝ TIN NHẮN REALTIME (Core Logic) ---
-        private void HandleRealtimeMessage(string eventName, object data)
+        public async Task InitializeAsync(string roomId, bool isHost, Deck deck = null)
         {
-            // Buộc phải chạy trên UI Thread vì thao tác với ObservableCollection
-            Application.Current.Dispatcher.Invoke(() =>
+            RoomId = roomId;
+            IsHost = isHost;
+            CanCloseWindow = false;
+
+            AddLog($"Init Step 1: Resolving Room Code '{RoomId}'...");
+            try
             {
-                try
+                // 1. Lấy thông tin phòng để có UUID
+                var roomInfo = await _classroomRepository.GetClassroomByCodeAsync(RoomId);
+
+                if (roomInfo == null)
                 {
-                    // Convert data sang JObject để dễ xử lý
-                    var json = JObject.FromObject(data);
-
-                    switch (eventName)
-                    {
-                        case "PLAYER_JOIN":
-                            HandlePlayerJoin(json);
-                            break;
-
-                        case "LOBBY_UPDATE":
-                            HandleLobbyUpdate(json);
-                            break;
-
-                        case "START_GAME":
-                            // Logic chuyển màn hình chơi game (sẽ làm ở task sau)
-                            MessageBox.Show("Giáo viên đã bắt đầu bài học!", "Thông báo");
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error handling message: {ex.Message}");
-                }
-            });
-        }
-
-        // Host xử lý khi có người mới vào
-        private void HandlePlayerJoin(JObject json)
-        {
-            // Chỉ Host mới có quyền quản lý danh sách
-            if (!IsHost) return;
-
-            var newPlayer = json.ToObject<PlayerInfo>();
-            if (newPlayer == null) return;
-
-            // Kiểm tra trùng lặp (nếu mạng lag gửi 2 lần)
-            if (!Players.Any(p => p.Id == newPlayer.Id))
-            {
-                // Task: Logic Check Full Slot
-                if (Players.Count >= 30) // Giới hạn 30 người
-                {
-                    // Có thể gửi tin nhắn "ROOM_FULL" lại cho người đó (Nâng cao)
+                    MessageBox.Show("Phòng không tồn tại!");
+                    ForceCloseWindow();
                     return;
                 }
 
-                Players.Add(newPlayer);
+                _realClassroomIdUUID = roomInfo.Id; // [QUAN TRỌNG] Lưu UUID
+                AddLog($"-> Resolved UUID: {_realClassroomIdUUID}");
 
-                // Gửi danh sách mới nhất cho tất cả mọi người (Sync)
-                BroadcastLobbyState();
-            }
-        }
-
-        // Client xử lý khi nhận danh sách mới từ Host
-        private void HandleLobbyUpdate(JObject json)
-        {
-            // Lấy mảng "players" từ gói tin
-            var playersList = json["players"]?.ToObject<List<PlayerInfo>>();
-
-            if (playersList != null)
-            {
-                Players.Clear();
-                foreach (var p in playersList)
+                // 2. Nếu là Host, load Deck
+                if (IsHost)
                 {
-                    Players.Add(p);
+                    var decks = await _deckRepository.GetAllAsync();
+                    AvailableDecks.Clear();
+                    foreach (var d in decks) AvailableDecks.Add(d);
+                    SelectedDeck = deck ?? decks.FirstOrDefault();
                 }
-            }
-        }
+                else
+                {
+                    // 3. Nếu là Student, tự ghi tên vào DB
+                    AddLog("-> Registering to DB members list...");
+                    var myId = _authService.CurrentUserId ?? _userSession.UserId;
 
-        // --- COMMANDS (Nút bấm) ---
+                    // Gọi hàm AddMemberAsync (đã thêm vào Repo)
+                    await _classroomRepository.AddMemberAsync(_realClassroomIdUUID, myId);
+                }
 
-        // Task: Logic Tạo phòng
-        [RelayCommand]
-        private async Task CreateRoom()
-        {
-            try
-            {
-                // 1. Sinh mã phòng (6 ký tự chữ hoa)
-                var random = new Random();
-                const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Bỏ I, O, 1, 0 tránh nhầm lẫn
-                RoomId = new string(Enumerable.Repeat(chars, 6)
-                    .Select(s => s[random.Next(s.Length)]).ToArray());
+                // 4. Kết nối và tải danh sách
+                await ConnectAndJoinRoom();
 
-                IsHost = true;
-                IsInLobby = true;
-                Players.Clear();
-
-                // 2. Thêm chính mình (Host) vào danh sách
-                var myInfo = GetMyInfo();
-                myInfo.IsHost = true;
-                myInfo.Name += " (Host)";
-                Players.Add(myInfo);
-
-                // 3. Kết nối Realtime
-                await _realtimeService.ConnectAsync();
-                await _realtimeService.JoinRoomAsync(RoomId);
+                // 5. Bắt đầu Heartbeat
+                _heartbeatTimer.Start();
+                AddLog("Heartbeat Timer Started");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi tạo phòng: {ex.Message}");
-                IsInLobby = false;
+                AddLog($"CRITICAL INIT ERROR: {ex.Message}");
             }
         }
 
-        // Task: Logic Join phòng & Gửi USER_JOINED
-        [RelayCommand]
-        private async Task JoinRoom()
+        private async Task ConnectAndJoinRoom()
         {
-            // Validation cơ bản
-            if (string.IsNullOrWhiteSpace(RoomId) || RoomId.Length < 4)
-            {
-                MessageBox.Show("Vui lòng nhập mã phòng hợp lệ.");
-                return;
-            }
-
             try
             {
-                IsHost = false;
-                IsInLobby = true; // Chuyển giao diện sang chờ
-                Players.Clear();  // Xóa danh sách cũ, đợi Host gửi danh sách mới về
+                // --- BƯỚC 1: Lấy danh sách thành viên từ DB ---
+                // [FIX BUG]: Dùng _realClassroomIdUUID (UUID) thay vì RoomId (Code)
+                // Và bỏ if (IsHost) để Student cũng thấy danh sách
 
-                // 1. Kết nối
-                await _realtimeService.ConnectAsync();
-                await _realtimeService.JoinRoomAsync(RoomId);
+                AddLog("Step 2: Fetching members from DB...");
+                var currentMembers = await _classroomRepository.GetMembersAsync(_realClassroomIdUUID);
 
-                // 2. Gửi event USER_JOINED
-                // Delay nhỏ để đảm bảo kết nối ổn định trước khi gửi
-                await Task.Delay(500);
+                Players.Clear();
+                foreach (var m in currentMembers)
+                {
+                    Players.Add(new PlayerInfo
+                    {
+                        Id = m.UserId,
+                        Name = m.Profile?.DisplayName ?? "Unknown",
+                        AvatarUrl = m.Profile?.AvatarUrl,
+                        IsHost = m.Role == "owner"
+                    });
+                    _lastSeenMap[m.UserId] = DateTime.Now;
+                }
+                AddLog($"-> Found {currentMembers.Count} members in DB.");
 
+                // --- BƯỚC 2: Kết nối Socket ---
+                AddLog("Step 3: Connecting to Realtime...");
+
+                var connectTask = _realtimeService.ConnectAsync();
+                if (await Task.WhenAny(connectTask, Task.Delay(5000)) != connectTask)
+                {
+                    AddLog("ERROR: Connect Timeout!");
+                    return; // Timeout thì thôi, nhưng danh sách DB đã load được rồi
+                }
+                await connectTask;
+                AddLog("-> Socket Connected!");
+
+                // --- BƯỚC 3: Vào phòng ---
+                // Topic dùng RoomId (Code) vẫn OK
+                AddLog($"Step 4: Joining Channel 'room:{RoomId}'...");
+
+                var joinTask = _realtimeService.JoinRoomAsync(RoomId);
+                if (await Task.WhenAny(joinTask, Task.Delay(5000)) != joinTask)
+                {
+                    AddLog("ERROR: Join Room Timeout!");
+                    return;
+                }
+                await joinTask;
+                AddLog("-> Joined Room Successfully!");
+
+                // --- BƯỚC 4: Gửi tin nhắn chào hỏi ---
                 var myInfo = GetMyInfo();
                 await _realtimeService.SendMessageAsync("PLAYER_JOIN", myInfo);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi vào phòng: {ex.Message}");
-                IsInLobby = false;
+                AddLog($"CONNECT ERROR: {ex.Message}");
+            }
+        }
+
+        // --- CÁC HÀM XỬ LÝ KHÁC (Giữ nguyên) ---
+
+        private void HandleRealtimeMessage(string eventName, object data)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                // AddLog($"RX: {eventName}"); // Tạm tắt cho đỡ rối mắt
+                try
+                {
+                    var json = JObject.FromObject(data);
+                    switch (eventName)
+                    {
+                        case "PLAYER_JOIN": HandlePlayerJoin(json); break;
+                        case "HEARTBEAT": HandleHeartbeat(json); break;
+                        case "LOBBY_UPDATE": HandleLobbyUpdate(json); break;
+                        case "KICK_PLAYER": HandleKickPlayer(json); break;
+                        case "CLOSE_ROOM": HandleCloseRoom(); break;
+                        case "START_GAME": HandleStartGame(); break;
+                        case "TIMER_SYNC": HandleTimerSync(json); break;
+                    }
+                }
+                catch { }
+            });
+        }
+
+        // [SỬA]: LeaveRoom cần xóa tên khỏi DB
+        [RelayCommand]
+        private async Task LeaveRoom()
+        {
+            if (MessageBox.Show("Rời phòng?", "Xác nhận", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    if (!IsHost && !string.IsNullOrEmpty(_realClassroomIdUUID))
+                    {
+                        var myId = _authService.CurrentUserId ?? _userSession.UserId;
+                        await _classroomRepository.RemoveMemberAsync(_realClassroomIdUUID, myId);
+                    }
+                }
+                catch { }
+
+                _realtimeService.SendMessageAsync("KICK_PLAYER", new { id = GetMyInfo().Id });
+                CanCloseWindow = true;
+                ForceCloseWindow();
+            }
+        }
+
+        // ... (Các hàm HandleHeartbeat, Heartbeat_Tick, CheckForOfflineUsers... giữ nguyên như cũ) ...
+
+        private void HandleHeartbeat(JObject json)
+        {
+            if (!IsHost) return;
+            string userId = json["id"]?.ToString();
+            if (!string.IsNullOrEmpty(userId))
+            {
+                if (!Players.Any(p => p.Id == userId))
+                {
+                    // Có thể gọi DB load lại nếu thấy user lạ
+                }
+                _lastSeenMap[userId] = DateTime.Now;
+            }
+        }
+
+        private void Heartbeat_Tick(object sender, EventArgs e)
+        {
+            var myId = _authService.CurrentUserId ?? _userSession.UserId;
+            _realtimeService.SendMessageAsync("HEARTBEAT", new { id = myId });
+            if (IsHost) CheckForOfflineUsers();
+        }
+
+        private void CheckForOfflineUsers()
+        {
+            var now = DateTime.Now;
+            var timeoutLimit = TimeSpan.FromSeconds(10);
+            var playersToRemove = new List<PlayerInfo>();
+
+            foreach (var p in Players)
+            {
+                if (p.IsHost) continue;
+                if (_lastSeenMap.ContainsKey(p.Id))
+                {
+                    if (now - _lastSeenMap[p.Id] > timeoutLimit) playersToRemove.Add(p);
+                }
+                else _lastSeenMap[p.Id] = DateTime.Now;
+            }
+
+            if (playersToRemove.Count > 0)
+            {
+                foreach (var p in playersToRemove)
+                {
+                    Players.Remove(p);
+                    _lastSeenMap.Remove(p.Id);
+                }
+                BroadcastLobbyState();
+            }
+        }
+
+        private void HandlePlayerJoin(JObject json)
+        {
+            if (!IsHost) return;
+            var newPlayer = json.ToObject<PlayerInfo>();
+            if (newPlayer != null)
+            {
+                _lastSeenMap[newPlayer.Id] = DateTime.Now;
+                if (!Players.Any(p => p.Id == newPlayer.Id))
+                {
+                    Players.Add(newPlayer);
+                    BroadcastLobbyState();
+                }
+            }
+        }
+
+        // Các hàm xử lý khác (Kick, Close, Timer...) giữ nguyên code cũ
+        private void HandleLobbyUpdate(JObject json)
+        {
+            var playersList = json["players"]?.ToObject<List<PlayerInfo>>();
+            if (playersList != null)
+            {
+                Players.Clear();
+                foreach (var p in playersList) Players.Add(p);
+            }
+        }
+
+        private void HandleKickPlayer(JObject json)
+        {
+            string kickedId = json["id"]?.ToString();
+            string myId = _authService.CurrentUserId ?? _userSession.UserId;
+            if (kickedId == myId)
+            {
+                CanCloseWindow = true;
+                MessageBox.Show("Bạn đã bị mời ra khỏi phòng!", "Thông báo");
+                ForceCloseWindow();
+            }
+        }
+
+        private void HandleCloseRoom()
+        {
+            if (!IsHost)
+            {
+                CanCloseWindow = true;
+                MessageBox.Show("Giáo viên đã giải tán phòng học.", "Thông báo");
+                ForceCloseWindow();
+            }
+        }
+
+        private void HandleTimerSync(JObject json)
+        {
+            if (IsHost) return;
+            TimeRemaining = json["seconds"]?.Value<int>() ?? 0;
+            IsTimerRunning = json["isRunning"]?.Value<bool>() ?? false;
+            TimeRemainingString = TimeSpan.FromSeconds(TimeRemaining).ToString(@"mm\:ss");
+        }
+
+        private void HandleStartGame()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                CanCloseWindow = true;
+                // _navigationService.ShowGameWindow...
+                ForceCloseWindow();
+            });
+        }
+
+        [RelayCommand]
+        private void KickPlayer(PlayerInfo player)
+        {
+            if (!IsHost || player == null) return;
+            _realtimeService.SendMessageAsync("KICK_PLAYER", new { id = player.Id });
+            Players.Remove(player);
+            BroadcastLobbyState();
+        }
+
+        [RelayCommand]
+        private async Task CloseRoom()
+        {
+            if (MessageBox.Show("Giải tán phòng?", "Xác nhận", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                try { if (IsHost) await _classroomRepository.DeleteClassroomAsync(RoomId); } catch { }
+                await _realtimeService.SendMessageAsync("CLOSE_ROOM", new { });
+                CanCloseWindow = true;
+                ForceCloseWindow();
             }
         }
 
         [RelayCommand]
-        private void LeaveRoom()
+        private void StartGameCommand()
         {
+            TimeRemaining = 5; IsTimerRunning = true; _timer.Start();
+            _realtimeService.SendMessageAsync("TIMER_SYNC", new { seconds = TimeRemaining, isRunning = true });
+        }
+
+        [RelayCommand] private void OpenSettings() => MessageBox.Show($"Deck: {SelectedDeck?.Name}");
+
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            if (TimeRemaining > 0) { TimeRemaining--; TimeRemainingString = TimeSpan.FromSeconds(TimeRemaining).ToString(@"mm\:ss"); _realtimeService.SendMessageAsync("TIMER_SYNC", new { seconds = TimeRemaining, isRunning = true }); }
+            else { _timer.Stop(); IsTimerRunning = false; _realtimeService.SendMessageAsync("START_GAME", new { }); }
+        }
+
+        private PlayerInfo GetMyInfo() => new PlayerInfo { Id = _authService.CurrentUserId ?? Guid.NewGuid().ToString(), Name = CurrentUserName, AvatarUrl = _currentUserAvatar, IsHost = IsHost };
+        private async void BroadcastLobbyState() => await _realtimeService.SendMessageAsync("LOBBY_UPDATE", new { players = Players, deckName = SelectedDeck?.Name, maxPlayers = MaxPlayers });
+
+        private void ForceCloseWindow()
+        {
+            _heartbeatTimer.Stop();
             _realtimeService.LeaveRoom();
-            IsInLobby = false;
-            Players.Clear();
-            IsHost = false;
-        }
-
-        [RelayCommand]
-        private async Task StartGame()
-        {
-            if (IsHost)
-            {
-                await _realtimeService.SendMessageAsync("START_GAME", new { });
-            }
-        }
-
-        // --- HELPERS ---
-        private PlayerInfo GetMyInfo()
-        {
-            return new PlayerInfo
-            {
-                Id = _authService.CurrentUserId ?? Guid.NewGuid().ToString(), // Nếu chưa login thì random ID
-                Name = CurrentUserName,
-                IsHost = IsHost,
-                AvatarUrl = ""
-            };
-        }
-
-        private async void BroadcastLobbyState()
-        {
-            // Host gửi toàn bộ danh sách Players hiện tại
-            await _realtimeService.SendMessageAsync("LOBBY_UPDATE", new { players = Players });
+            Application.Current.Dispatcher.Invoke(() => { foreach (Window window in Application.Current.Windows) { if (window.DataContext == this) { window.Close(); break; } } });
         }
     }
 }

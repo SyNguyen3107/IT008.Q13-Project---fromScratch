@@ -76,6 +76,7 @@ namespace EasyFlips
 
             services.AddScoped<IDeckRepository, DeckRepository>();
             services.AddScoped<ICardRepository, CardRepository>();
+            services.AddScoped<IClassroomRepository, ClassroomRepository>();
 
             services.AddScoped<StudyService>();
             services.AddSingleton<INavigationService, NavigationService>();
@@ -85,6 +86,8 @@ namespace EasyFlips
             services.AddSingleton<SupabaseService>();
             services.AddSingleton<IAuthService, SupabaseAuthService>();
             services.AddTransient<SyncService>();
+            services.AddSingleton<RealtimeService>();
+            
 
             services.AddTransient<MainViewModel>();
             services.AddTransient<StudyViewModel>();
@@ -96,6 +99,9 @@ namespace EasyFlips
             services.AddTransient<LoginViewModel>();
             services.AddTransient<RegisterViewModel>();
             services.AddTransient<SyncViewModel>();
+            services.AddTransient<LobbyViewModel>();
+            services.AddTransient<JoinViewModel>();
+            services.AddTransient<CreateRoomViewModel>();
 
             services.AddTransient<MainWindow>();
             services.AddTransient<StudyWindow>();
@@ -111,11 +117,15 @@ namespace EasyFlips
             services.AddTransient<OtpWindow>();
             services.AddTransient<ResetPasswordViewModel>();
             services.AddTransient<ResetPasswordWindow>();
-
+            services.AddTransient<LobbyWindow>();
+            services.AddTransient<JoinWindow>();
+            services.AddTransient<CreateRoomWindow>();
             services.AddTransient<TestRealtimeWindow>();
 
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
             services.AddSingleton<UserSession>();
+            
+            
         }
 
         protected override async void OnStartup(StartupEventArgs e)

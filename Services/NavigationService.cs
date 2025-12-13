@@ -199,5 +199,40 @@ namespace EasyFlips.Services
             var window = _serviceProvider.GetRequiredService<ResetPasswordWindow>();
             window.Show();
         }
+        public void ShowJoinWindow()
+        {
+            // Cửa sổ trung gian (Chọn tạo hoặc nhập mã)
+            var window = _serviceProvider.GetRequiredService<JoinWindow>();
+            window.Owner = Application.Current.MainWindow;
+            window.ShowDialog();
+        }
+
+        public void ShowCreateRoomWindow()
+        {
+            // Cửa sổ setting của giáo viên
+            var window = _serviceProvider.GetRequiredService<CreateRoomWindow>();
+            window.Owner = Application.Current.MainWindow;
+            window.ShowDialog();
+        }
+
+        // [QUAN TRỌNG] Hàm mở Lobby nhận tham số
+        public void ShowLobbyWindow(string roomId, bool isHost, Deck deck = null)
+        {
+            var window = _serviceProvider.GetRequiredService<LobbyWindow>();
+
+            // Lấy ViewModel để truyền dữ liệu
+            if (window.DataContext is LobbyViewModel vm)
+            {
+                // Gọi hàm InitializeAsync mà chúng ta đã viết ở bước trước
+                // Lưu ý: Vì là async void (fire-and-forget) hoặc cần wrap trong Task.Run nếu muốn đợi
+                _ = vm.InitializeAsync(roomId, isHost, deck);
+            }
+
+            if (Application.Current.MainWindow != null)
+                window.Owner = Application.Current.MainWindow;
+
+            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            window.ShowDialog(); // Chặn cửa sổ chính
+        }
     }
 }

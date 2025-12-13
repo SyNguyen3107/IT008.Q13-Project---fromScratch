@@ -103,6 +103,12 @@ namespace EasyFlips.ViewModels
         [RelayCommand] private void AddCard() => _navigationService.ShowAddCardWindow();
         [RelayCommand] private void RenameDeck(Deck deck) { if (deck != null) _navigationService.ShowDeckRenameWindow(deck); }
         [RelayCommand] private void Sync() => _navigationService.ShowSyncWindow();
+        [RelayCommand]
+        private void JoinLobby()
+        {
+            // Thay đổi: Mở JoinWindow thay vì ShowLobbyWindow trực tiếp
+            _navigationService.ShowJoinWindow();
+        }
 
         [RelayCommand]
         private async Task ImportFile()

@@ -105,7 +105,7 @@ namespace EasyFlips.Services
                 Name = name,
                 Description = description,
                 RoomCode = roomCode,
-                OwnerId = ownerId,
+                HostId = ownerId,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow

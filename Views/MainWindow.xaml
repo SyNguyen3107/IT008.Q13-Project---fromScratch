@@ -196,7 +196,7 @@
                 <Button Content="Decks" Command="{Binding ReloadDecksCommand}" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
                 <Button Content="Add" Style="{StaticResource NavButtonStyle}" Margin="10,0" Command="{Binding AddCardCommand}" />
                 <!--<Button Content="Browse" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>-->
-                <Button Content="Stats" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
+                <Button Content="Join" Style="{StaticResource NavButtonStyle}" Command="{Binding JoinLobbyCommand}" Margin="10,0"/>
                 <Button Content="Sync" Style="{StaticResource NavButtonStyle}" Margin="10,0" Command="{Binding SyncCommand}" />
             </StackPanel>
         </Border>

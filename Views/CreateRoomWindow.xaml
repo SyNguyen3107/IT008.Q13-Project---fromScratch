@@ -1,0 +1,34 @@
+﻿<Window x:Class="EasyFlips.Views.CreateRoomWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Cài đặt phòng học" Height="450" Width="500"
+        WindowStartupLocation="CenterOwner"
+        Background="#333">
+
+    <StackPanel Margin="30">
+        <TextBlock Text="CẤU HÌNH PHÒNG HỌC" Foreground="White" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+        <TextBlock Text="Chọn bộ thẻ (Deck):" Foreground="#DDD" Margin="0,10,0,5"/>
+        <ComboBox ItemsSource="{Binding AvailableDecks}" 
+                  SelectedItem="{Binding SelectedDeck}"
+                  DisplayMemberPath="Name"
+                  Height="35" FontSize="14"/>
+
+        <TextBlock Text="{Binding MaxPlayers, StringFormat='Số người tối đa: {0}'}" Foreground="#DDD" Margin="0,20,0,5"/>
+        <Slider Minimum="2" Maximum="50" Value="{Binding MaxPlayers}" TickFrequency="1" IsSnapToTickEnabled="True"/>
+
+        <TextBlock Text="Thời gian mỗi câu (giây):" Foreground="#DDD" Margin="0,20,0,5"/>
+        <TextBox Text="{Binding TimePerRound}" Background="#444" Foreground="White" Height="30" Padding="5"/>
+
+        <Button Content="Xác Nhận Tạo Phòng"
+                Command="{Binding ConfirmCreateRoomCommand}"
+                Margin="0,40,0,0" Height="45"
+                Background="#E67E22" Foreground="White" FontWeight="Bold" FontSize="16">
+            <Button.Resources>
+                <Style TargetType="Border">
+                    <Setter Property="CornerRadius" Value="8"/>
+                </Style>
+            </Button.Resources>
+        </Button>
+    </StackPanel>
+</Window>
