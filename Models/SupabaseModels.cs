@@ -41,10 +41,8 @@ namespace EasyFlips.Models
         [PrimaryKey("id", false)]
         public string Id { get; set; }
 
-        // [QUAN TRỌNG]: Database yêu cầu Name NOT NULL.
-        // Ta set mặc định để không bị lỗi khi tạo phòng nhanh.
         [Column("name")]
-        public string Name { get; set; } = "Phòng học mới";
+        public string Name { get; set; } = "New classroom";
 
         [Column("description")]
         public string? Description { get; set; }
@@ -52,18 +50,17 @@ namespace EasyFlips.Models
         [Column("room_code")]
         public string RoomCode { get; set; } = string.Empty;
 
-        // [QUAN TRỌNG]: Đổi tên Property thành HostId để khớp với ViewModel
-        // Nhưng vẫn map vào cột "owner_id" của Database
         [Column("owner_id")]
         public string HostId { get; set; }
-
-        // [FIX]: Đổi tên Property thành MaxPlayers cho đồng bộ ViewModel
         [Column("max_members")]
         public int MaxPlayers { get; set; } = 30;
 
-        // [MỚI]: Thêm cột Status (WAITING, PLAYING, CLOSED)
+        // cột Status (WAITING, PLAYING, CLOSED)
         [Column("status")]
         public string Status { get; set; } = "WAITING";
+
+        [Column("time_per_round")]
+        public int TimePerRound { get; set; } = 30;
 
         // [MỚI]: Thêm cột DeckId để biết phòng đang học bộ bài nào
         [Column("deck_id")]

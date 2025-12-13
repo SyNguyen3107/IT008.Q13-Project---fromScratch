@@ -5,12 +5,24 @@ namespace EasyFlips.Views
 {
     public partial class LobbyWindow : Window
     {
-        // [QUAN TRỌNG] Inject ViewModel vào Constructor
-        public LobbyWindow(LobbyViewModel viewModel)
+        // Biến lưu trữ cục bộ (nếu cần dùng sau này)
+        private readonly int _maxPlayers;
+
+        // [FIX]: Thêm tham số maxPlayers vào Constructor
+        public LobbyWindow(LobbyViewModel viewModel, int maxPlayers = 30)
         {
             InitializeComponent();
 
-            // Gán DataContext để giao diện biết lấy dữ liệu ở đâu
+            _maxPlayers = maxPlayers;
+
+            // [QUAN TRỌNG]: Truyền giá trị MaxPlayers vào ViewModel để Binding ra UI
+            // Lưu ý: Bạn cần chắc chắn LobbyViewModel đã có property 'MaxPlayers'
+            if (viewModel != null)
+            {
+                viewModel.MaxPlayers = _maxPlayers;
+            }
+
+            // Gán DataContext
             DataContext = viewModel;
         }
 

@@ -89,6 +89,7 @@ namespace EasyFlips.ViewModels
                     DeckId = SelectedDeck.Id,
                     MaxPlayers = MaxPlayers,
                     Status = "WAITING",
+                    TimePerRound = TimePerRound,
                     IsActive = true,
                     Name = $"Lớp học {roomId}"
                 };
@@ -96,7 +97,7 @@ namespace EasyFlips.ViewModels
                 // Gọi Repository (Bây giờ Database đã cho phép 'anon' nên chắc chắn sẽ qua)
                 await _classroomRepository.CreateClassroomAsync(newRoom);
 
-                _navigationService.ShowLobbyWindow(roomId, isHost: true, deck: SelectedDeck);
+                _navigationService.ShowLobbyWindow(roomId, isHost: true, deck: SelectedDeck, MaxPlayers);
                 CloseWindow();
             }
             catch (Exception ex)

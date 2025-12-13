@@ -24,8 +24,8 @@ namespace EasyFlips.ViewModels
         private readonly IDeckRepository _deckRepository;
         private readonly IClassroomRepository _classroomRepository;
 
-        [ObservableProperty] private string _roomId; // Đây là CODE (ví dụ RN63Q3)
-        private string _realClassroomIdUUID;         // Đây là UUID thật trong DB
+        [ObservableProperty] private string _roomId;
+        private string _realClassroomIdUUID;
 
         [ObservableProperty] private string _currentUserName;
         [ObservableProperty] private string _currentUserAvatar;
@@ -40,23 +40,21 @@ namespace EasyFlips.ViewModels
 
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
         [ObservableProperty] private Deck _selectedDeck;
-        [ObservableProperty] private int _maxPlayers = 30;
+
+        // [FIX]: Property hiển thị chuỗi dạng "/ 30"
+        public string MaxPlayersString => $"/ {MaxPlayers}";
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(MaxPlayersString))] // Tự động cập nhật chuỗi hiển thị khi số thay đổi
+        private int _maxPlayers = 30;
+
+        [ObservableProperty] private int _timePerRound = 15;
 
         public ObservableCollection<PlayerInfo> Players { get; } = new ObservableCollection<PlayerInfo>();
 
         private Dictionary<string, DateTime> _lastSeenMap = new Dictionary<string, DateTime>();
         private DispatcherTimer _heartbeatTimer;
         public ObservableCollection<string> DebugLogs { get; } = new ObservableCollection<string>();
-
-        private void AddLog(string message)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                string time = DateTime.Now.ToString("HH:mm:ss");
-                DebugLogs.Insert(0, $"[{time}] {message}");
-                if (DebugLogs.Count > 50) DebugLogs.RemoveAt(DebugLogs.Count - 1);
-            });
-        }
 
         public LobbyViewModel(
             RealtimeService realtimeService,
@@ -84,16 +82,23 @@ namespace EasyFlips.ViewModels
             _realtimeService.OnMessageReceived += HandleRealtimeMessage;
         }
 
-        public async Task InitializeAsync(string roomId, bool isHost, Deck deck = null)
+        // [FIX QUAN TRỌNG]: Đổi tham số thành 'int? maxPlayers = null'
+        // Để nếu bên ngoài không truyền vào, nó sẽ KHÔNG reset giá trị hiện tại về 30
+        public async Task InitializeAsync(string roomId, bool isHost, Deck deck = null, int? maxPlayers = null)
         {
             RoomId = roomId;
             IsHost = isHost;
             CanCloseWindow = false;
 
-            AddLog($"Init Step 1: Resolving Room Code '{RoomId}'...");
+            // Chỉ cập nhật nếu có giá trị truyền vào rõ ràng (từ CreateRoomViewModel)
+            if (maxPlayers.HasValue)
+            {
+                MaxPlayers = maxPlayers.Value;
+            }
+            // Nếu null, giữ nguyên giá trị đã được set bởi LobbyWindow Constructor
+
             try
             {
-                // 1. Lấy thông tin phòng để có UUID
                 var roomInfo = await _classroomRepository.GetClassroomByCodeAsync(RoomId);
 
                 if (roomInfo == null)
@@ -103,10 +108,13 @@ namespace EasyFlips.ViewModels
                     return;
                 }
 
-                _realClassroomIdUUID = roomInfo.Id; // [QUAN TRỌNG] Lưu UUID
-                AddLog($"-> Resolved UUID: {_realClassroomIdUUID}");
+                _realClassroomIdUUID = roomInfo.Id;
 
-                // 2. Nếu là Host, load Deck
+                if (roomInfo.TimePerRound > 0)
+                {
+                    TimePerRound = roomInfo.TimePerRound;
+                }
+
                 if (IsHost)
                 {
                     var decks = await _deckRepository.GetAllAsync();
@@ -116,24 +124,18 @@ namespace EasyFlips.ViewModels
                 }
                 else
                 {
-                    // 3. Nếu là Student, tự ghi tên vào DB
-                    AddLog("-> Registering to DB members list...");
                     var myId = _authService.CurrentUserId ?? _userSession.UserId;
-
-                    // Gọi hàm AddMemberAsync (đã thêm vào Repo)
                     await _classroomRepository.AddMemberAsync(_realClassroomIdUUID, myId);
                 }
 
-                // 4. Kết nối và tải danh sách
                 await ConnectAndJoinRoom();
 
-                // 5. Bắt đầu Heartbeat
                 _heartbeatTimer.Start();
-                AddLog("Heartbeat Timer Started");
             }
             catch (Exception ex)
             {
-                AddLog($"CRITICAL INIT ERROR: {ex.Message}");
+                MessageBox.Show($"Lỗi khi khởi tạo phòng: {ex.Message}");
+                ForceCloseWindow();
             }
         }
 
@@ -141,69 +143,45 @@ namespace EasyFlips.ViewModels
         {
             try
             {
-                // --- BƯỚC 1: Lấy danh sách thành viên từ DB ---
-                // [FIX BUG]: Dùng _realClassroomIdUUID (UUID) thay vì RoomId (Code)
-                // Và bỏ if (IsHost) để Student cũng thấy danh sách
-
-                AddLog("Step 2: Fetching members from DB...");
                 var currentMembers = await _classroomRepository.GetMembersAsync(_realClassroomIdUUID);
 
                 Players.Clear();
                 foreach (var m in currentMembers)
                 {
+                    string displayName = m.Profile?.DisplayName;
+                    if (string.IsNullOrEmpty(displayName))
+                    {
+                        displayName = $"Player {m.UserId.Substring(Math.Max(0, m.UserId.Length - 4))}";
+                    }
+
                     Players.Add(new PlayerInfo
                     {
                         Id = m.UserId,
-                        Name = m.Profile?.DisplayName ?? "Unknown",
+                        Name = displayName,
                         AvatarUrl = m.Profile?.AvatarUrl,
                         IsHost = m.Role == "owner"
                     });
                     _lastSeenMap[m.UserId] = DateTime.Now;
                 }
-                AddLog($"-> Found {currentMembers.Count} members in DB.");
-
-                // --- BƯỚC 2: Kết nối Socket ---
-                AddLog("Step 3: Connecting to Realtime...");
 
                 var connectTask = _realtimeService.ConnectAsync();
-                if (await Task.WhenAny(connectTask, Task.Delay(5000)) != connectTask)
-                {
-                    AddLog("ERROR: Connect Timeout!");
-                    return; // Timeout thì thôi, nhưng danh sách DB đã load được rồi
-                }
-                await connectTask;
-                AddLog("-> Socket Connected!");
-
-                // --- BƯỚC 3: Vào phòng ---
-                // Topic dùng RoomId (Code) vẫn OK
-                AddLog($"Step 4: Joining Channel 'room:{RoomId}'...");
+                if (await Task.WhenAny(connectTask, Task.Delay(5000)) != connectTask) { }
+                else await connectTask;
 
                 var joinTask = _realtimeService.JoinRoomAsync(RoomId);
-                if (await Task.WhenAny(joinTask, Task.Delay(5000)) != joinTask)
-                {
-                    AddLog("ERROR: Join Room Timeout!");
-                    return;
-                }
+                if (await Task.WhenAny(joinTask, Task.Delay(5000)) != joinTask) return;
                 await joinTask;
-                AddLog("-> Joined Room Successfully!");
 
-                // --- BƯỚC 4: Gửi tin nhắn chào hỏi ---
                 var myInfo = GetMyInfo();
                 await _realtimeService.SendMessageAsync("PLAYER_JOIN", myInfo);
             }
-            catch (Exception ex)
-            {
-                AddLog($"CONNECT ERROR: {ex.Message}");
-            }
+            catch { }
         }
-
-        // --- CÁC HÀM XỬ LÝ KHÁC (Giữ nguyên) ---
 
         private void HandleRealtimeMessage(string eventName, object data)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                // AddLog($"RX: {eventName}"); // Tạm tắt cho đỡ rối mắt
                 try
                 {
                     var json = JObject.FromObject(data);
@@ -222,7 +200,6 @@ namespace EasyFlips.ViewModels
             });
         }
 
-        // [SỬA]: LeaveRoom cần xóa tên khỏi DB
         [RelayCommand]
         private async Task LeaveRoom()
         {
@@ -244,18 +221,12 @@ namespace EasyFlips.ViewModels
             }
         }
 
-        // ... (Các hàm HandleHeartbeat, Heartbeat_Tick, CheckForOfflineUsers... giữ nguyên như cũ) ...
-
         private void HandleHeartbeat(JObject json)
         {
             if (!IsHost) return;
             string userId = json["id"]?.ToString();
             if (!string.IsNullOrEmpty(userId))
             {
-                if (!Players.Any(p => p.Id == userId))
-                {
-                    // Có thể gọi DB load lại nếu thấy user lạ
-                }
                 _lastSeenMap[userId] = DateTime.Now;
             }
         }
@@ -309,7 +280,6 @@ namespace EasyFlips.ViewModels
             }
         }
 
-        // Các hàm xử lý khác (Kick, Close, Timer...) giữ nguyên code cũ
         private void HandleLobbyUpdate(JObject json)
         {
             var playersList = json["players"]?.ToObject<List<PlayerInfo>>();
@@ -355,7 +325,6 @@ namespace EasyFlips.ViewModels
             Application.Current.Dispatcher.Invoke(() =>
             {
                 CanCloseWindow = true;
-                // _navigationService.ShowGameWindow...
                 ForceCloseWindow();
             });
         }
@@ -374,9 +343,38 @@ namespace EasyFlips.ViewModels
         {
             if (MessageBox.Show("Giải tán phòng?", "Xác nhận", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
-                try { if (IsHost) await _classroomRepository.DeleteClassroomAsync(RoomId); } catch { }
-                await _realtimeService.SendMessageAsync("CLOSE_ROOM", new { });
+                // [QUAN TRỌNG 1]: Mở khóa cửa sổ NGAY LẬP TỨC
+                // Để dù mạng có lỗi, cửa sổ vẫn có quyền đóng lại.
                 CanCloseWindow = true;
+
+                try
+                {
+                    // 1. Xóa dữ liệu trong DB (Ưu tiên cao)
+                    if (IsHost)
+                    {
+                        await _classroomRepository.DeleteClassroomAsync(RoomId);
+                    }
+                }
+                catch (Exception)
+                {
+                    // Lỗi xóa DB không nên chặn việc đóng App
+                }
+
+                try
+                {
+                    // [QUAN TRỌNG 2]: Gửi tin nhắn với Timeout
+                    // Nếu gửi tin nhắn mất quá 2 giây (mạng lag), bỏ qua luôn để đóng Window cho mượt.
+                    var sendTask = _realtimeService.SendMessageAsync("CLOSE_ROOM", new { });
+                    var timeoutTask = Task.Delay(2000); // Timeout 2s
+
+                    await Task.WhenAny(sendTask, timeoutTask);
+                }
+                catch
+                {
+                    // Lỗi Socket cũng không được chặn đóng App
+                }
+
+                // 3. Đóng cửa sổ
                 ForceCloseWindow();
             }
         }
@@ -384,7 +382,9 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private void StartGameCommand()
         {
-            TimeRemaining = 5; IsTimerRunning = true; _timer.Start();
+            TimeRemaining = TimePerRound > 0 ? TimePerRound : 15;
+            IsTimerRunning = true;
+            _timer.Start();
             _realtimeService.SendMessageAsync("TIMER_SYNC", new { seconds = TimeRemaining, isRunning = true });
         }
 
@@ -392,8 +392,18 @@ namespace EasyFlips.ViewModels
 
         private void Timer_Tick(object sender, EventArgs e)
         {
-            if (TimeRemaining > 0) { TimeRemaining--; TimeRemainingString = TimeSpan.FromSeconds(TimeRemaining).ToString(@"mm\:ss"); _realtimeService.SendMessageAsync("TIMER_SYNC", new { seconds = TimeRemaining, isRunning = true }); }
-            else { _timer.Stop(); IsTimerRunning = false; _realtimeService.SendMessageAsync("START_GAME", new { }); }
+            if (TimeRemaining > 0)
+            {
+                TimeRemaining--;
+                TimeRemainingString = TimeSpan.FromSeconds(TimeRemaining).ToString(@"mm\:ss");
+                _realtimeService.SendMessageAsync("TIMER_SYNC", new { seconds = TimeRemaining, isRunning = true });
+            }
+            else
+            {
+                _timer.Stop();
+                IsTimerRunning = false;
+                _realtimeService.SendMessageAsync("START_GAME", new { });
+            }
         }
 
         private PlayerInfo GetMyInfo() => new PlayerInfo { Id = _authService.CurrentUserId ?? Guid.NewGuid().ToString(), Name = CurrentUserName, AvatarUrl = _currentUserAvatar, IsHost = IsHost };

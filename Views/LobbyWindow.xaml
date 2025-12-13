@@ -130,7 +130,7 @@
                         <Ellipse Width="10" Height="10" Fill="#4CD137" Margin="0,0,8,0"/>
                         <TextBlock Text="ONLINE: " Foreground="#BDC3C7" FontWeight="Bold" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding Players.Count}" Foreground="White" FontWeight="Bold" Margin="5,0,0,0"/>
-                        <TextBlock Text="/ 30" Foreground="#7F8FA6" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding MaxPlayersString}" Foreground="#7F8FA6" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
                 <Border Background="#30000000" CornerRadius="15" HorizontalAlignment="Center" Margin="0,20,0,0" Padding="20,8"
