@@ -75,7 +75,7 @@ namespace EasyFlips.ViewModels
         }
 
         [RelayCommand]
-        public async Task SaveProfile()
+        public void SaveProfile()
         {
             if (IsBusy) return; // Chặn bấm liên tục
             IsBusy = true;
@@ -85,9 +85,12 @@ namespace EasyFlips.ViewModels
                 // Cập nhật lại Session cục bộ để hiển thị ngay
                 _userSession.UpdateUserInfo(UserName, AvatarURL);
 
-                MessageBox.Show($"Đã lưu thành công!", "Thông báo");
+                MessageBox.Show("Đã lưu thành công!", "Thông báo");
 
                 _selectedLocalImagePath = null;
+
+                // Đóng cửa sổ sau khi lưu
+                CloseAction?.Invoke();
             }
             catch (Exception ex)
             {
@@ -98,6 +101,7 @@ namespace EasyFlips.ViewModels
                 IsBusy = false;
             }
         }
+
 
         [RelayCommand]
         public void Cancel()
