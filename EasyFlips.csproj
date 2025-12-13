@@ -16,6 +16,8 @@
     <None Remove="Resources\fail.gif" />
     <None Remove="Resources\hide.png" />
     <None Remove="Resources\lock.png" />
+    <None Remove="Resources\password.png" />
+    <None Remove="Resources\SL-022722-48830-19.jpg" />
     <None Remove="Resources\view.png" />
     <None Remove="Resources\error.png" />
   </ItemGroup>
@@ -30,6 +32,12 @@
 
   <ItemGroup>
     <Content Include="Resources\easyflips.ico" />
+    <Content Include="Resources\password.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\SL-022722-48830-19.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

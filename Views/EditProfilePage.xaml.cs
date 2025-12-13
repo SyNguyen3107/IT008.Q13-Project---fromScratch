@@ -20,12 +20,14 @@ namespace EasyFlips.Views
             viewModel.CloseAction = () =>
             {
                 var mainWindow = Application.Current.MainWindow as MainWindow;
-                if (mainWindow != null && mainWindow.MainFrame != null)
+                if (mainWindow?.MainFrame != null)
                 {
-                    mainWindow.MainFrame.Visibility = Visibility.Hidden;
                     mainWindow.MainFrame.Content = null;
+                    mainWindow.MainFrame.Visibility = Visibility.Hidden;
                 }
             };
+
+
         }
     }
 }

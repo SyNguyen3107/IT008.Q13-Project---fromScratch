@@ -59,5 +59,11 @@ namespace EasyFlips.ViewModels
             }
         }
 
+        [RelayCommand]
+        private void Cancel()
+        {
+            CloseCurrentWindow();
+
+        }
     }
 }
