@@ -108,13 +108,15 @@ namespace EasyFlips.ViewModels
             {
                 ShowErrorDialog(GetUserFriendlyErrorMessage(ex));
             }
-                }
-            }
+                
+            
             catch (Exception ex)
             {
                 ShowErrorDialog("Đã xảy ra lỗi: " + ex.Message);
             }
-        }
+        
+}
+
 
         private string GetUserFriendlyErrorMessage(Exception ex)
         {

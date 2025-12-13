@@ -16,15 +16,16 @@ namespace EasyFlips.Views
 
             this.DataContext = viewModel;
 
-                // 3. Setup nút Cancel/Close
-                viewModel.CloseAction = () =>
+            // 3. Setup nút Cancel/Close
+            viewModel.CloseAction = () =>
+            {
+                var mainWindow = Application.Current.MainWindow as MainWindow;
+                if (mainWindow != null && mainWindow.MainFrame != null)
                 {
-                    var mainWindow = Application.Current.MainWindow as MainWindow;
-                    if (mainWindow != null && mainWindow.MainFrame != null)
-                    {
-                        mainWindow.MainFrame.Visibility = Visibility.Hidden;
-                        mainWindow.MainFrame.Content = null;
-                    }
-                };
+                    mainWindow.MainFrame.Visibility = Visibility.Hidden;
+                    mainWindow.MainFrame.Content = null;
+                }
+            };
         }
     }
+}
