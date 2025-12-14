@@ -62,6 +62,10 @@ namespace EasyFlips.Models
         [Column("time_per_round")]
         public int TimePerRound { get; set; } = 30;
 
+        // Thời gian chờ trước khi bắt đầu game (giây), mặc định 300 giây = 5 phút
+        [Column("wait_time")]
+        public int WaitTime { get; set; } = 300;
+
         // [MỚI]: Thêm cột DeckId để biết phòng đang học bộ bài nào
         [Column("deck_id")]
         public string? DeckId { get; set; }

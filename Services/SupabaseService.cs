@@ -96,7 +96,15 @@ namespace EasyFlips.Services
         #endregion
 
         #region Classroom Operations
-        public async Task<Classroom?> CreateClassroomAsync(string name, string? description, string ownerId)
+        /// <summary>
+        /// Tạo phòng học mới
+        /// </summary>
+        /// <param name="name">Tên phòng</param>
+        /// <param name="description">Mô tả phòng</param>
+        /// <param name="ownerId">ID của Host tạo phòng</param>
+        /// <param name="waitTime">Thời gian chờ trước khi bắt đầu (giây), mặc định 300</param>
+        /// <returns>Classroom mới tạo hoặc null nếu thất bại</returns>
+        public async Task<Classroom?> CreateClassroomAsync(string name, string? description, string ownerId, int waitTime = 300)
         {
             var roomCode = await GenerateRoomCodeAsync();
             var classroom = new Classroom
@@ -106,6 +114,7 @@ namespace EasyFlips.Services
                 Description = description,
                 RoomCode = roomCode,
                 HostId = ownerId,
+                WaitTime = waitTime,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
