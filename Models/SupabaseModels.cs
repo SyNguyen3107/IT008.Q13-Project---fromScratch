@@ -144,4 +144,25 @@ namespace EasyFlips.Models
         [JsonProperty("joined_at")]
         public DateTime JoinedAt { get; set; }
     }
+
+    /// <summary>
+    /// DTO: Thông tin thành viên kèm profile (tên, avatar) để hiển thị trên UI
+    /// </summary>
+    public class MemberWithProfile
+    {
+        public string MemberId { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
+        public string ClassroomId { get; set; } = string.Empty;
+        public string Role { get; set; } = "member";
+        public DateTime JoinedAt { get; set; }
+
+        // Thông tin từ bảng Profile
+        public string DisplayName { get; set; } = "Unknown";
+        public string Email { get; set; } = string.Empty;
+        public string? AvatarUrl { get; set; }
+
+        // Thuộc tính hỗ trợ cho UI
+        public bool IsHost => Role.Equals("host", StringComparison.OrdinalIgnoreCase);
+        public string RoleDisplay => IsHost ? "👑 Host" : "👤 Thành viên";
+    }
 }

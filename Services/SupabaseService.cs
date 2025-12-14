@@ -130,6 +130,98 @@ namespace EasyFlips.Services
             var result = await _client.From<Classroom>().Update(classroom);
             return result.Models.Any();
         }
+
+        /// <summary>
+        /// Giải tán phòng hoàn toàn (Hard Delete) - Chỉ Host mới được gọi
+        /// Xóa tất cả members trước, sau đó xóa classroom
+        /// </summary>
+        /// <param name="classroomId">ID phòng cần giải tán</param>
+        /// <param name="hostId">ID của Host (để kiểm tra quyền)</param>
+        /// <returns>True nếu thành công, False nếu thất bại hoặc không có quyền</returns>
+        public async Task<(bool Success, string Message)> DissolveClassroomAsync(string classroomId, string hostId)
+        {
+            try
+            {
+                // 1. Kiểm tra phòng có tồn tại không
+                var classroom = await GetClassroomAsync(classroomId);
+                if (classroom == null)
+                {
+                    return (false, "Phòng không tồn tại.");
+                }
+
+                // 2. Kiểm tra quyền Host
+                if (classroom.HostId != hostId)
+                {
+                    return (false, "Bạn không có quyền giải tán phòng này.");
+                }
+
+                // 3. Xóa tất cả members trong phòng trước
+                await _client.From<Member>()
+                    .Where(x => x.ClassroomId == classroomId)
+                    .Delete();
+                Debug.WriteLine($"[SupabaseService] Deleted all members from room {classroomId}");
+
+                // 4. Xóa classroom
+                await _client.From<Classroom>()
+                    .Where(x => x.Id == classroomId)
+                    .Delete();
+                Debug.WriteLine($"[SupabaseService] Deleted classroom {classroomId}");
+
+                return (true, "Đã giải tán phòng thành công.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Dissolve classroom error: {ex.Message}");
+                return (false, $"Lỗi khi giải tán phòng: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách members kèm thông tin profile (tên, avatar)
+        /// </summary>
+        public async Task<List<MemberWithProfile>> GetClassroomMembersWithProfileAsync(string classroomId)
+        {
+            try
+            {
+                // Lấy danh sách members
+                var members = await GetClassroomMembersAsync(classroomId);
+                var result = new List<MemberWithProfile>();
+
+                // Lấy profile cho từng member
+                foreach (var member in members)
+                {
+                    var profile = await GetProfileAsync(member.UserId);
+                    result.Add(new MemberWithProfile
+                    {
+                        MemberId = member.Id,
+                        UserId = member.UserId,
+                        ClassroomId = member.ClassroomId,
+                        Role = member.Role,
+                        JoinedAt = member.JoinedAt,
+                        DisplayName = profile?.DisplayName ?? "Unknown",
+                        Email = profile?.Email ?? "",
+                        AvatarUrl = profile?.AvatarUrl
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Get members with profile error: {ex.Message}");
+                return new List<MemberWithProfile>();
+            }
+        }
+
+        /// <summary>
+        /// Kiểm tra user có phải là Host của phòng không
+        /// </summary>
+        public async Task<bool> IsHostAsync(string classroomId, string userId)
+        {
+            var classroom = await GetClassroomAsync(classroomId);
+            return classroom?.HostId == userId;
+        }
+
         public async Task<List<UserClassroom>> GetUserClassroomsAsync(string userId)
         {
             var result = await _client.Rpc("get_user_classrooms", new Dictionary<string, object> { { "p_user_id", userId } });
@@ -517,8 +609,12 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Lắng nghe nhiều loại sự kiện cho một bảng (Insert, Update, Delete)
+        /// Lắng nghe nhiều loại sự kiện cho bảng members (Insert, Update, Delete)
         /// </summary>
+        /// <param name="classroomId">ID phòng học</param>
+        /// <param name="onInsert">Callback khi có thành viên mới</param>
+        /// <param name="onUpdate">Callback khi thành viên được cập nhật</param>
+        /// <param name="onDelete">Callback khi thành viên rời phòng</param>
         public async Task SubscribeToClassroomMembersAllEventsAsync(
             string classroomId,
             Action<Member>? onInsert = null,
@@ -561,18 +657,25 @@ namespace EasyFlips.Services
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"[Realtime Error] Parse member failed: {ex.Message}");
+                        Debug.WriteLine($"[Realtime Error] Lỗi parse member: {ex.Message}");
                     }
                 });
 
                 await channel.Subscribe();
-                Debug.WriteLine($"[SupabaseService] Subscribed to all member events for room {classroomId}");
+                Debug.WriteLine($"[SupabaseService] Đã đăng ký lắng nghe tất cả sự kiện members của phòng {classroomId}");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[SupabaseService] All events subscription failed: {ex.Message}");
+                Debug.WriteLine($"[SupabaseService] Lỗi đăng ký lắng nghe: {ex.Message}");
             }
         }
+        /// <summary>
+        /// Tham gia Presence của phòng (theo dõi ai đang online)
+        /// </summary>
+        /// <param name="classroomId">ID phòng học</param>
+        /// <param name="userId">ID người dùng</param>
+        /// <param name="displayName">Tên hiển thị</param>
+        /// <param name="onPresenceSync">Callback khi danh sách online thay đổi</param>
         public async Task JoinRoomPresenceAsync(string classroomId, string userId, string? displayName, Action<List<string>> onPresenceSync)
         {
             try
@@ -581,7 +684,7 @@ namespace EasyFlips.Services
 
                 string channelName = $"presence:{classroomId}";
 
-                // Cleanup old channel if exists
+                // Dọn dẹp kênh cũ nếu tồn tại
                 if (_activeChannels.TryGetValue(channelName, out var oldChannel))
                 {
                     oldChannel.Unsubscribe();
@@ -591,11 +694,11 @@ namespace EasyFlips.Services
                 var channel = _client.Realtime.Channel(channelName);
                 _activeChannels[channelName] = channel;
 
-                // Register presence with unique key (userId to identify per user)
+                // Đăng ký presence với key duy nhất (userId để định danh mỗi user)
                 string presenceKey = userId;
                 var presence = channel.Register<UserPresence>(presenceKey);
 
-                // Add handler for Sync event
+                // Thêm handler cho sự kiện Sync
                 presence.AddPresenceEventHandler(IRealtimePresence.EventType.Sync, (sender, args) =>
                 {
                     try
@@ -617,15 +720,15 @@ namespace EasyFlips.Services
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"[Presence Error] Sync handler: {ex.Message}");
+                        Debug.WriteLine($"[Presence Error] Lỗi xử lý Sync: {ex.Message}");
                     }
                 });
 
-                // Subscribe and check state using the original channel (avoids type issues)
+                // Subscribe và kiểm tra trạng thái
                 await channel.Subscribe();
                 if (channel.State != ChannelState.Joined)
                 {
-                    Debug.WriteLine("[Presence] Subscribe failed");
+                    Debug.WriteLine("[Presence] Subscribe thất bại");
                     return;
                 }
 
@@ -637,14 +740,17 @@ namespace EasyFlips.Services
                 };
                 await presence.Track(payload);
 
-                Debug.WriteLine($"[Presence] Joined room {classroomId} as {userId}");
+                Debug.WriteLine($"[Presence] Đã tham gia phòng {classroomId} với userId {userId}");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[Presence] Join failed: {ex.Message}");
+                Debug.WriteLine($"[Presence] Lỗi tham gia: {ex.Message}");
             }
         }
 
+        /// <summary>
+        /// Rời khỏi Presence của phòng (ngừng theo dõi online)
+        /// </summary>
         public async Task LeaveRoomPresenceAsync(string classroomId, string userId)
         {
             string channelName = $"presence:{classroomId}";
@@ -652,7 +758,7 @@ namespace EasyFlips.Services
             {
                 try
                 {
-                    // Re-register with same key to untrack
+                    // Đăng ký lại với cùng key để untrack
                     var presence = channel.Register<UserPresence>(userId);
 
                     await presence.Untrack();
@@ -660,11 +766,11 @@ namespace EasyFlips.Services
 
                     _activeChannels.Remove(channelName);
 
-                    Debug.WriteLine($"[Presence] Left room {classroomId}");
+                    Debug.WriteLine($"[Presence] Đã rời phòng {classroomId}");
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[Presence] Leave error: {ex.Message}");
+                    Debug.WriteLine($"[Presence] Lỗi rời phòng: {ex.Message}");
                 }
             }
         }
