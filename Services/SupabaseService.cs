@@ -431,6 +431,73 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
+        /// Upload avatar mới và giữ lại 1 avatar gần nhất làm backup (để rollback trong 7-30 ngày)
+        /// Chỉ giữ tối đa 2 ảnh: ảnh hiện tại + 1 ảnh backup
+        /// </summary>
+        /// <param name="userId">ID người dùng</param>
+        /// <param name="newFilePath">Đường dẫn file ảnh mới</param>
+        /// <returns>Public URL của ảnh mới hoặc null nếu thất bại</returns>
+        public async Task<string?> ReplaceAvatarWithBackupAsync(string userId, string newFilePath)
+        {
+            try
+            {
+                // 1. Validate file
+                if (!File.Exists(newFilePath))
+                {
+                    Debug.WriteLine($"[SupabaseService] File not found: {newFilePath}");
+                    return null;
+                }
+
+                // 2. Lấy danh sách file cũ trong folder của user
+                var existingFiles = await _client.Storage.From("avatars").List(userId);
+                Debug.WriteLine($"[SupabaseService] Found {existingFiles?.Count ?? 0} existing avatar(s)");
+
+                // 3. Sắp xếp theo tên file (chứa timestamp) để xác định ảnh cũ nhất
+                // Giữ lại 1 ảnh gần nhất (avatar hiện tại sẽ thành backup), xóa các ảnh cũ hơn
+                if (existingFiles != null && existingFiles.Count >= 2)
+                {
+                    // Sắp xếp theo tên file giảm dần (file mới nhất lên đầu)
+                    var sortedFiles = existingFiles
+                        .OrderByDescending(f => f.Name)
+                        .ToList();
+
+                    // Giữ lại 1 file mới nhất (sẽ thành backup), xóa các file còn lại
+                    var filesToDelete = sortedFiles.Skip(1).Select(f => $"{userId}/{f.Name}").ToList();
+                    
+                    if (filesToDelete.Any())
+                    {
+                        await _client.Storage.From("avatars").Remove(filesToDelete);
+                        Debug.WriteLine($"[SupabaseService] Deleted {filesToDelete.Count} old avatar(s), kept 1 as backup");
+                    }
+                }
+
+                // 4. Đọc file mới thành byte array
+                var imageData = await File.ReadAllBytesAsync(newFilePath);
+
+                // 5. Tạo tên file unique với timestamp
+                var extension = Path.GetExtension(newFilePath).ToLower();
+                var uniqueFileName = $"avatar_{DateTime.UtcNow.Ticks}{extension}";
+
+                // 6. Upload lên Storage
+                var avatarUrl = await UploadAvatarAsync(userId, imageData, uniqueFileName);
+
+                if (avatarUrl != null)
+                {
+                    // 7. Cập nhật URL vào bảng profiles
+                    await UpdateProfileAvatarAsync(userId, avatarUrl);
+                    Debug.WriteLine($"[SupabaseService] New avatar uploaded with backup: {avatarUrl}");
+                }
+
+                return avatarUrl;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Replace avatar with backup error: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Lấy public URL của avatar
         /// </summary>
         public string GetAvatarUrl(string userId, string fileName)

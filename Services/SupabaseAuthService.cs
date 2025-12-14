@@ -30,12 +30,28 @@ namespace EasyFlips.Services
             {
                 CurrentUserId = session.User.Id;
 
-                var displayName = session.User.UserMetadata?.ContainsKey("display_name") == true
-                    ? session.User.UserMetadata["display_name"]?.ToString()
-                    : "";
-                var avatarUrl = session.User.UserMetadata?.ContainsKey("avatar_url") == true
-                    ? session.User.UserMetadata["avatar_url"]?.ToString()
-                    : "";
+                // Lấy thông tin profile từ bảng profiles (ưu tiên hơn UserMetadata)
+                var profile = await _supabaseService.GetProfileAsync(session.User.Id);
+                
+                string displayName;
+                string avatarUrl;
+
+                if (profile != null)
+                {
+                    // Ưu tiên dùng dữ liệu từ bảng profiles
+                    displayName = profile.DisplayName ?? "";
+                    avatarUrl = profile.AvatarUrl ?? "";
+                }
+                else
+                {
+                    // Fallback về UserMetadata nếu chưa có profile
+                    displayName = session.User.UserMetadata?.ContainsKey("display_name") == true
+                        ? session.User.UserMetadata["display_name"]?.ToString() ?? ""
+                        : "";
+                    avatarUrl = session.User.UserMetadata?.ContainsKey("avatar_url") == true
+                        ? session.User.UserMetadata["avatar_url"]?.ToString() ?? ""
+                        : "";
+                }
 
                 // Cập nhật thông tin vào bộ nhớ phiên làm việc (RAM)
                 _userSession.SetUser(
@@ -43,8 +59,8 @@ namespace EasyFlips.Services
                     session.User.Email ?? email,
                     session.AccessToken ?? "",
                     session.RefreshToken ?? "",
-                    displayName ?? "",
-                    avatarUrl ?? ""
+                    displayName,
+                    avatarUrl
                 );
 
                 return true;
@@ -143,6 +159,29 @@ namespace EasyFlips.Services
 
             return false;
         }
+
+        /// <summary>
+        /// Tải thông tin profile (display_name, avatar_url) từ bảng profiles sau khi RestoreSession
+        /// </summary>
+        public async Task LoadProfileInfoAsync()
+        {
+            if (string.IsNullOrEmpty(CurrentUserId)) return;
+
+            try
+            {
+                var profile = await _supabaseService.GetProfileAsync(CurrentUserId);
+                if (profile != null)
+                {
+                    _userSession.UpdateUserInfo(profile.DisplayName ?? "", profile.AvatarUrl ?? "");
+                    System.Diagnostics.Debug.WriteLine($"[AuthService] Profile loaded: {profile.DisplayName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AuthService] Load profile error: {ex.Message}");
+            }
+        }
+
         public async Task<bool> ForgotPasswordAsync(string email)
         {
             try

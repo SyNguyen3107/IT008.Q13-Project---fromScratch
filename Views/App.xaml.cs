@@ -169,6 +169,12 @@ namespace EasyFlips
             var authService = ServiceProvider.GetRequiredService<IAuthService>();
             bool isLoggedIn = authService.RestoreSession(); // Gọi trực tiếp từ Interface
 
+            // [BƯỚC 2.1]: Nếu đăng nhập thành công, tải thông tin profile từ database
+            if (isLoggedIn)
+            {
+                await authService.LoadProfileInfoAsync();
+            }
+
             // [BƯỚC 3]: Điều hướng
             if (isLoggedIn)
             {

@@ -25,6 +25,9 @@ namespace EasyFlips.Interfaces
         // [FIX]: Thêm hàm khôi phục phiên đăng nhập
         bool RestoreSession();
 
+        // [NEW]: Tải thông tin profile (display_name, avatar_url) từ bảng profiles
+        Task LoadProfileInfoAsync();
+
         // [NEW]: Gửi email reset mật khẩu
         Task<bool> ForgotPasswordAsync(string email);
 

@@ -1,5 +1,7 @@
 ﻿using EasyFlips.ViewModels;
 using EasyFlips.Views;
+using EasyFlips.Services;
+using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives; // <-- Thêm để dùng ScrollBar
@@ -33,9 +35,14 @@ namespace EasyFlips
             {
                 // 2. Hiện Frame lên (QUAN TRỌNG: Phải set Visible thì mới đè lên được)
                 MainFrame.Visibility = Visibility.Visible;
-                var editViewModel = new EditProfileViewModel(_viewModel.UserSession);
-                // 3. Truyền Session thật vào trang Edit
-                // Lưu ý: Đảm bảo _viewModel.UserSession là public
+                
+                // 3. Lấy SupabaseService từ DI container
+                var supabaseService = App.ServiceProvider.GetRequiredService<SupabaseService>();
+                
+                // 4. Tạo ViewModel với cả UserSession và SupabaseService
+                var editViewModel = new EditProfileViewModel(_viewModel.UserSession, supabaseService);
+                
+                // 5. Truyền Session thật vào trang Edit
                 var editPage = new EditProfilePage(editViewModel);
 
                 MainFrame.Navigate(editPage);
