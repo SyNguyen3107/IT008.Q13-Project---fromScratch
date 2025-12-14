@@ -24,7 +24,8 @@ namespace EasyFlips.ViewModels
 
         [ObservableProperty] private Deck _selectedDeck;
         [ObservableProperty] private int _maxPlayers = 30;
-        [ObservableProperty] private int _timePerRound = 15; // Giây
+        [ObservableProperty] private int _timePerRound = 15; // Giây      
+        [ObservableProperty] private int _waitTimeMinutes = 5;// 0 nghĩa là tắt đếm ngược (Bắt đầu thủ công), 5 là 5 phút
 
         // Constructor nhận đầy đủ các Service cần thiết
         public CreateRoomViewModel(
@@ -91,13 +92,14 @@ namespace EasyFlips.ViewModels
                     Status = "WAITING",
                     TimePerRound = TimePerRound,
                     IsActive = true,
-                    Name = $"Lớp học {roomId}"
+                    Name = $"Lớp học {roomId}",
+                    WaitTime = WaitTimeMinutes * 60
                 };
 
                 // Gọi Repository (Bây giờ Database đã cho phép 'anon' nên chắc chắn sẽ qua)
                 await _classroomRepository.CreateClassroomAsync(newRoom);
 
-                _navigationService.ShowLobbyWindow(roomId, isHost: true, deck: SelectedDeck, MaxPlayers);
+                _navigationService.ShowLobbyWindow(roomId, isHost: true, deck: SelectedDeck, MaxPlayers, newRoom.WaitTime);
                 CloseWindow();
             }
             catch (Exception ex)

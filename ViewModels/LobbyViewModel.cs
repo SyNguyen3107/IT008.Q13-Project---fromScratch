@@ -41,14 +41,30 @@ namespace EasyFlips.ViewModels
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
         [ObservableProperty] private Deck _selectedDeck;
 
-        // [FIX]: Property hiển thị chuỗi dạng "/ 30"
+        // Property hiển thị chuỗi dạng "/ 30"
         public string MaxPlayersString => $"/ {MaxPlayers}";
-
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(MaxPlayersString))] // Tự động cập nhật chuỗi hiển thị khi số thay đổi
         private int _maxPlayers = 30;
 
         [ObservableProperty] private int _timePerRound = 15;
+
+        // === Các biến phục vụ Auto Start ===
+        private DispatcherTimer _autoStartTimer;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(AutoStartStatus))]
+        private int _autoStartSeconds; // Thời gian đếm ngược (giây)
+
+        [ObservableProperty]
+        private int _totalWaitTime; // Tổng thời gian (để tính % ProgressBar)
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(AutoStartStatus))]
+        private bool _isAutoStartActive; // Cờ để hiện/ẩn UI đếm ngược
+
+        public string AutoStartStatus => $"Starting in: {TimeSpan.FromSeconds(AutoStartSeconds):mm\\:ss}";
+
 
         public ObservableCollection<PlayerInfo> Players { get; } = new ObservableCollection<PlayerInfo>();
 
@@ -80,11 +96,15 @@ namespace EasyFlips.ViewModels
             _heartbeatTimer.Tick += Heartbeat_Tick;
 
             _realtimeService.OnMessageReceived += HandleRealtimeMessage;
+
+            // Khởi tạo Timer cho Auto Start
+            _autoStartTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _autoStartTimer.Tick += AutoStart_Tick;
         }
 
         // [FIX QUAN TRỌNG]: Đổi tham số thành 'int? maxPlayers = null'
         // Để nếu bên ngoài không truyền vào, nó sẽ KHÔNG reset giá trị hiện tại về 30
-        public async Task InitializeAsync(string roomId, bool isHost, Deck deck = null, int? maxPlayers = null)
+        public async Task InitializeAsync(string roomId, bool isHost, Deck deck = null, int? maxPlayers = null, int? waitTime = null)
         {
             RoomId = roomId;
             IsHost = isHost;
@@ -95,8 +115,6 @@ namespace EasyFlips.ViewModels
             {
                 MaxPlayers = maxPlayers.Value;
             }
-            // Nếu null, giữ nguyên giá trị đã được set bởi LobbyWindow Constructor
-
             try
             {
                 var roomInfo = await _classroomRepository.GetClassroomByCodeAsync(RoomId);
@@ -127,6 +145,21 @@ namespace EasyFlips.ViewModels
                     var myId = _authService.CurrentUserId ?? _userSession.UserId;
                     await _classroomRepository.AddMemberAsync(_realClassroomIdUUID, myId);
                 }
+
+                // Xử lý logic WaitTime
+                if (isHost && waitTime.HasValue && waitTime.Value > 0)
+                {
+                    TotalWaitTime = waitTime.Value;
+                    AutoStartSeconds = waitTime.Value;
+                    IsAutoStartActive = true;
+
+                    _autoStartTimer.Start();
+                }
+                else
+                {
+                    IsAutoStartActive = false;
+                }
+
 
                 await ConnectAndJoinRoom();
 
@@ -265,6 +298,30 @@ namespace EasyFlips.ViewModels
             }
         }
 
+        // Hàm xử lý khi Timer nhảy số
+        private void AutoStart_Tick(object sender, EventArgs e)
+        {
+            if (AutoStartSeconds > 0)
+            {
+                AutoStartSeconds--;
+            }
+            else
+            {
+                // Hết giờ -> Tự động Start
+                StopAutoStart();
+                //StartGameCommand.Execute(null);
+            }
+        }
+        // Hàm dừng Auto Start (Gọi khi Start thủ công hoặc Rời phòng)
+        private void StopAutoStart()
+        {
+            if (_autoStartTimer.IsEnabled)
+            {
+                _autoStartTimer.Stop();
+            }
+            IsAutoStartActive = false;
+        }
+
         private void HandlePlayerJoin(JObject json)
         {
             if (!IsHost) return;
@@ -382,6 +439,9 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private void StartGameCommand()
         {
+
+            StopAutoStart(); // <--- Thêm dòng này để hủy đếm ngược nếu Host bấm nút sớm
+
             TimeRemaining = TimePerRound > 0 ? TimePerRound : 15;
             IsTimerRunning = true;
             _timer.Start();
@@ -411,6 +471,7 @@ namespace EasyFlips.ViewModels
 
         private void ForceCloseWindow()
         {
+            _autoStartTimer?.Stop();
             _heartbeatTimer.Stop();
             _realtimeService.LeaveRoom();
             Application.Current.Dispatcher.Invoke(() => { foreach (Window window in Application.Current.Windows) { if (window.DataContext == this) { window.Close(); break; } } });

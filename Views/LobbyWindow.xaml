@@ -109,6 +109,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,40,0,20">
+           
             <TextBlock Text="ROOM CODE" Foreground="#7F8FA6" FontSize="14" FontWeight="Bold" 
                        HorizontalAlignment="Center" Margin="0,0,0,5"/>
 
@@ -125,24 +126,51 @@
 
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
-                <Border Background="#30000000" CornerRadius="15" HorizontalAlignment="Center" Margin="0,20,0,0" Padding="20,8">
+
+                <Border Background="#30000000" CornerRadius="15" Margin="0,20,0,0" Padding="20,8">
                     <StackPanel Orientation="Horizontal">
                         <Ellipse Width="10" Height="10" Fill="#4CD137" Margin="0,0,8,0"/>
                         <TextBlock Text="ONLINE: " Foreground="#BDC3C7" FontWeight="Bold" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding Players.Count}" Foreground="White" FontWeight="Bold" Margin="5,0,0,0"/>
+                        <TextBlock Text="{Binding Players.Count}" Foreground="White" FontWeight="Bold" Margin="5,0,0,0" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding MaxPlayersString}" Foreground="#7F8FA6" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
-                <Border Background="#30000000" CornerRadius="15" HorizontalAlignment="Center" Margin="0,20,0,0" Padding="20,8"
-            Visibility="{Binding IsTimerRunning, Converter={StaticResource BoolToVis}}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="⏳ STARTING IN: " Foreground="#FF6B6B" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding TimeRemainingString}" Foreground="#FF6B6B" FontWeight="ExtraBold" FontSize="20" Margin="5,0,0,0">
-                            <TextBlock.Effect>
-                                <DropShadowEffect Color="#FF6B6B" BlurRadius="10" ShadowDepth="0"/>
-                            </TextBlock.Effect>
-                        </TextBlock>
-                    </StackPanel>
+
+                <Border Background="#30000000" CornerRadius="15" Margin="15,20,0,0" Padding="20,8"
+                        Visibility="{Binding IsAutoStartActive, Converter={StaticResource BoolToVis}}">
+
+                    <Grid VerticalAlignment="Center">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   Text="{Binding AutoStartStatus}" 
+                                   Foreground="#F59E0B" FontWeight="Bold" FontSize="12"
+                                   HorizontalAlignment="Center" Margin="0,0,0,5"/>
+
+                        <ProgressBar Grid.Row="1"
+                                     Value="{Binding AutoStartSeconds}" Maximum="{Binding TotalWaitTime}"
+                                     Width="150" Height="6"
+                                     BorderThickness="0" Background="#334155" Foreground="#F59E0B">
+                            <ProgressBar.Resources>
+                                <Style TargetType="ProgressBar">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ProgressBar">
+                                                <Grid x:Name="TemplateRoot">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="3"/>
+                                                    <Border x:Name="PART_Track"/>
+                                                    <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="3" HorizontalAlignment="Left"/>
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ProgressBar.Resources>
+                        </ProgressBar>
+                    </Grid>
                 </Border>
             </StackPanel>
         </StackPanel>
@@ -258,6 +286,7 @@
                 Style="{StaticResource IconButtonStyle}"
                 Foreground="White" FontWeight="SemiBold"/>
 
+                
                 <Button Command="{Binding StartGameCommand}" Content="START GAME"
                 Width="180" Height="50"
                 Style="{StaticResource ModernButtonStyle}"

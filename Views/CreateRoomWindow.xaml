@@ -1,34 +1,92 @@
 ﻿<Window x:Class="EasyFlips.Views.CreateRoomWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Cài đặt phòng học" Height="450" Width="500"
+        Title="Room Setup" Height="550" Width="450"
         WindowStartupLocation="CenterOwner"
-        Background="#333">
+        Background="#1A2232" ResizeMode="NoResize">
 
-    <StackPanel Margin="30">
-        <TextBlock Text="CẤU HÌNH PHÒNG HỌC" Foreground="White" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+    <Window.Resources>
+        <Style TargetType="Slider">
+            <Setter Property="IsSnapToTickEnabled" Value="True"/>
+            <Setter Property="TickPlacement" Value="None"/>
+            <Setter Property="Foreground" Value="#3B82F6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
 
-        <TextBlock Text="Chọn bộ thẻ (Deck):" Foreground="#DDD" Margin="0,10,0,5"/>
-        <ComboBox ItemsSource="{Binding AvailableDecks}" 
-                  SelectedItem="{Binding SelectedDeck}"
-                  DisplayMemberPath="Name"
-                  Height="35" FontSize="14"/>
+        <Style x:Key="LabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="0,15,0,5"/>
+        </Style>
 
-        <TextBlock Text="{Binding MaxPlayers, StringFormat='Số người tối đa: {0}'}" Foreground="#DDD" Margin="0,20,0,5"/>
-        <Slider Minimum="2" Maximum="50" Value="{Binding MaxPlayers}" TickFrequency="1" IsSnapToTickEnabled="True"/>
+        <Style x:Key="ValueStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+    </Window.Resources>
 
-        <TextBlock Text="Thời gian mỗi câu (giây):" Foreground="#DDD" Margin="0,20,0,5"/>
-        <TextBox Text="{Binding TimePerRound}" Background="#444" Foreground="White" Height="30" Padding="5"/>
+    <Border Padding="30">
+        <StackPanel>
+            <TextBlock Text="ROOM CONFIGURATION" Foreground="White" FontSize="24" FontWeight="Bold" 
+                       HorizontalAlignment="Center" Margin="0,0,0,30">
+                <TextBlock.Effect>
+                    <DropShadowEffect Color="#3B82F6" BlurRadius="15" Opacity="0.4" ShadowDepth="0"/>
+                </TextBlock.Effect>
+            </TextBlock>
 
-        <Button Content="Xác Nhận Tạo Phòng"
-                Command="{Binding ConfirmCreateRoomCommand}"
-                Margin="0,40,0,0" Height="45"
-                Background="#E67E22" Foreground="White" FontWeight="Bold" FontSize="16">
-            <Button.Resources>
-                <Style TargetType="Border">
-                    <Setter Property="CornerRadius" Value="8"/>
-                </Style>
-            </Button.Resources>
-        </Button>
-    </StackPanel>
+            <TextBlock Text="Select Deck" Style="{StaticResource LabelStyle}"/>
+            <ComboBox ItemsSource="{Binding AvailableDecks}" 
+                      SelectedItem="{Binding SelectedDeck}"
+                      DisplayMemberPath="Name"
+                      Height="40" FontSize="14" Padding="10,0"
+                      Background="#2D3748" Foreground="Black" BorderThickness="0">
+            </ComboBox>
+
+            <Grid Margin="0,20,0,0">
+                <TextBlock Text="Max Players" Style="{StaticResource LabelStyle}" VerticalAlignment="Center" Margin="0"/>
+                <TextBlock Text="{Binding MaxPlayers, StringFormat='{}{0} players'}" Style="{StaticResource ValueStyle}"/>
+            </Grid>
+            <Slider Minimum="2" Maximum="50" Value="{Binding MaxPlayers}" TickFrequency="1" Margin="0,5,0,0"/>
+
+            <Grid Margin="0,15,0,0">
+                <TextBlock Text="Time Per Round" Style="{StaticResource LabelStyle}" VerticalAlignment="Center" Margin="0"/>
+                <TextBlock Text="{Binding TimePerRound, StringFormat='{}{0} seconds'}" Style="{StaticResource ValueStyle}"/>
+            </Grid>
+            <Slider Minimum="5" Maximum="60" Value="{Binding TimePerRound}" TickFrequency="5" Margin="0,5,0,0"/>
+
+            <Grid Margin="0,15,0,0">
+                <TextBlock Text="Auto-start after" Style="{StaticResource LabelStyle}" VerticalAlignment="Center" Margin="0"/>
+
+                <TextBlock x:Name="txtWaitTime">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource ValueStyle}">
+                            <Setter Property="Text" Value="{Binding WaitTimeMinutes, StringFormat='{}{0} minutes'}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding WaitTimeMinutes}" Value="0">
+                                    <Setter Property="Text" Value="Manual Start"/>
+                                    <Setter Property="Foreground" Value="#F59E0B"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+            <Slider Minimum="0" Maximum="15" Value="{Binding WaitTimeMinutes}" TickFrequency="1" Margin="0,5,0,0"/>
+            <TextBlock Text="Set to 0 to disable auto-start" Foreground="#64748B" FontSize="11" FontStyle="Italic" Margin="0,2,0,0"/>
+
+            <Button Content="CREATE ROOM"
+                    Command="{Binding ConfirmCreateRoomCommand}"
+                    Margin="0,40,0,0" Height="50"
+                    Background="#3B82F6" Foreground="White" FontWeight="Bold" FontSize="16" Cursor="Hand"
+                    BorderThickness="0">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="10"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+        </StackPanel>
+    </Border>
 </Window>

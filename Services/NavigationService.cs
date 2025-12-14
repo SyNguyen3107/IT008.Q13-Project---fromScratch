@@ -216,7 +216,7 @@ namespace EasyFlips.Services
         }
 
         // [QUAN TRỌNG] Hàm mở Lobby nhận tham số
-        public void ShowLobbyWindow(string roomId, bool isHost, Deck deck = null, int maxPlayers = 30)
+        public void ShowLobbyWindow(string roomId, bool isHost, Deck deck = null, int maxPlayers = 30, int waitTime = 300)
         {
             var window = _serviceProvider.GetRequiredService<LobbyWindow>();
 
@@ -225,7 +225,7 @@ namespace EasyFlips.Services
             {
                 // Gọi hàm InitializeAsync mà chúng ta đã viết ở bước trước
                 // Lưu ý: Vì là async void (fire-and-forget) hoặc cần wrap trong Task.Run nếu muốn đợi
-                _ = vm.InitializeAsync(roomId, isHost, deck, maxPlayers);
+                _ = vm.InitializeAsync(roomId, isHost, deck, maxPlayers, waitTime);
             }
 
             if (Application.Current.MainWindow != null)
