@@ -17,7 +17,7 @@ namespace EasyFlips.ViewModels
         private readonly IDeckRepository _deckRepository;
         private readonly IClassroomRepository _classroomRepository;
         private readonly IAuthService _authService;
-        private readonly SupabaseService _supabaseService; // [FIX]: Thêm field này
+        private readonly SupabaseService _supabaseService;
 
         // Dữ liệu binding ra UI
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
@@ -33,7 +33,7 @@ namespace EasyFlips.ViewModels
             IDeckRepository deckRepository,
             IClassroomRepository classroomRepository,
             IAuthService authService,
-            SupabaseService supabaseService) // [FIX]: Inject thêm SupabaseService
+            SupabaseService supabaseService)
         {
             _navigationService = navigationService;
             _deckRepository = deckRepository;
@@ -43,7 +43,7 @@ namespace EasyFlips.ViewModels
 
             LoadDecks();
         }
-
+        //=== LẤY DECK TỪ DATABASE ===
         private async void LoadDecks()
         {
             try
@@ -60,7 +60,7 @@ namespace EasyFlips.ViewModels
                 MessageBox.Show($"Không thể tải danh sách Deck: {ex.Message}");
             }
         }
-
+        //=== HÀM ĐƯỢC GỌI KHI NHẤN NÚT TẠO PHÒNG ===
         [RelayCommand]
         private async Task ConfirmCreateRoom()
         {
@@ -73,11 +73,12 @@ namespace EasyFlips.ViewModels
             // 1. Sinh mã phòng ngẫu nhiên (6 ký tự)
             var random = new Random();
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            // Lấy 6 ký tự ngẫu nhiên tạo thành mã phòng
             string roomId = new string(Enumerable.Repeat(chars, 6).Select(s => s[random.Next(s.Length)]).ToArray());
 
             try
             {
-                // [FIX]: Thử làm mới Token trước khi gửi (Đề phòng Token hết hạn)
+                // Thử làm mới Token trước khi gửi (Đề phòng Token hết hạn)
                 if (_supabaseService.Client.Auth.CurrentSession != null)
                 {
                     await _supabaseService.Client.Auth.RefreshSession();
@@ -92,11 +93,11 @@ namespace EasyFlips.ViewModels
                     Status = "WAITING",
                     TimePerRound = TimePerRound,
                     IsActive = true,
-                    Name = $"Lớp học {roomId}",
+                    Name = $"Classroom {roomId}",
                     WaitTime = WaitTimeMinutes * 60
                 };
 
-                // Gọi Repository (Bây giờ Database đã cho phép 'anon' nên chắc chắn sẽ qua)
+                // Gọi Repository
                 await _classroomRepository.CreateClassroomAsync(newRoom);
 
                 _navigationService.ShowLobbyWindow(roomId, isHost: true, deck: SelectedDeck, MaxPlayers, newRoom.WaitTime);
@@ -104,7 +105,6 @@ namespace EasyFlips.ViewModels
             }
             catch (Exception ex)
             {
-                // Nếu vẫn lỗi, in chi tiết Exception ra để xem
                 MessageBox.Show($"Lỗi: {ex.Message}\nInner: {ex.InnerException?.Message}", "Lỗi Supabase");
             }
         }

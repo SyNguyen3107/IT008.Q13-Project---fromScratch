@@ -3,8 +3,8 @@ using Newtonsoft.Json;
 using Supabase;
 using Supabase.Gotrue;
 using Supabase.Gotrue.Interfaces;
-using Supabase.Realtime; // Đảm bảo namespace này có mặt
-using Supabase.Realtime.Interfaces; // Đảm bảo namespace này có mặt
+using Supabase.Realtime;
+using Supabase.Realtime.Interfaces;
 using Supabase.Realtime.PostgresChanges;
 using System;
 using System.Collections.Generic;
@@ -21,17 +21,37 @@ using Supabase.Postgrest.Responses;
 
 namespace EasyFlips.Services
 {
+    /// <summary>
+    /// Service trung gian xử lý mọi giao tiếp với Supabase (Auth, Database, Realtime, Storage).
+    /// </summary>
     public class SupabaseService
     {
         private readonly Supabase.Client _client;
         private readonly CustomFileSessionHandler _sessionHandler;
-        // [NEW]: Quản lý các kênh presence đang active
         private readonly Dictionary<string, RealtimeChannel> _activeChannels = new Dictionary<string, RealtimeChannel>();
         public Supabase.Client Client => _client;
 
+        /// <summary>
+        /// Khởi tạo SupabaseService, thiết lập đường dẫn cache và cấu hình Client.
+        /// </summary>
         public SupabaseService()
         {
-            var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EasyFlips");
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+            // Mặc định là thư mục chính
+            var folderName = "EasyFlips";
+
+            // [MẸO] Kiểm tra xem có đang chạy instance thứ 2 không 
+            // (Bằng cách check xem process EasyFlips có đang chạy nhiều hơn 1 không)
+            var procName = Process.GetCurrentProcess().ProcessName;
+            if (Process.GetProcessesByName(procName).Length > 1)
+            {
+                // Nếu đây là cửa sổ thứ 2, dùng thư mục cache tạm khác
+                // Để không đụng chạm vào session của cửa sổ 1
+                folderName = "EasyFlips_Instance2";
+            }
+
+            var cacheDir = Path.Combine(appData, folderName);
             if (!Directory.Exists(cacheDir)) Directory.CreateDirectory(cacheDir);
 
             _sessionHandler = new CustomFileSessionHandler(cacheDir);
@@ -46,16 +66,16 @@ namespace EasyFlips.Services
             _client = new Supabase.Client(AppConfig.SupabaseUrl, AppConfig.SupabaseKey, options);
         }
 
+        /// <summary>
+        /// Khởi động Client và cố gắng khôi phục phiên đăng nhập (Session) từ file cache cũ.
+        /// </summary>
         public async Task InitializeAsync()
         {
             try
             {
-                // [FIX]: Tự động load session thủ công để đảm bảo tính ổn định
                 var loadedSession = _sessionHandler.LoadSession();
-
                 await _client.InitializeAsync();
 
-                // Nếu thư viện không tự nhận session, ta thực hiện thủ công
                 if (_client.Auth.CurrentSession == null && loadedSession != null)
                 {
                     if (!string.IsNullOrEmpty(loadedSession.AccessToken) && !string.IsNullOrEmpty(loadedSession.RefreshToken))
@@ -79,11 +99,22 @@ namespace EasyFlips.Services
         }
 
         #region Profile Operations
+
+        /// <summary>
+        /// Lấy thông tin Profile cơ bản của người dùng.
+        /// </summary>
+        /// <param name="userId">ID người dùng (GUID).</param>
+        /// <returns>Đối tượng Profile hoặc null.</returns>
         public async Task<Profile?> GetProfileAsync(string userId)
         {
             var result = await _client.From<Profile>().Where(x => x.Id == userId).Single();
             return result;
         }
+
+        /// <summary>
+        /// Lấy thông tin UserProfile chi tiết (Bảng mở rộng nếu có).
+        /// </summary>
+        /// <param name="userId">ID người dùng.</param>
         public async Task<UserProfile?> GetUserProfileAsync(string userId)
         {
             try
@@ -93,7 +124,7 @@ namespace EasyFlips.Services
                     .Where(x => x.UserId == userId)
                     .Single();
 
-                return profile; // trả về trực tiếp object UserProfile
+                return profile;
             }
             catch (Exception ex)
             {
@@ -102,16 +133,24 @@ namespace EasyFlips.Services
             }
         }
 
-
-
-
-
+        /// <summary>
+        /// Cập nhật thông tin hiển thị và avatar cho người dùng.
+        /// </summary>
+        /// <param name="userId">ID người dùng.</param>
+        /// <param name="displayName">Tên hiển thị mới.</param>
+        /// <param name="avatarUrl">Đường dẫn ảnh đại diện mới.</param>
         public async Task<Profile?> UpdateProfileAsync(string userId, string? displayName, string? avatarUrl)
         {
             var profile = new Profile { Id = userId, DisplayName = displayName, AvatarUrl = avatarUrl, UpdatedAt = DateTime.UtcNow };
             var result = await _client.From<Profile>().Update(profile);
             return result.Models.FirstOrDefault();
         }
+
+        /// <summary>
+        /// Tìm kiếm người dùng dựa trên email (gần đúng).
+        /// </summary>
+        /// <param name="emailQuery">Chuỗi email cần tìm.</param>
+        /// <returns>Danh sách các Profile khớp.</returns>
         public async Task<List<Profile>> SearchProfilesByEmailAsync(string emailQuery)
         {
             var result = await _client.From<Profile>().Where(x => x.Email.Contains(emailQuery)).Get();
@@ -120,14 +159,15 @@ namespace EasyFlips.Services
         #endregion
 
         #region Classroom Operations
+
         /// <summary>
-        /// Tạo phòng học mới
+        /// Tạo một phòng học mới.
         /// </summary>
-        /// <param name="name">Tên phòng</param>
-        /// <param name="description">Mô tả phòng</param>
-        /// <param name="ownerId">ID của Host tạo phòng</param>
-        /// <param name="waitTime">Thời gian chờ trước khi bắt đầu (giây), mặc định 300</param>
-        /// <returns>Classroom mới tạo hoặc null nếu thất bại</returns>
+        /// <param name="name">Tên phòng học.</param>
+        /// <param name="description">Mô tả phòng học (tùy chọn).</param>
+        /// <param name="ownerId">ID của người tạo (Host).</param>
+        /// <param name="waitTime">Thời gian chờ tự động bắt đầu (giây), mặc định 300s.</param>
+        /// <returns>Đối tượng Classroom vừa tạo.</returns>
         public async Task<Classroom?> CreateClassroomAsync(string name, string? description, string ownerId, int waitTime = 300)
         {
             var roomCode = await GenerateRoomCodeAsync();
@@ -146,17 +186,30 @@ namespace EasyFlips.Services
             var result = await _client.From<Classroom>().Insert(classroom);
             return result.Models.FirstOrDefault();
         }
+
+        /// <summary>
+        /// Lấy thông tin chi tiết một phòng học theo ID.
+        /// </summary>
+        /// <param name="classroomId">ID của phòng.</param>
         public async Task<Classroom?> GetClassroomAsync(string classroomId)
         {
             var result = await _client.From<Classroom>().Where(x => x.Id == classroomId).Single();
             return result;
         }
+
+        /// <summary>
+        /// Cập nhật thông tin tên và mô tả của phòng học.
+        /// </summary>
         public async Task<Classroom?> UpdateClassroomAsync(string classroomId, string name, string? description)
         {
             var classroom = new Classroom { Id = classroomId, Name = name, Description = description, UpdatedAt = DateTime.UtcNow };
             var result = await _client.From<Classroom>().Update(classroom);
             return result.Models.FirstOrDefault();
         }
+
+        /// <summary>
+        /// Vô hiệu hóa phòng học (Soft Delete).
+        /// </summary>
         public async Task<bool> DeactivateClassroomAsync(string classroomId)
         {
             var classroom = new Classroom { Id = classroomId, IsActive = false, UpdatedAt = DateTime.UtcNow };
@@ -165,39 +218,26 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Giải tán phòng hoàn toàn (Hard Delete) - Chỉ Host mới được gọi
-        /// Xóa tất cả members trước, sau đó xóa classroom
+        /// Giải tán phòng hoàn toàn (Hard Delete) - Xóa Members trước rồi xóa Classroom.
         /// </summary>
-        /// <param name="classroomId">ID phòng cần giải tán</param>
-        /// <param name="hostId">ID của Host (để kiểm tra quyền)</param>
-        /// <returns>True nếu thành công, False nếu thất bại hoặc không có quyền</returns>
+        /// <param name="classroomId">ID phòng cần giải tán.</param>
+        /// <param name="hostId">ID của Host (để xác thực quyền).</param>
+        /// <returns>Tuple (Thành công/Thất bại, Thông báo lỗi).</returns>
         public async Task<(bool Success, string Message)> DissolveClassroomAsync(string classroomId, string hostId)
         {
             try
             {
-                // 1. Kiểm tra phòng có tồn tại không
                 var classroom = await GetClassroomAsync(classroomId);
-                if (classroom == null)
-                {
-                    return (false, "Phòng không tồn tại.");
-                }
+                if (classroom == null) return (false, "Phòng không tồn tại.");
 
-                // 2. Kiểm tra quyền Host
-                if (classroom.HostId != hostId)
-                {
-                    return (false, "Bạn không có quyền giải tán phòng này.");
-                }
+                if (classroom.HostId != hostId) return (false, "Bạn không có quyền giải tán phòng này.");
 
-                // 3. Xóa tất cả members trong phòng trước
-                await _client.From<Member>()
-                    .Where(x => x.ClassroomId == classroomId)
-                    .Delete();
+                // Xóa members trước để tránh lỗi Foreign Key
+                await _client.From<Member>().Where(x => x.ClassroomId == classroomId).Delete();
                 Debug.WriteLine($"[SupabaseService] Deleted all members from room {classroomId}");
 
-                // 4. Xóa classroom
-                await _client.From<Classroom>()
-                    .Where(x => x.Id == classroomId)
-                    .Delete();
+                // Xóa phòng
+                await _client.From<Classroom>().Where(x => x.Id == classroomId).Delete();
                 Debug.WriteLine($"[SupabaseService] Deleted classroom {classroomId}");
 
                 return (true, "Đã giải tán phòng thành công.");
@@ -210,17 +250,17 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Lấy danh sách members kèm thông tin profile (tên, avatar)
+        /// Lấy danh sách thành viên trong phòng kèm theo thông tin Profile (Tên, Avatar).
         /// </summary>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <returns>Danh sách MemberWithProfile.</returns>
         public async Task<List<MemberWithProfile>> GetClassroomMembersWithProfileAsync(string classroomId)
         {
             try
             {
-                // Lấy danh sách members
                 var members = await GetClassroomMembersAsync(classroomId);
                 var result = new List<MemberWithProfile>();
 
-                // Lấy profile cho từng member
                 foreach (var member in members)
                 {
                     var profile = await GetProfileAsync(member.UserId);
@@ -247,7 +287,7 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Kiểm tra user có phải là Host của phòng không
+        /// Kiểm tra xem một user có phải là Host của phòng không.
         /// </summary>
         public async Task<bool> IsHostAsync(string classroomId, string userId)
         {
@@ -255,39 +295,68 @@ namespace EasyFlips.Services
             return classroom?.HostId == userId;
         }
 
+        /// <summary>
+        /// Lấy danh sách các phòng mà user đã tham gia (sử dụng RPC).
+        /// </summary>
         public async Task<List<UserClassroom>> GetUserClassroomsAsync(string userId)
         {
             var result = await _client.Rpc("get_user_classrooms", new Dictionary<string, object> { { "p_user_id", userId } });
-            return new List<UserClassroom>();
+            return new List<UserClassroom>(); // Lưu ý: Hàm này đang trả về list rỗng, cần map result.Content
         }
         #endregion
 
         #region Member Operations
+
+        /// <summary>
+        /// Tham gia phòng học bằng Mã Code (Sử dụng RPC Database).
+        /// </summary>
+        /// <param name="roomCode">Mã phòng 6 ký tự.</param>
+        /// <param name="userId">ID người tham gia.</param>
         public async Task<JoinClassroomResult> JoinClassroomByCodeAsync(string roomCode, string userId)
         {
             var result = await _client.Rpc("join_classroom_by_code", new Dictionary<string, object> { { "p_room_code", roomCode }, { "p_user_id", userId } });
             return new JoinClassroomResult { Success = true, Message = "Joined successfully" };
         }
+
+        /// <summary>
+        /// Lấy danh sách thô các thành viên trong phòng (chỉ bảng Members).
+        /// </summary>
         public async Task<List<Member>> GetClassroomMembersAsync(string classroomId)
         {
             var result = await _client.From<Member>().Where(x => x.ClassroomId == classroomId).Get();
             return result.Models;
         }
+
+        /// <summary>
+        /// Thêm thành viên vào phòng thủ công.
+        /// </summary>
         public async Task<Member?> AddMemberAsync(string classroomId, string userId, string role = "member")
         {
             var member = new Member { Id = Guid.NewGuid().ToString(), ClassroomId = classroomId, UserId = userId, Role = role, JoinedAt = DateTime.UtcNow };
             var result = await _client.From<Member>().Insert(member);
             return result.Models.FirstOrDefault();
         }
+
+        /// <summary>
+        /// Xóa thành viên khỏi phòng.
+        /// </summary>
         public async Task<bool> RemoveMemberAsync(string classroomId, string userId)
         {
             await _client.From<Member>().Where(x => x.ClassroomId == classroomId && x.UserId == userId).Delete();
             return true;
         }
+
+        /// <summary>
+        /// Rời khỏi phòng (Alias cho RemoveMemberAsync).
+        /// </summary>
         public async Task<bool> LeaveClassroomAsync(string classroomId, string userId)
         {
             return await RemoveMemberAsync(classroomId, userId);
         }
+
+        /// <summary>
+        /// Cập nhật vai trò (Role) của thành viên.
+        /// </summary>
         public async Task<Member?> UpdateMemberRoleAsync(string classroomId, string userId, string newRole)
         {
             var member = new Member { ClassroomId = classroomId, UserId = userId, Role = newRole };
@@ -299,18 +368,16 @@ namespace EasyFlips.Services
         #region Storage Operations
 
         /// <summary>
-        /// Upload ảnh avatar từ byte array
+        /// Upload ảnh avatar từ mảng byte.
         /// </summary>
-        /// <param name="userId">ID của user</param>
-        /// <param name="imageData">Dữ liệu ảnh dạng byte[]</param>
-        /// <param name="fileName">Tên file (vd: avatar.png)</param>
-        /// <returns>Public URL của ảnh hoặc null nếu thất bại</returns>
+        /// <param name="userId">ID User (dùng làm tên folder).</param>
+        /// <param name="imageData">Dữ liệu ảnh.</param>
+        /// <param name="fileName">Tên file lưu trữ.</param>
         public async Task<string?> UploadAvatarAsync(string userId, byte[] imageData, string fileName)
         {
             var path = $"{userId}/{fileName}";
             try
             {
-                // Upload với option upsert để ghi đè nếu đã tồn tại
                 await _client.Storage.From("avatars").Upload(imageData, path, new Supabase.Storage.FileOptions
                 {
                     Upsert = true
@@ -325,37 +392,23 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Upload ảnh avatar từ file path và tự động cập nhật vào bảng profiles
+        /// Upload avatar từ đường dẫn file trên máy và cập nhật vào Profile.
         /// </summary>
-        /// <param name="userId">ID của user</param>
-        /// <param name="filePath">Đường dẫn file ảnh trên máy</param>
-        /// <returns>Public URL của ảnh hoặc null nếu thất bại</returns>
         public async Task<string?> UploadAvatarFromFileAsync(string userId, string filePath)
         {
             try
             {
-                // 1. Validate file
-                if (!File.Exists(filePath))
-                {
-                    Debug.WriteLine($"[SupabaseService] File not found: {filePath}");
-                    return null;
-                }
+                if (!File.Exists(filePath)) return null;
 
-                // 2. Đọc file thành byte array
                 var imageData = await File.ReadAllBytesAsync(filePath);
-
-                // 3. Tạo tên file unique (tránh cache browser)
                 var extension = Path.GetExtension(filePath).ToLower();
                 var uniqueFileName = $"avatar_{DateTime.UtcNow.Ticks}{extension}";
 
-                // 4. Upload lên Storage
                 var avatarUrl = await UploadAvatarAsync(userId, imageData, uniqueFileName);
 
                 if (avatarUrl != null)
                 {
-                    // 5. Cập nhật URL vào bảng profiles
                     await UpdateProfileAvatarAsync(userId, avatarUrl);
-                    Debug.WriteLine($"[SupabaseService] Avatar uploaded and profile updated: {avatarUrl}");
                 }
 
                 return avatarUrl;
@@ -368,7 +421,7 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Upload ảnh avatar từ Stream (dùng cho clipboard, camera...)
+        /// Upload avatar từ Stream (MemoryStream, Camera stream...).
         /// </summary>
         public async Task<string?> UploadAvatarFromStreamAsync(string userId, Stream imageStream, string extension = ".png")
         {
@@ -396,7 +449,7 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Cập nhật avatar_url vào bảng profiles
+        /// Cập nhật trường AvatarUrl trong bảng Profile.
         /// </summary>
         public async Task<bool> UpdateProfileAvatarAsync(string userId, string avatarUrl)
         {
@@ -418,7 +471,7 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Xóa avatar cũ khỏi Storage
+        /// Xóa file avatar khỏi Storage.
         /// </summary>
         public async Task<bool> DeleteAvatarAsync(string userId, string fileName)
         {
@@ -436,24 +489,20 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Xóa tất cả avatar cũ của user và upload avatar mới
+        /// Thay thế avatar: Xóa HẾT ảnh cũ và upload ảnh mới.
         /// </summary>
         public async Task<string?> ReplaceAvatarAsync(string userId, string newFilePath)
         {
             try
             {
-                // 1. Lấy danh sách file cũ trong folder của user
                 var existingFiles = await _client.Storage.From("avatars").List(userId);
 
-                // 2. Xóa tất cả file cũ
                 if (existingFiles != null && existingFiles.Any())
                 {
                     var pathsToDelete = existingFiles.Select(f => $"{userId}/{f.Name}").ToList();
                     await _client.Storage.From("avatars").Remove(pathsToDelete);
-                    Debug.WriteLine($"[SupabaseService] Deleted {pathsToDelete.Count} old avatar(s)");
                 }
 
-                // 3. Upload file mới
                 return await UploadAvatarFromFileAsync(userId, newFilePath);
             }
             catch (Exception ex)
@@ -464,61 +513,36 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Upload avatar mới và giữ lại 1 avatar gần nhất làm backup (để rollback trong 7-30 ngày)
-        /// Chỉ giữ tối đa 2 ảnh: ảnh hiện tại + 1 ảnh backup
+        /// Thay thế avatar an toàn: Upload ảnh mới, giữ lại 1 ảnh gần nhất làm backup.
         /// </summary>
-        /// <param name="userId">ID người dùng</param>
-        /// <param name="newFilePath">Đường dẫn file ảnh mới</param>
-        /// <returns>Public URL của ảnh mới hoặc null nếu thất bại</returns>
         public async Task<string?> ReplaceAvatarWithBackupAsync(string userId, string newFilePath)
         {
             try
             {
-                // 1. Validate file
-                if (!File.Exists(newFilePath))
-                {
-                    Debug.WriteLine($"[SupabaseService] File not found: {newFilePath}");
-                    return null;
-                }
+                if (!File.Exists(newFilePath)) return null;
 
-                // 2. Lấy danh sách file cũ trong folder của user
                 var existingFiles = await _client.Storage.From("avatars").List(userId);
-                Debug.WriteLine($"[SupabaseService] Found {existingFiles?.Count ?? 0} existing avatar(s)");
 
-                // 3. Sắp xếp theo tên file (chứa timestamp) để xác định ảnh cũ nhất
-                // Giữ lại 1 ảnh gần nhất (avatar hiện tại sẽ thành backup), xóa các ảnh cũ hơn
                 if (existingFiles != null && existingFiles.Count >= 2)
                 {
-                    // Sắp xếp theo tên file giảm dần (file mới nhất lên đầu)
-                    var sortedFiles = existingFiles
-                        .OrderByDescending(f => f.Name)
-                        .ToList();
-
-                    // Giữ lại 1 file mới nhất (sẽ thành backup), xóa các file còn lại
+                    var sortedFiles = existingFiles.OrderByDescending(f => f.Name).ToList();
                     var filesToDelete = sortedFiles.Skip(1).Select(f => $"{userId}/{f.Name}").ToList();
-                    
+
                     if (filesToDelete.Any())
                     {
                         await _client.Storage.From("avatars").Remove(filesToDelete);
-                        Debug.WriteLine($"[SupabaseService] Deleted {filesToDelete.Count} old avatar(s), kept 1 as backup");
                     }
                 }
 
-                // 4. Đọc file mới thành byte array
                 var imageData = await File.ReadAllBytesAsync(newFilePath);
-
-                // 5. Tạo tên file unique với timestamp
                 var extension = Path.GetExtension(newFilePath).ToLower();
                 var uniqueFileName = $"avatar_{DateTime.UtcNow.Ticks}{extension}";
 
-                // 6. Upload lên Storage
                 var avatarUrl = await UploadAvatarAsync(userId, imageData, uniqueFileName);
 
                 if (avatarUrl != null)
                 {
-                    // 7. Cập nhật URL vào bảng profiles
                     await UpdateProfileAvatarAsync(userId, avatarUrl);
-                    Debug.WriteLine($"[SupabaseService] New avatar uploaded with backup: {avatarUrl}");
                 }
 
                 return avatarUrl;
@@ -531,7 +555,7 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Lấy public URL của avatar
+        /// Lấy Public URL để hiển thị avatar.
         /// </summary>
         public string GetAvatarUrl(string userId, string fileName)
         {
@@ -540,7 +564,7 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Upload ảnh flashcard lên Storage
+        /// Upload hình ảnh cho Flashcard.
         /// </summary>
         public async Task<string?> UploadFlashcardImageAsync(string classroomId, string setId, byte[] imageData, string fileName)
         {
@@ -561,7 +585,7 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Upload audio flashcard lên Storage
+        /// Upload âm thanh cho Flashcard.
         /// </summary>
         public async Task<string?> UploadFlashcardAudioAsync(string classroomId, string setId, byte[] audioData, string fileName)
         {
@@ -584,6 +608,9 @@ namespace EasyFlips.Services
         #endregion
 
         #region Helper Methods
+        /// <summary>
+        /// Gọi RPC Database để sinh mã phòng ngẫu nhiên duy nhất.
+        /// </summary>
         private async Task<string> GenerateRoomCodeAsync()
         {
             try { var result = await _client.Rpc("generate_room_code", null); return result.Content ?? "TEMP1234"; }
@@ -594,21 +621,17 @@ namespace EasyFlips.Services
         #region Realtime Subscriptions
 
         /// <summary>
-        /// Lắng nghe sự kiện có thành viên mới tham gia vào phòng
+        /// Đăng ký lắng nghe sự kiện: Có thành viên mới vào phòng (Insert).
         /// </summary>
-        /// <param name="classroomId">ID phòng học</param>
-        /// <param name="onMemberJoined">Hàm callback xử lý khi có user mới</param>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="onMemberJoined">Hàm callback xử lý khi có dữ liệu mới.</param>
         public async Task SubscribeToClassroomMembersAsync(string classroomId, Action<Member> onMemberJoined)
         {
             try
             {
-                // 1. Đảm bảo kết nối Socket
                 await _client.Realtime.ConnectAsync();
-
-                // 2. Tạo kênh (Channel) riêng cho phòng này
                 var channel = _client.Realtime.Channel($"room:{classroomId}");
 
-                // 3. Đăng ký lắng nghe sự kiện INSERT trên bảng 'members'
                 var options = new PostgresChangesOptions("public", "members")
                 {
                     Filter = $"classroom_id=eq.{classroomId}"
@@ -620,14 +643,8 @@ namespace EasyFlips.Services
                 {
                     try
                     {
-                        // change.Model sẽ tự động deserialize thành Member
                         var member = change.Model<Member>();
-
-                        if (member != null)
-                        {
-                            // Gọi callback để UI cập nhật
-                            onMemberJoined?.Invoke(member);
-                        }
+                        if (member != null) onMemberJoined?.Invoke(member);
                     }
                     catch (Exception ex)
                     {
@@ -635,7 +652,6 @@ namespace EasyFlips.Services
                     }
                 });
 
-                // 4. Bắt đầu lắng nghe
                 await channel.Subscribe();
                 Debug.WriteLine($"[SupabaseService] Subscribed to members of room {classroomId}");
             }
@@ -646,7 +662,7 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Hủy đăng ký lắng nghe (khi thoát phòng)
+        /// Hủy đăng ký lắng nghe (khi rời phòng hoặc đóng ứng dụng).
         /// </summary>
         public async Task UnsubscribeFromClassroomAsync(string classroomId)
         {
@@ -666,14 +682,13 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Lắng nghe cập nhật thông tin phòng học
+        /// Đăng ký lắng nghe sự kiện cập nhật thông tin phòng (Update).
         /// </summary>
         public async Task SubscribeToClassroomAsync(string classroomId, Action<Classroom> onUpdate)
         {
             try
             {
                 await _client.Realtime.ConnectAsync();
-
                 var channel = _client.Realtime.Channel($"classroom:{classroomId}");
 
                 var options = new PostgresChangesOptions("public", "classrooms")
@@ -688,10 +703,7 @@ namespace EasyFlips.Services
                     try
                     {
                         var classroom = change.Model<Classroom>();
-                        if (classroom != null)
-                        {
-                            onUpdate?.Invoke(classroom);
-                        }
+                        if (classroom != null) onUpdate?.Invoke(classroom);
                     }
                     catch (Exception ex)
                     {
@@ -700,7 +712,6 @@ namespace EasyFlips.Services
                 });
 
                 await channel.Subscribe();
-                Debug.WriteLine($"[SupabaseService] Subscribed to classroom {classroomId}");
             }
             catch (Exception ex)
             {
@@ -709,12 +720,12 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Lắng nghe nhiều loại sự kiện cho bảng members (Insert, Update, Delete)
+        /// Đăng ký lắng nghe tất cả sự kiện (Thêm, Sửa, Xóa) của thành viên trong phòng.
         /// </summary>
-        /// <param name="classroomId">ID phòng học</param>
-        /// <param name="onInsert">Callback khi có thành viên mới</param>
-        /// <param name="onUpdate">Callback khi thành viên được cập nhật</param>
-        /// <param name="onDelete">Callback khi thành viên rời phòng</param>
+        /// <param name="classroomId">ID phòng.</param>
+        /// <param name="onInsert">Callback khi thêm.</param>
+        /// <param name="onUpdate">Callback khi sửa.</param>
+        /// <param name="onDelete">Callback khi xóa.</param>
         public async Task SubscribeToClassroomMembersAllEventsAsync(
             string classroomId,
             Action<Member>? onInsert = null,
@@ -724,7 +735,6 @@ namespace EasyFlips.Services
             try
             {
                 await _client.Realtime.ConnectAsync();
-
                 var channel = _client.Realtime.Channel($"room-all:{classroomId}");
 
                 var options = new PostgresChangesOptions("public", "members")
@@ -734,7 +744,6 @@ namespace EasyFlips.Services
 
                 channel.Register(options);
 
-                // Lắng nghe tất cả các sự kiện
                 channel.AddPostgresChangeHandler(ListenType.All, (sender, change) =>
                 {
                     try
@@ -769,13 +778,14 @@ namespace EasyFlips.Services
                 Debug.WriteLine($"[SupabaseService] Lỗi đăng ký lắng nghe: {ex.Message}");
             }
         }
+
         /// <summary>
-        /// Tham gia Presence của phòng (theo dõi ai đang online)
+        /// Tham gia kênh Presence để theo dõi ai đang Online trong phòng.
         /// </summary>
-        /// <param name="classroomId">ID phòng học</param>
-        /// <param name="userId">ID người dùng</param>
-        /// <param name="displayName">Tên hiển thị</param>
-        /// <param name="onPresenceSync">Callback khi danh sách online thay đổi</param>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="userId">ID người dùng hiện tại.</param>
+        /// <param name="displayName">Tên hiển thị.</param>
+        /// <param name="onPresenceSync">Callback trả về danh sách UserID đang online.</param>
         public async Task JoinRoomPresenceAsync(string classroomId, string userId, string? displayName, Action<List<string>> onPresenceSync)
         {
             try
@@ -784,7 +794,6 @@ namespace EasyFlips.Services
 
                 string channelName = $"presence:{classroomId}";
 
-                // Dọn dẹp kênh cũ nếu tồn tại
                 if (_activeChannels.TryGetValue(channelName, out var oldChannel))
                 {
                     oldChannel.Unsubscribe();
@@ -794,28 +803,21 @@ namespace EasyFlips.Services
                 var channel = _client.Realtime.Channel(channelName);
                 _activeChannels[channelName] = channel;
 
-                // Đăng ký presence với key duy nhất (userId để định danh mỗi user)
                 string presenceKey = userId;
                 var presence = channel.Register<UserPresence>(presenceKey);
 
-                // Thêm handler cho sự kiện Sync
                 presence.AddPresenceEventHandler(IRealtimePresence.EventType.Sync, (sender, args) =>
                 {
                     try
                     {
                         var onlineUserIds = new List<string>();
-
                         foreach (var presences in presence.CurrentState.Values)
                         {
                             foreach (var p in presences)
                             {
-                                if (!string.IsNullOrEmpty(p.UserId))
-                                {
-                                    onlineUserIds.Add(p.UserId);
-                                }
+                                if (!string.IsNullOrEmpty(p.UserId)) onlineUserIds.Add(p.UserId);
                             }
                         }
-
                         onPresenceSync?.Invoke(onlineUserIds.Distinct().ToList());
                     }
                     catch (Exception ex)
@@ -824,7 +826,6 @@ namespace EasyFlips.Services
                     }
                 });
 
-                // Subscribe và kiểm tra trạng thái
                 await channel.Subscribe();
                 if (channel.State != ChannelState.Joined)
                 {
@@ -832,7 +833,6 @@ namespace EasyFlips.Services
                     return;
                 }
 
-                // Track payload
                 var payload = new UserPresence
                 {
                     UserId = userId,
@@ -849,7 +849,7 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
-        /// Rời khỏi Presence của phòng (ngừng theo dõi online)
+        /// Rời khỏi kênh Presence (ngừng báo Online).
         /// </summary>
         public async Task LeaveRoomPresenceAsync(string classroomId, string userId)
         {
@@ -858,14 +858,10 @@ namespace EasyFlips.Services
             {
                 try
                 {
-                    // Đăng ký lại với cùng key để untrack
                     var presence = channel.Register<UserPresence>(userId);
-
                     await presence.Untrack();
                     channel.Unsubscribe();
-
                     _activeChannels.Remove(channelName);
-
                     Debug.WriteLine($"[Presence] Đã rời phòng {classroomId}");
                 }
                 catch (Exception ex)
@@ -874,17 +870,17 @@ namespace EasyFlips.Services
                 }
             }
         }
-
         #endregion
-
     }
 
+    /// <summary>
+    /// Class hỗ trợ lưu và đọc Session từ file JSON cục bộ.
+    /// </summary>
     public class CustomFileSessionHandler : IGotrueSessionPersistence<Session>
     {
         private readonly string _cachePath;
         private readonly string _fileName = ".gotrue.cache";
 
-        // Cấu hình JSON bỏ qua lỗi null và format ngày tháng chuẩn
         private readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
         {
             NullValueHandling = NullValueHandling.Ignore,
@@ -896,6 +892,9 @@ namespace EasyFlips.Services
             _cachePath = cachePath;
         }
 
+        /// <summary>
+        /// Lưu session vào file.
+        /// </summary>
         public void SaveSession(Session session)
         {
             try
@@ -916,6 +915,9 @@ namespace EasyFlips.Services
             }
         }
 
+        /// <summary>
+        /// Đọc session từ file.
+        /// </summary>
         public Session? LoadSession()
         {
             try
@@ -926,7 +928,6 @@ namespace EasyFlips.Services
                 var json = File.ReadAllText(fullPath);
                 if (string.IsNullOrWhiteSpace(json)) return null;
 
-                // Deserialize với settings chuẩn
                 var session = JsonConvert.DeserializeObject<Session>(json, _jsonSettings);
                 return session;
             }
@@ -937,6 +938,9 @@ namespace EasyFlips.Services
             }
         }
 
+        /// <summary>
+        /// Xóa file session (Đăng xuất).
+        /// </summary>
         public void DestroySession()
         {
             try

@@ -1,92 +1,97 @@
-﻿using System;
+﻿using Supabase.Realtime;
+using Supabase.Realtime.Models;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Supabase.Realtime;
-using Supabase.Realtime.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace EasyFlips.Services
 {
-    // Class hứng dữ liệu linh hoạt
-    public class GenericMessage
-    {
-        [JsonExtensionData]
-        public Dictionary<string, object> Payload { get; set; } = new Dictionary<string, object>();
-    }
-
-    public class GenericBroadcast : BaseBroadcast<GenericMessage>
-    {
-    }
+    // Định nghĩa kiểu dữ liệu nhận về là Dictionary
+    public class DictionaryBroadcast : BaseBroadcast<Dictionary<string, object>> { }
 
     public class RealtimeService
     {
-        private readonly string SupabaseUrl = AppConfig.SupabaseUrl;
-        private readonly string SupabaseKey = AppConfig.SupabaseKey;
-
-        private readonly Supabase.Client _client;
+        private Supabase.Client _client;
         private RealtimeChannel _channel;
-        private RealtimeBroadcast<GenericBroadcast> _broadcast;
+        private RealtimeBroadcast<DictionaryBroadcast> _broadcast;
 
-        // Chỉ giữ lại event nhận tin nhắn, bỏ Presence
-        public event Action<string, object> OnMessageReceived;
+        // Sự kiện trùng khớp với ViewModel
+        public event Action<string, JObject> OnMessageReceived;
 
-        public RealtimeService()
-        {
-            var options = new Supabase.SupabaseOptions
-            {
-                AutoRefreshToken = true,
-                AutoConnectRealtime = true
-            };
-            _client = new Supabase.Client(SupabaseUrl, SupabaseKey, options);
-        }
+        public void SetClient(Supabase.Client client) => _client = client;
 
         public async Task ConnectAsync()
         {
-            await _client.InitializeAsync();
-            if (!_client.Realtime.Socket.IsConnected)
+            if (_client?.Realtime?.Socket == null) return;
+            try
             {
-                await _client.Realtime.ConnectAsync();
+                if (!_client.Realtime.Socket.IsConnected)
+                {
+                    await _client.Realtime.ConnectAsync();
+                    await Task.Delay(500);
+                }
             }
+            catch { }
         }
 
         public async Task JoinRoomAsync(string roomId)
         {
-            string topic = $"room:{roomId}";
+            if (_client == null) return;
 
-            if (_channel != null)
+            await LeaveRoom();
+
+            try
             {
-                if (_channel.Topic == topic && _channel.IsJoined) return;
-                await LeaveRoom();
-            }
+                _channel = _client.Realtime.Channel($"room:{roomId}");
 
-            _channel = _client.Realtime.Channel(topic);
+                _broadcast = _channel.Register<DictionaryBroadcast>(true, false);
 
-            // Chỉ đăng ký Broadcast (Broadcast = true, Presence = false)
-            // Để tránh lỗi biên dịch với thư viện cũ
-            _broadcast = _channel.Register<GenericBroadcast>(true, false);
-
-            _broadcast.AddBroadcastEventHandler((sender, args) =>
-            {
-                Console.WriteLine($"[Realtime RAW] Event received!");
-                try
+                _broadcast.AddBroadcastEventHandler((sender, args) =>
                 {
-                    var state = _broadcast.Current();
-                    if (state?.Payload != null)
+                    if (args.Event == "SYNC")
                     {
-                        Console.WriteLine($"[Realtime Event]: {state.Event}");
-                        var rawPayload = state.Payload.Payload;
-                        if (rawPayload != null && rawPayload.Count > 0)
+                        try
                         {
-                            var jsonObject = JObject.FromObject(rawPayload);
-                            OnMessageReceived?.Invoke(state.Event, jsonObject);
+                            var dict = args.Payload;
+
+                            if (dict != null)
+                            {
+                                var json = JObject.FromObject(dict);
+                                string action = json["action"]?.ToString();
+
+                                JObject payloadData = new JObject();
+                                if (json["payload"] != null)
+                                {
+                                    if (json["payload"] is JObject jObj)
+                                        payloadData = jObj;
+                                    else
+                                        payloadData = JObject.FromObject(json["payload"]);
+                                }
+
+                                if (!string.IsNullOrEmpty(action))
+                                {
+                                    Debug.WriteLine($"[IN] {action}");
+                                    OnMessageReceived?.Invoke(action, payloadData);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[Parse Error] {ex.Message}");
                         }
                     }
-                }
-                catch { }
-            });
+                });
 
-            await _channel.Subscribe();
+                await _channel.Subscribe();
+                Debug.WriteLine($"[REALTIME] Joined Room: {roomId}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[REALTIME ERROR] Join: {ex.Message}");
+            }
         }
 
         public async Task SendMessageAsync(string eventName, object data)
@@ -94,12 +99,14 @@ namespace EasyFlips.Services
             if (_broadcast == null) return;
             try
             {
-                var message = new GenericMessage();
-                var jsonString = JsonConvert.SerializeObject(data);
-                var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
-                message.Payload = dict;
+                var wrapper = new Dictionary<string, object>
+                {
+                    { "action", eventName },
+                    { "payload", data }
+                };
 
-                await _broadcast.Send(eventName, message);
+                await _broadcast.Send("SYNC", wrapper);
+                Debug.WriteLine($"[OUT] {eventName}");
             }
             catch { }
         }
@@ -114,12 +121,9 @@ namespace EasyFlips.Services
                     _client.Realtime.Remove(_channel);
                 }
                 catch { }
-                finally
-                {
-                    _channel = null;
-                    _broadcast = null;
-                }
+                finally { _channel = null; _broadcast = null; }
             }
+            await Task.CompletedTask;
         }
     }
 }

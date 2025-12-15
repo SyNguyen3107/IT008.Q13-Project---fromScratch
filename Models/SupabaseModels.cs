@@ -66,7 +66,6 @@ namespace EasyFlips.Models
         [Column("wait_time")]
         public int WaitTime { get; set; } = 300;
 
-        // [MỚI]: Thêm cột DeckId để biết phòng đang học bộ bài nào
         [Column("deck_id")]
         public string? DeckId { get; set; }
 
