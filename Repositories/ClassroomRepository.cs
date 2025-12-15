@@ -59,29 +59,20 @@ namespace EasyFlips.Repositories
                          .Delete();
         }
 
-        // --- [ĐOẠN CẦN SỬA Ở ĐÂY] ---
         public async Task<List<Member>> GetMembersAsync(string roomId)
         {
             try
             {
-                // [FIX TẠM THỜI]: Bỏ "profiles(*)" đi để tránh lỗi Foreign Key
-                // Chỉ lấy dữ liệu thô từ bảng Member để test số lượng (Count)
                 var response = await _client.From<Member>()
                                             .Select("*")
                                             .Filter("classroom_id", Supabase.Postgrest.Constants.Operator.Equals, roomId)
                                             .Get();
 
-                // Kiểm tra null an toàn trước khi trả về
-                if (response.Models == null)
-                {
-                    return new List<Member>();
-                }
-
+                if (response.Models == null) return new List<Member>();
                 return response.Models;
             }
             catch (Exception ex)
             {
-                // In chi tiết lỗi ra để debug nếu vẫn bị crash
                 throw new Exception($"GetMembers Failed: {ex.Message}");
             }
         }
@@ -101,7 +92,6 @@ namespace EasyFlips.Repositories
             }
             catch (Exception ex)
             {
-                // Bỏ qua lỗi trùng lặp (đã join rồi thì thôi)
                 if (ex.Message.Contains("23505") || ex.Message.Contains("duplicate key"))
                 {
                     return;
@@ -123,6 +113,27 @@ namespace EasyFlips.Repositories
                              .Delete();
             }
             catch { }
+        }
+
+        public async Task<Classroom> UpdateClassroomSettingsAsync(string classroomId, string? deckId, int maxPlayers, int timePerRound, int waitTimeSeconds)
+        {
+            try
+            {
+                var response = await _client.From<Classroom>()
+                                            .Filter(x => x.Id, Operator.Equals, classroomId)
+                                            .Set(x => x.DeckId, deckId)
+                                            .Set(x => x.MaxPlayers, maxPlayers)
+                                            .Set(x => x.TimePerRound, timePerRound)
+                                            .Set(x => x.WaitTime, waitTimeSeconds)
+                                            .Set(x => x.UpdatedAt, DateTime.UtcNow)
+                                            .Update();
+
+                return response.Models.FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"UpdateClassroomSettings Failed: {ex.Message}");
+            }
         }
     }
 }

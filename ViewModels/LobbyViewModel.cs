@@ -448,7 +448,108 @@ namespace EasyFlips.ViewModels
             _realtimeService.SendMessageAsync("TIMER_SYNC", new { seconds = TimeRemaining, isRunning = true });
         }
 
-        [RelayCommand] private void OpenSettings() => MessageBox.Show($"Deck: {SelectedDeck?.Name}");
+        [RelayCommand]
+        private async Task OpenSettings()
+        {
+            if (!IsHost) return;
+
+            try
+            {
+                var settingsVm = new SettingsViewModel(_deckRepository, SelectedDeck, MaxPlayers, TimePerRound, TotalWaitTime);
+                var settingsWindow = new SettingsWindow(settingsVm);
+                var result = settingsWindow.ShowDialog();
+
+                if (result == true)
+                {
+                    var newDeck = settingsVm.SelectedDeck;
+                    var newMax = settingsVm.MaxPlayers;
+                    var newTimePerRound = settingsVm.TimePerRound;
+                    var newWaitMinutes = settingsVm.WaitTimeMinutes;
+                    var newWaitSeconds = newWaitMinutes * 60;
+
+                    if (!string.IsNullOrEmpty(_realClassroomIdUUID))
+                    {
+                        try
+                        {
+                            var updated = await _classroomRepository.UpdateClassroomSettingsAsync(_realClassroomIdUUID, newDeck?.Id, newMax, newTimePerRound, newWaitSeconds);
+                            if (updated != null)
+                            {
+                                SelectedDeck = AvailableDecks.FirstOrDefault(d => d.Id == newDeck?.Id) ?? newDeck;
+                                MaxPlayers = newMax;
+                                TimePerRound = newTimePerRound;
+
+                                TotalWaitTime = newWaitSeconds;
+                                if (newWaitSeconds > 0)
+                                {
+                                    AutoStartSeconds = newWaitSeconds;
+                                    IsAutoStartActive = true;
+                                    if (!_autoStartTimer.IsEnabled) _autoStartTimer.Start();
+                                }
+                                else
+                                {
+                                    StopAutoStart();
+                                }
+
+                                // Prepare payload and try to send reliably (timeout + retry).
+                                var payload = new
+                                {
+                                    players = Players,
+                                    deckName = SelectedDeck?.Name,
+                                    maxPlayers = MaxPlayers,
+                                    timePerRound = TimePerRound,
+                                    waitTime = TotalWaitTime
+                                };
+
+                                await SendLobbyUpdateWithTimeoutAndRetryAsync(payload);
+
+                                // Always show confirmation to the user after attempting send
+                                MessageBox.Show("Room settings updated successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                            }
+                        }
+                        catch (System.Exception ex)
+                        {
+                            MessageBox.Show($"Failed to update room settings: {ex.Message}", "Error");
+                        }
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show($"Error opening settings: {ex.Message}", "Error");
+            }
+        }
+
+        private async Task SendLobbyUpdateWithTimeoutAndRetryAsync(object payload)
+        {
+            // Try send up to 2 times, each attempt waits up to 2s so UI isn't blocked indefinitely.
+            const int timeoutMs = 1500;
+            const int maxAttempts = 2;
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    var sendTask = _realtimeService.SendMessageAsync("LOBBY_UPDATE", payload);
+                    var completed = await Task.WhenAny(sendTask, Task.Delay(timeoutMs));
+                    if (completed == sendTask)
+                    {
+                        // ensure any exception from sendTask is observed
+                        await sendTask;
+                        return;
+                    }
+                }
+                catch
+                {
+                    // swallow and retry once; do a tiny backoff
+                }
+
+                await Task.Delay(150);
+            }
+
+            // Fallback: ensure at least local broadcast method is invoked so host UI and other local listeners update
+            // BroadcastLobbyState already exists and sends the same message.
+            try { BroadcastLobbyState(); } catch { }
+        }
 
         private void Timer_Tick(object sender, EventArgs e)
         {

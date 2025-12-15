@@ -19,5 +19,8 @@ namespace EasyFlips.Interfaces
         Task<List<Member>> GetMembersAsync(string roomId); // Lấy danh sách thành viên trong phòng
         Task AddMemberAsync(string classId, string userId);
         Task RemoveMemberAsync(string classId, string userId);
+
+        // New: update classroom settings (deck, max, time per round, wait time) by classroom id
+        Task<Classroom> UpdateClassroomSettingsAsync(string classroomId, string? deckId, int maxPlayers, int timePerRound, int waitTimeSeconds);
     }
 }
