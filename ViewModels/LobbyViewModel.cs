@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Interfaces;
 using EasyFlips.Models;
+using EasyFlips.Repositories;
 using EasyFlips.Services;
 using EasyFlips.Views;
 using Newtonsoft.Json.Linq;
@@ -23,6 +24,7 @@ namespace EasyFlips.ViewModels
         private readonly UserSession _userSession;
         private readonly IDeckRepository _deckRepository;
         private readonly IClassroomRepository _classroomRepository;
+        private readonly SupabaseService _supabaseService;
 
         [ObservableProperty] private string _roomId;
         private string _realClassroomIdUUID;
@@ -41,30 +43,27 @@ namespace EasyFlips.ViewModels
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
         [ObservableProperty] private Deck _selectedDeck;
 
-        // Property hiển thị chuỗi dạng "/ 30"
         public string MaxPlayersString => $"/ {MaxPlayers}";
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(MaxPlayersString))] // Tự động cập nhật chuỗi hiển thị khi số thay đổi
+        [NotifyPropertyChangedFor(nameof(MaxPlayersString))]
         private int _maxPlayers = 30;
 
         [ObservableProperty] private int _timePerRound = 15;
 
-        // === Các biến phục vụ Auto Start ===
         private DispatcherTimer _autoStartTimer;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(AutoStartStatus))]
-        private int _autoStartSeconds; // Thời gian đếm ngược (giây)
+        private int _autoStartSeconds;
 
         [ObservableProperty]
-        private int _totalWaitTime; // Tổng thời gian (để tính % ProgressBar)
+        private int _totalWaitTime;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(AutoStartStatus))]
-        private bool _isAutoStartActive; // Cờ để hiện/ẩn UI đếm ngược
+        private bool _isAutoStartActive;
 
         public string AutoStartStatus => $"Starting in: {TimeSpan.FromSeconds(AutoStartSeconds):mm\\:ss}";
-
 
         public ObservableCollection<PlayerInfo> Players { get; } = new ObservableCollection<PlayerInfo>();
 
@@ -78,14 +77,18 @@ namespace EasyFlips.ViewModels
             INavigationService navigationService,
             UserSession userSession,
             IDeckRepository deckRepository,
-            IClassroomRepository classroomRepository)
+            IClassroomRepository classroomRepository,
+            SupabaseService supabaseService)
         {
+            _realtimeService = realtimeService;
+        _auth_service: _realtimeService = realtimeService; // <- keep original field assignment consistent
             _realtimeService = realtimeService;
             _authService = authService;
             _navigationService = navigationService;
             _userSession = userSession;
             _deckRepository = deckRepository;
             _classroomRepository = classroomRepository;
+            _supabaseService = supabaseService;
 
             CurrentUserName = !string.IsNullOrEmpty(_userSession.UserName) ? _userSession.UserName : "Guest";
 
@@ -97,28 +100,19 @@ namespace EasyFlips.ViewModels
 
             _realtimeService.OnMessageReceived += HandleRealtimeMessage;
 
-            // Khởi tạo Timer cho Auto Start
             _autoStartTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _autoStartTimer.Tick += AutoStart_Tick;
         }
 
-        // [FIX QUAN TRỌNG]: Đổi tham số thành 'int? maxPlayers = null'
-        // Để nếu bên ngoài không truyền vào, nó sẽ KHÔNG reset giá trị hiện tại về 30
         public async Task InitializeAsync(string roomId, bool isHost, Deck deck = null, int? maxPlayers = null, int? waitTime = null)
         {
             RoomId = roomId;
             IsHost = isHost;
-            CanCloseWindow = false;
 
-            // Chỉ cập nhật nếu có giá trị truyền vào rõ ràng (từ CreateRoomViewModel)
-            if (maxPlayers.HasValue)
-            {
-                MaxPlayers = maxPlayers.Value;
-            }
+
             try
             {
                 var roomInfo = await _classroomRepository.GetClassroomByCodeAsync(RoomId);
-
                 if (roomInfo == null)
                 {
                     MessageBox.Show("Phòng không tồn tại!");
@@ -128,10 +122,10 @@ namespace EasyFlips.ViewModels
 
                 _realClassroomIdUUID = roomInfo.Id;
 
-                if (roomInfo.TimePerRound > 0)
-                {
-                    TimePerRound = roomInfo.TimePerRound;
-                }
+                if (maxPlayers.HasValue) MaxPlayers = maxPlayers.Value;
+                else if (roomInfo.MaxPlayers > 0) MaxPlayers = roomInfo.MaxPlayers;
+
+                if (roomInfo.TimePerRound > 0) TimePerRound = roomInfo.TimePerRound;
 
                 if (IsHost)
                 {
@@ -143,27 +137,72 @@ namespace EasyFlips.ViewModels
                 else
                 {
                     var myId = _authService.CurrentUserId ?? _userSession.UserId;
-                    await _classroomRepository.AddMemberAsync(_realClassroomIdUUID, myId);
+                    var classroom = await _supabaseService.GetClassroomAsync(_realClassroomIdUUID);
+                    if (classroom != null)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (classroom.MaxPlayers > 0) MaxPlayers = classroom.MaxPlayers;
+                            if (classroom.TimePerRound > 0) TimePerRound = classroom.TimePerRound;
+                            TotalWaitTime = classroom.WaitTime;
+                            AutoStartSeconds = classroom.WaitTime;
+                        });
+                    }
+                    await _supabaseService.AddMemberAsync(_realClassroomIdUUID, myId);
                 }
+                
 
-                // Xử lý logic WaitTime
+
                 if (isHost && waitTime.HasValue && waitTime.Value > 0)
                 {
                     TotalWaitTime = waitTime.Value;
                     AutoStartSeconds = waitTime.Value;
                     IsAutoStartActive = true;
-
                     _autoStartTimer.Start();
                 }
-                else
-                {
-                    IsAutoStartActive = false;
-                }
-
 
                 await ConnectAndJoinRoom();
-
                 _heartbeatTimer.Start();
+
+                // 🔑 Subscribe classroom updates
+                await _supabaseService.SubscribeToClassroomAsync(_realClassroomIdUUID, classroom =>
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (classroom.MaxPlayers > 0) MaxPlayers = classroom.MaxPlayers;
+                        if (classroom.TimePerRound > 0) TimePerRound = classroom.TimePerRound;
+                        TotalWaitTime = classroom.WaitTime;
+                        AutoStartSeconds = classroom.WaitTime;
+                    });
+                });
+
+                // 🔑 Subscribe members events
+                await _supabaseService.SubscribeToClassroomMembersAllEventsAsync(
+                    _realClassroomIdUUID,
+                    onInsert: member =>
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (!Players.Any(p => p.Id == member.UserId))
+                            {
+                                Players.Add(new PlayerInfo
+                                {
+                                    Id = member.UserId,
+                                    Name = $"Player {member.UserId.Substring(Math.Max(0, member.UserId.Length - 4))}",
+                                    IsHost = member.Role == "owner"
+                                });
+                            }
+                        });
+                    },
+                    onDelete: member =>
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            var existing = Players.FirstOrDefault(p => p.Id == member.UserId);
+                            if (existing != null) Players.Remove(existing);
+                        });
+                    }
+                );
             }
             catch (Exception ex)
             {
@@ -176,39 +215,36 @@ namespace EasyFlips.ViewModels
         {
             try
             {
-                var currentMembers = await _classroomRepository.GetMembersAsync(_realClassroomIdUUID);
-
+                var members = await _supabaseService.GetClassroomMembersWithProfileAsync(_realClassroomIdUUID);
                 Players.Clear();
-                foreach (var m in currentMembers)
+                foreach (var m in members)
                 {
-                    string displayName = m.Profile?.DisplayName;
-                    if (string.IsNullOrEmpty(displayName))
-                    {
-                        displayName = $"Player {m.UserId.Substring(Math.Max(0, m.UserId.Length - 4))}";
-                    }
-
                     Players.Add(new PlayerInfo
                     {
                         Id = m.UserId,
-                        Name = displayName,
-                        AvatarUrl = m.Profile?.AvatarUrl,
+                        Name = m.DisplayName,
+                        AvatarUrl = m.AvatarUrl,
                         IsHost = m.Role == "owner"
                     });
                     _lastSeenMap[m.UserId] = DateTime.Now;
                 }
 
-                var connectTask = _realtimeService.ConnectAsync();
-                if (await Task.WhenAny(connectTask, Task.Delay(5000)) != connectTask) { }
-                else await connectTask;
-
-                var joinTask = _realtimeService.JoinRoomAsync(RoomId);
-                if (await Task.WhenAny(joinTask, Task.Delay(5000)) != joinTask) return;
-                await joinTask;
-
                 var myInfo = GetMyInfo();
-                await _realtimeService.SendMessageAsync("PLAYER_JOIN", myInfo);
+                await _supabaseService.JoinRoomPresenceAsync(
+                        _realClassroomIdUUID,
+                        myInfo.Id,
+                        myInfo.Name, // hoặc CurrentUserName
+                        presenceList => {
+                            // Callback khi có danh sách người đang online
+                            // Ví dụ: cập nhật UI hoặc log ra console
+                            DebugLogs.Add($"Presence sync: {string.Join(", ", presenceList)}");
+    });
+
             }
-            catch { }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Connect error: {ex.Message}");
+            }
         }
 
         private void HandleRealtimeMessage(string eventName, object data)
@@ -244,6 +280,12 @@ namespace EasyFlips.ViewModels
                     {
                         var myId = _authService.CurrentUserId ?? _userSession.UserId;
                         await _classroomRepository.RemoveMemberAsync(_realClassroomIdUUID, myId);
+                    }
+
+                    if (!string.IsNullOrEmpty(_realClassroomIdUUID) && _supabaseService != null)
+                    {
+                        _ = _supabaseService.UnsubscribeFromClassroomAsync(_realClassroomIdUUID);
+                        _ = _supabaseService.LeaveRoomPresenceAsync(_realClassroomIdUUID, _authService.CurrentUserId ?? _userSession.UserId);
                     }
                 }
                 catch { }
@@ -298,7 +340,6 @@ namespace EasyFlips.ViewModels
             }
         }
 
-        // Hàm xử lý khi Timer nhảy số
         private void AutoStart_Tick(object sender, EventArgs e)
         {
             if (AutoStartSeconds > 0)
@@ -307,12 +348,10 @@ namespace EasyFlips.ViewModels
             }
             else
             {
-                // Hết giờ -> Tự động Start
                 StopAutoStart();
-                //StartGameCommand.Execute(null);
             }
         }
-        // Hàm dừng Auto Start (Gọi khi Start thủ công hoặc Rời phòng)
+
         private void StopAutoStart()
         {
             if (_autoStartTimer.IsEnabled)
@@ -400,38 +439,31 @@ namespace EasyFlips.ViewModels
         {
             if (MessageBox.Show("Giải tán phòng?", "Xác nhận", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
-                // [QUAN TRỌNG 1]: Mở khóa cửa sổ NGAY LẬP TỨC
-                // Để dù mạng có lỗi, cửa sổ vẫn có quyền đóng lại.
                 CanCloseWindow = true;
 
                 try
                 {
-                    // 1. Xóa dữ liệu trong DB (Ưu tiên cao)
                     if (IsHost)
                     {
                         await _classroomRepository.DeleteClassroomAsync(RoomId);
                     }
                 }
-                catch (Exception)
-                {
-                    // Lỗi xóa DB không nên chặn việc đóng App
-                }
+                catch (Exception) { }
 
                 try
                 {
-                    // [QUAN TRỌNG 2]: Gửi tin nhắn với Timeout
-                    // Nếu gửi tin nhắn mất quá 2 giây (mạng lag), bỏ qua luôn để đóng Window cho mượt.
                     var sendTask = _realtimeService.SendMessageAsync("CLOSE_ROOM", new { });
-                    var timeoutTask = Task.Delay(2000); // Timeout 2s
-
+                    var timeoutTask = Task.Delay(2000);
                     await Task.WhenAny(sendTask, timeoutTask);
                 }
-                catch
+                catch { }
+
+                if (!string.IsNullOrEmpty(_realClassroomIdUUID) && _supabaseService != null)
                 {
-                    // Lỗi Socket cũng không được chặn đóng App
+                    _ = _supabaseService.UnsubscribeFromClassroomAsync(_realClassroomIdUUID);
+                    _ = _supabaseService.LeaveRoomPresenceAsync(_realClassroomIdUUID, _authService.CurrentUserId ?? _userSession.UserId);
                 }
 
-                // 3. Đóng cửa sổ
                 ForceCloseWindow();
             }
         }
@@ -439,8 +471,7 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private void StartGameCommand()
         {
-
-            StopAutoStart(); // <--- Thêm dòng này để hủy đếm ngược nếu Host bấm nút sớm
+            StopAutoStart();
 
             TimeRemaining = TimePerRound > 0 ? TimePerRound : 15;
             IsTimerRunning = true;
@@ -490,7 +521,6 @@ namespace EasyFlips.ViewModels
                                     StopAutoStart();
                                 }
 
-                                // Prepare payload and try to send reliably (timeout + retry).
                                 var payload = new
                                 {
                                     players = Players,
@@ -502,7 +532,6 @@ namespace EasyFlips.ViewModels
 
                                 await SendLobbyUpdateWithTimeoutAndRetryAsync(payload);
 
-                                // Always show confirmation to the user after attempting send
                                 MessageBox.Show("Room settings updated successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                             }
                         }
@@ -521,7 +550,6 @@ namespace EasyFlips.ViewModels
 
         private async Task SendLobbyUpdateWithTimeoutAndRetryAsync(object payload)
         {
-            // Try send up to 2 times, each attempt waits up to 2s so UI isn't blocked indefinitely.
             const int timeoutMs = 1500;
             const int maxAttempts = 2;
 
@@ -533,21 +561,15 @@ namespace EasyFlips.ViewModels
                     var completed = await Task.WhenAny(sendTask, Task.Delay(timeoutMs));
                     if (completed == sendTask)
                     {
-                        // ensure any exception from sendTask is observed
                         await sendTask;
                         return;
                     }
                 }
-                catch
-                {
-                    // swallow and retry once; do a tiny backoff
-                }
+                catch { }
 
                 await Task.Delay(150);
             }
 
-            // Fallback: ensure at least local broadcast method is invoked so host UI and other local listeners update
-            // BroadcastLobbyState already exists and sends the same message.
             try { BroadcastLobbyState(); } catch { }
         }
 
@@ -575,6 +597,13 @@ namespace EasyFlips.ViewModels
             _autoStartTimer?.Stop();
             _heartbeatTimer.Stop();
             _realtimeService.LeaveRoom();
+
+            if (!string.IsNullOrEmpty(_realClassroomIdUUID) && _supabaseService != null)
+            {
+                _ = _supabaseService.UnsubscribeFromClassroomAsync(_realClassroomIdUUID);
+                _ = _supabaseService.LeaveRoomPresenceAsync(_realClassroomIdUUID, _authService.CurrentUserId ?? _userSession.UserId);
+            }
+
             Application.Current.Dispatcher.Invoke(() => { foreach (Window window in Application.Current.Windows) { if (window.DataContext == this) { window.Close(); break; } } });
         }
     }
