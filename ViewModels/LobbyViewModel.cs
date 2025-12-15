@@ -178,31 +178,37 @@ namespace EasyFlips.ViewModels
 
                 // 🔑 Subscribe members events
                 await _supabaseService.SubscribeToClassroomMembersAllEventsAsync(
-                    _realClassroomIdUUID,
-                    onInsert: member =>
+                _realClassroomIdUUID,
+                onInsert: async member =>
+                {
+                    var profile = await _supabaseService.GetUserProfileAsync(member.UserId);
+
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
+                        if (!Players.Any(p => p.Id == member.UserId))
                         {
-                            if (!Players.Any(p => p.Id == member.UserId))
+                            Players.Add(new PlayerInfo
                             {
-                                Players.Add(new PlayerInfo
-                                {
-                                    Id = member.UserId,
-                                    Name = $"Player {member.UserId.Substring(Math.Max(0, member.UserId.Length - 4))}",
-                                    IsHost = member.Role == "owner"
-                                });
-                            }
-                        });
-                    },
-                    onDelete: member =>
+                                Id = member.UserId,
+                                Name = profile?.DisplayName ?? $"Player {member.UserId.Substring(Math.Max(0, member.UserId.Length - 4))}",
+                                AvatarUrl = profile?.AvatarUrl,
+                                IsHost = member.Role == "owner"
+                            });
+                            BroadcastLobbyState();
+                        }
+                    });
+                },
+                onDelete: member =>
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            var existing = Players.FirstOrDefault(p => p.Id == member.UserId);
-                            if (existing != null) Players.Remove(existing);
-                        });
-                    }
-                );
+                        var existing = Players.FirstOrDefault(p => p.Id == member.UserId);
+                        if (existing != null) Players.Remove(existing);
+                    });
+                }
+            );
+
+
             }
             catch (Exception ex)
             {
@@ -231,14 +237,42 @@ namespace EasyFlips.ViewModels
 
                 var myInfo = GetMyInfo();
                 await _supabaseService.JoinRoomPresenceAsync(
-                        _realClassroomIdUUID,
-                        myInfo.Id,
-                        myInfo.Name, // hoặc CurrentUserName
-                        presenceList => {
-                            // Callback khi có danh sách người đang online
-                            // Ví dụ: cập nhật UI hoặc log ra console
-                            DebugLogs.Add($"Presence sync: {string.Join(", ", presenceList)}");
-    });
+                _realClassroomIdUUID,
+                myInfo.Id,
+                myInfo.Name,
+                async presenceList =>
+                {
+                    var fullMembers = await _supabaseService.GetClassroomMembersWithProfileAsync(_realClassroomIdUUID);
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        foreach (var p in fullMembers)
+                        {
+                            var existing = Players.FirstOrDefault(x => x.Id == p.UserId);
+                            if (existing == null)
+                            {
+                                Players.Add(new PlayerInfo
+                                {
+                                    Id = p.UserId,
+                                    Name = p.DisplayName ?? $"Player {p.UserId.Substring(Math.Max(0, p.UserId.Length - 4))}",
+                                    AvatarUrl = p.AvatarUrl,
+                                    IsHost = p.Role == "owner"
+                                });
+                            }
+                            else
+                            {
+                                existing.Name = p.DisplayName ?? existing.Name;
+                                existing.AvatarUrl = p.AvatarUrl ?? existing.AvatarUrl;
+                                existing.IsHost = p.Role == "owner";
+                            }
+                        }
+                        // ❌ Không xóa toàn bộ danh sách → tránh mất hết player
+                    });
+
+                }
+            );
+
+
 
             }
             catch (Exception ex)
@@ -316,29 +350,30 @@ namespace EasyFlips.ViewModels
         private void CheckForOfflineUsers()
         {
             var now = DateTime.Now;
-            var timeoutLimit = TimeSpan.FromSeconds(10);
-            var playersToRemove = new List<PlayerInfo>();
+            var timeoutLimit = TimeSpan.FromSeconds(30); // tăng timeout
 
+            var playersToRemove = new List<PlayerInfo>();
             foreach (var p in Players)
             {
                 if (p.IsHost) continue;
                 if (_lastSeenMap.ContainsKey(p.Id))
                 {
-                    if (now - _lastSeenMap[p.Id] > timeoutLimit) playersToRemove.Add(p);
+                    if (now - _lastSeenMap[p.Id] > timeoutLimit)
+                        playersToRemove.Add(p);
                 }
                 else _lastSeenMap[p.Id] = DateTime.Now;
             }
 
-            if (playersToRemove.Count > 0)
+            foreach (var p in playersToRemove)
             {
-                foreach (var p in playersToRemove)
-                {
-                    Players.Remove(p);
-                    _lastSeenMap.Remove(p.Id);
-                }
-                BroadcastLobbyState();
+                Players.Remove(p);
+                _lastSeenMap.Remove(p.Id);
             }
+
+            if (playersToRemove.Count > 0 && IsHost)
+                BroadcastLobbyState();
         }
+
 
         private void AutoStart_Tick(object sender, EventArgs e)
         {
@@ -379,12 +414,36 @@ namespace EasyFlips.ViewModels
         private void HandleLobbyUpdate(JObject json)
         {
             var playersList = json["players"]?.ToObject<List<PlayerInfo>>();
-            if (playersList != null)
+            if (playersList == null) return;
+
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Players.Clear();
-                foreach (var p in playersList) Players.Add(p);
-            }
+                // Thêm hoặc cập nhật player mới
+                foreach (var p in playersList)
+                {
+                    var existing = Players.FirstOrDefault(x => x.Id == p.Id);
+                    if (existing == null)
+                    {
+                        Players.Add(p);
+                    }
+                    else
+                    {
+                        existing.Name = p.Name ?? existing.Name;
+                        existing.AvatarUrl = p.AvatarUrl ?? existing.AvatarUrl;
+                        existing.IsHost = p.IsHost;
+                    }
+                }
+
+                // Xóa những player không còn trong danh sách mới
+                var toRemove = Players.Where(x => !playersList.Any(p => p.Id == x.Id)).ToList();
+                foreach (var r in toRemove)
+                {
+                    Players.Remove(r);
+                }
+            });
         }
+
+
 
         private void HandleKickPlayer(JObject json)
         {

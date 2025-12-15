@@ -16,6 +16,8 @@ using static Supabase.Realtime.Constants;
 using static Supabase.Realtime.PostgresChanges.PostgresChangesOptions;
 using RealtimeConstants = Supabase.Realtime.Constants;
 using Supabase.Realtime.Presence;
+using Supabase.Postgrest.Models;
+using Supabase.Postgrest.Responses;
 
 namespace EasyFlips.Services
 {
@@ -82,6 +84,28 @@ namespace EasyFlips.Services
             var result = await _client.From<Profile>().Where(x => x.Id == userId).Single();
             return result;
         }
+        public async Task<UserProfile?> GetUserProfileAsync(string userId)
+        {
+            try
+            {
+                var profile = await _client
+                    .From<UserProfile>()
+                    .Where(x => x.UserId == userId)
+                    .Single();
+
+                return profile; // trả về trực tiếp object UserProfile
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SupabaseService] GetUserProfileAsync error: {ex.Message}");
+                return null;
+            }
+        }
+
+
+
+
+
         public async Task<Profile?> UpdateProfileAsync(string userId, string? displayName, string? avatarUrl)
         {
             var profile = new Profile { Id = userId, DisplayName = displayName, AvatarUrl = avatarUrl, UpdatedAt = DateTime.UtcNow };
