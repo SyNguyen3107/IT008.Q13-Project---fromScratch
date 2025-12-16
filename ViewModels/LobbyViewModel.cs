@@ -21,6 +21,8 @@ namespace EasyFlips.ViewModels
         private readonly IDeckRepository _deckRepository;
         private readonly IClassroomRepository _classroomRepository;
         private readonly SupabaseService _supabaseService;
+        private DateTime _lastUpdatedAt = DateTime.MinValue;
+
 
         // [POLLING] Timer để cập nhật dữ liệu định kỳ
         private DispatcherTimer _syncTimer;
@@ -90,6 +92,7 @@ namespace EasyFlips.ViewModels
                 MaxPlayers = maxPlayers ?? roomInfo.MaxPlayers;
                 TimePerRound = roomInfo.TimePerRound > 0 ? roomInfo.TimePerRound : 15;
                 TotalWaitTime = roomInfo.WaitTime;
+                // Nếu server có lưu thời điểm bắt đầu auto start
                 AutoStartSeconds = roomInfo.WaitTime;
 
                 if (IsHost)
@@ -98,7 +101,6 @@ namespace EasyFlips.ViewModels
                     AvailableDecks.Clear();
                     foreach (var d in decks) AvailableDecks.Add(d);
                     SelectedDeck = deck ?? decks.FirstOrDefault();
-
                     if (waitTime.HasValue && waitTime.Value > 0)
                     {
                         IsAutoStartActive = true;
@@ -111,7 +113,30 @@ namespace EasyFlips.ViewModels
                     var myId = _authService.CurrentUserId ?? _userSession.UserId;
                     // Gọi repository để join (hoặc SupabaseService)
                     await _supabaseService.AddMemberAsync(_realClassroomIdUUID, myId);
+                    var updatedUtc = DateTime.SpecifyKind(roomInfo.UpdatedAt, DateTimeKind.Utc);
+                    var elapsed = (int)(DateTime.Now - updatedUtc).TotalSeconds;
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG] Room UpdatedAt (UTC): {updatedUtc}, Now (UTC): {DateTime.Now}, Elapsed: {elapsed}s");
+                    _lastUpdatedAt = roomInfo.UpdatedAt;
+                    AutoStartSeconds = Math.Max(roomInfo.WaitTime - elapsed, 0);
+
+
+
+                    if (waitTime.HasValue && waitTime.Value > 0)
+                    {
+                        IsAutoStartActive = true;
+                        _autoStartTimer.Start();
+                        System.Diagnostics.Debug.WriteLine($"[DEBUG] AutoStartActive={IsAutoStartActive}, AutoStartSeconds={AutoStartSeconds}, TotalWaitTime={TotalWaitTime}, TimerEnabled={_autoStartTimer.IsEnabled}");
+                    }
+                    else
+                    {
+                        MessageBox.Show("⏰ Hết giờ, bạn không thể join vào phòng này nữa.", "Thông báo");
+                        AutoStartSeconds = 0;
+                        IsAutoStartActive = false;
+                        CanCloseWindow = true;
+                        ForceCloseWindow();
+                    }
                 }
+                
 
                 // Load danh sách thành viên lần đầu
                 await RefreshLobbyState();
@@ -160,12 +185,13 @@ namespace EasyFlips.ViewModels
                 // Cập nhật Settings nếu có thay đổi từ Host
                 if (MaxPlayers != room.MaxPlayers) MaxPlayers = room.MaxPlayers;
                 if (TimePerRound != room.TimePerRound) TimePerRound = room.TimePerRound;
-
-                // Nếu WaitTime đổi thì cập nhật timer
-                if (room.WaitTime != TotalWaitTime)
+                if (room.UpdatedAt != _lastUpdatedAt && !IsHost)
                 {
+                    _lastUpdatedAt = room.UpdatedAt;
                     TotalWaitTime = room.WaitTime;
-                    if (!IsHost && IsAutoStartActive) AutoStartSeconds = TotalWaitTime;
+                    var updatedUtc = DateTime.SpecifyKind(room.UpdatedAt, DateTimeKind.Utc);
+                    var elapsed = (int)(DateTime.Now - updatedUtc).TotalSeconds;
+                    AutoStartSeconds = Math.Max(room.WaitTime - elapsed, 0);
                 }
 
                 // 2. Cập nhật danh sách thành viên
@@ -214,6 +240,7 @@ namespace EasyFlips.ViewModels
                 }
             });
         }
+        
 
         private void AutoStart_Tick(object sender, EventArgs e)
         {
@@ -324,6 +351,13 @@ namespace EasyFlips.ViewModels
                         settingsVm.TimePerRound,
                         settingsVm.WaitTimeMinutes * 60
                     );
+                    // Cập nhật ngay lập tức cho host
+                    TotalWaitTime = settingsVm.WaitTimeMinutes * 60;
+                    AutoStartSeconds = TotalWaitTime;
+                    MaxPlayers = settingsVm.MaxPlayers;
+                    IsAutoStartActive = true;
+                    _autoStartTimer.Start();
+
 
                     // Polling sẽ tự động cập nhật UI cho mọi người sau tối đa 3s
                     MessageBox.Show("Room settings updated successfully.", "Success");

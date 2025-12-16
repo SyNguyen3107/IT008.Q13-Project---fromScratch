@@ -94,7 +94,9 @@ namespace EasyFlips.ViewModels
                     TimePerRound = TimePerRound,
                     IsActive = true,
                     Name = $"Classroom {roomId}",
-                    WaitTime = WaitTimeMinutes * 60
+                    WaitTime = WaitTimeMinutes * 60,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 };
 
                 // Gọi Repository

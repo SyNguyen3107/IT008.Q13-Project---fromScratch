@@ -180,9 +180,10 @@ namespace EasyFlips.Services
                 HostId = ownerId,
                 WaitTime = waitTime,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
             };
+            var json = JsonConvert.SerializeObject(classroom);
+            Console.WriteLine(json);
+
             var result = await _client.From<Classroom>().Insert(classroom);
             return result.Models.FirstOrDefault();
         }
