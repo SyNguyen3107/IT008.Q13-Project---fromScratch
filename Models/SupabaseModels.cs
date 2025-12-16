@@ -41,36 +41,35 @@ namespace EasyFlips.Models
         [PrimaryKey("id", false)]
         public string Id { get; set; }
 
+        [Column("room_code")]
+        public string RoomCode { get; set; }
+
         [Column("name")]
-        public string Name { get; set; } = "New classroom";
+        public string Name { get; set; }
 
         [Column("description")]
         public string? Description { get; set; }
 
-        [Column("room_code")]
-        public string RoomCode { get; set; } = string.Empty;
-
-        [Column("owner_id")]
+        [Column("host_id")]
         public string HostId { get; set; }
-        [Column("max_members")]
-        public int MaxPlayers { get; set; } = 30;
 
-        // cột Status (WAITING, PLAYING, CLOSED)
-        [Column("status")]
-        public string Status { get; set; } = "WAITING";
+        [Column("max_players")]
+        public int MaxPlayers { get; set; }
 
         [Column("time_per_round")]
-        public int TimePerRound { get; set; } = 30;
+        public int TimePerRound { get; set; }
 
-        // Thời gian chờ trước khi bắt đầu game (giây), mặc định 300 giây = 5 phút
         [Column("wait_time")]
-        public int WaitTime { get; set; } = 300;
+        public int WaitTime { get; set; }
+
+        [Column("status")]
+        public string Status { get; set; }
+
+        [Column("is_active")]
+        public bool IsActive { get; set; }
 
         [Column("deck_id")]
         public string? DeckId { get; set; }
-
-        [Column("is_active")]
-        public bool IsActive { get; set; } = true;
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }

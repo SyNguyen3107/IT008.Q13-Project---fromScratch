@@ -258,21 +258,35 @@ namespace EasyFlips.Services
         {
             try
             {
-                var members = await GetClassroomMembersAsync(classroomId);
+                // 1. Lấy danh sách Member (1 Request)
+                var members = await _client.From<Member>()
+                                           .Where(x => x.ClassroomId == classroomId)
+                                           .Get();
+
+                if (members.Models.Count == 0) return new List<MemberWithProfile>();
+
+                // 2. Lấy danh sách ID của các user
+                var userIds = members.Models.Select(m => m.UserId).ToList();
+
+                // 3. Lấy TẤT CẢ Profile của các user này trong 1 Request duy nhất (Dùng Filter IN)
+                var profilesResponse = await _client.From<Profile>()
+                                                    .Filter("id", Supabase.Postgrest.Constants.Operator.In, userIds)
+                                                    .Get();
+                var profiles = profilesResponse.Models;
+
+                // 4. Ghép dữ liệu lại trong bộ nhớ (RAM) - cực nhanh
                 var result = new List<MemberWithProfile>();
 
-                foreach (var member in members)
+                foreach (var member in members.Models)
                 {
-                    var profile = await GetProfileAsync(member.UserId);
+                    var profile = profiles.FirstOrDefault(p => p.Id == member.UserId);
                     result.Add(new MemberWithProfile
                     {
                         MemberId = member.Id,
                         UserId = member.UserId,
                         ClassroomId = member.ClassroomId,
                         Role = member.Role,
-                        JoinedAt = member.JoinedAt,
                         DisplayName = profile?.DisplayName ?? "Unknown",
-                        Email = profile?.Email ?? "",
                         AvatarUrl = profile?.AvatarUrl
                     });
                 }
@@ -281,7 +295,7 @@ namespace EasyFlips.Services
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[SupabaseService] Get members with profile error: {ex.Message}");
+                Debug.WriteLine($"[SupabaseService] Error: {ex.Message}");
                 return new List<MemberWithProfile>();
             }
         }

@@ -13,71 +13,159 @@ using System;
 using System.IO;
 using System.Windows;
 using EasyFlips.Properties;
+using Supabase.Gotrue;
+using Supabase.Gotrue.Interfaces;
+using Newtonsoft.Json;
 
 namespace EasyFlips
 {
     public partial class App : Application
     {
         public static IServiceProvider ServiceProvider { get; private set; }
+        public static string ProfileId { get; private set; } = "default";
 
         public App()
         {
             this.DispatcherUnhandledException += App_DispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        }
 
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            // 1. Parse tham số dòng lệnh trước tiên
+            ParseCommandLineArgs(e.Args);
+
+            // [FIX] KHÔNG gán MainWindow.Title ở đây vì MainWindow chưa được khởi tạo -> Gây Crash.
+            // Việc gán Title sẽ thực hiện trong InitializeApp sau khi tạo Window.
+
+            // 2. Cấu hình dịch vụ
             var services = new ServiceCollection();
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider();
+
+            // 3. Khởi chạy ứng dụng
+            InitializeApp();
         }
 
-        private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        private void ParseCommandLineArgs(string[] args)
         {
-            MessageBox.Show($"Lỗi Crash UI: {e.Exception.Message}\n\n{e.Exception.StackTrace}", "Lỗi Nghiêm Trọng");
-            e.Handled = true;
-        }
+            // Parse: EasyFlips.exe --profile=1
+            foreach (var arg in args)
+            {
+                if (arg.StartsWith("--profile="))
+                {
+                    ProfileId = arg.Replace("--profile=", "").Trim();
+                    break;
+                }
+            }
 
-        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-        {
-            var ex = e.ExceptionObject as Exception;
-            MessageBox.Show($"Lỗi Crash AppDomain: {ex?.Message}\n\n{ex?.StackTrace}", "Lỗi Nghiêm Trọng");
+            // Validate profile ID
+            if (string.IsNullOrEmpty(ProfileId))
+            {
+                ProfileId = "default";
+            }
         }
 
         private void ConfigureServices(IServiceCollection services)
         {
-            string dbPath;
-            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string dbPath = GetProfileDatabasePath();
 
-#if DEBUG
-            string projectRoot = Path.GetFullPath(Path.Combine(baseDirectory, "../../../"));
-            dbPath = Path.Combine(projectRoot, "EasyFlipsAppDB.db");
-#else
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string appFolder = Path.Combine(appData, "EasyFlips");
-            if (!Directory.Exists(appFolder)) Directory.CreateDirectory(appFolder);
-            dbPath = Path.Combine(appFolder, "EasyFlipsAppDB.db");
-#endif
+            // Đăng ký DB Context
             services.AddDbContext<AppDbContext>(options =>
             {
                 options.UseSqlite($"Data Source={dbPath}");
             });
 
-            // --- ĐĂNG KÝ SUPABASE CLIENT (SINGLETON) ---
+            RegisterServices(services);
+        }
+
+        private async void InitializeApp()
+        {
+            // [BƯỚC 0]: Migrate Database SQLite Local
+            try
+            {
+                using (var scope = ServiceProvider.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    db.Database.Migrate();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Xử lý lỗi hỏng file DB (như code cũ của bạn)
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string dbPath = Path.Combine(appData, "EasyFlips", $"EasyFlipsAppDB_Profile{ProfileId}.db");
+
+                try { if (File.Exists(dbPath)) File.Delete(dbPath); } catch { }
+
+                MessageBox.Show($"Cơ sở dữ liệu profile '{ProfileId}' bị lỗi và đã được làm mới.\nVui lòng khởi động lại.",
+                                "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                Current.Shutdown();
+                return;
+            }
+
+            // Kích hoạt NetworkService
+            NetworkService.Instance.Initialize();
+
+            // [BƯỚC 1]: Khởi tạo Supabase
+            var supabaseService = ServiceProvider.GetRequiredService<SupabaseService>();
+            await supabaseService.InitializeAsync();
+
+            // [BƯỚC 2]: Khôi phục session
+            var authService = ServiceProvider.GetRequiredService<IAuthService>();
+            bool isLoggedIn = authService.RestoreSession();
+
+            // [BƯỚC 2.1]: Tải thông tin profile nếu đã đăng nhập
+            if (isLoggedIn)
+            {
+                await authService.LoadProfileInfoAsync();
+            }
+
+            // [BƯỚC 3]: Điều hướng và Hiển thị Window
+            Window windowToShow;
+            if (isLoggedIn)
+            {
+                var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+                mainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
+                windowToShow = mainWindow;
+            }
+            else
+            {
+                var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
+                windowToShow = loginWindow;
+            }
+
+            // [FIX] Gán Title ở đây mới an toàn
+            windowToShow.Title = $"EasyFlips - Profile: {ProfileId}";
+            windowToShow.Show();
+        }
+
+        private void RegisterServices(IServiceCollection services)
+        {
+            // --- SUPABASE CLIENT VỚI CUSTOM SESSION HANDLER ---
             services.AddSingleton<Supabase.Client>(provider =>
             {
                 var options = new Supabase.SupabaseOptions
                 {
                     AutoRefreshToken = true,
                     AutoConnectRealtime = true,
-                    // [Gợi ý cho Lỗi 2]: Đảm bảo SessionPersistanceEnabled mặc định là true
+                    // [QUAN TRỌNG] Sử dụng bộ lưu session riêng biệt cho từng Profile
+                    SessionHandler = new ProfileSessionPersistence()
                 };
+
+                // Giả sử AppConfig đã có
                 var client = new Supabase.Client(AppConfig.SupabaseUrl, AppConfig.SupabaseKey, options);
                 return client;
             });
 
+            // Repositories
             services.AddScoped<IDeckRepository, DeckRepository>();
             services.AddScoped<ICardRepository, CardRepository>();
             services.AddScoped<IClassroomRepository, ClassroomRepository>();
 
+            // Services
             services.AddScoped<StudyService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddTransient<ExportService>();
@@ -87,8 +175,8 @@ namespace EasyFlips
             services.AddSingleton<IAuthService, SupabaseAuthService>();
             services.AddTransient<SyncService>();
             services.AddSingleton<RealtimeService>();
-            
 
+            // ViewModels
             services.AddTransient<MainViewModel>();
             services.AddTransient<StudyViewModel>();
             services.AddTransient<CreateDeckViewModel>();
@@ -102,7 +190,10 @@ namespace EasyFlips
             services.AddTransient<LobbyViewModel>();
             services.AddTransient<JoinViewModel>();
             services.AddTransient<CreateRoomViewModel>();
+            services.AddTransient<OtpViewModel>();
+            services.AddTransient<ResetPasswordViewModel>();
 
+            // Windows
             services.AddTransient<MainWindow>();
             services.AddTransient<StudyWindow>();
             services.AddTransient<CreateDeckWindow>();
@@ -113,9 +204,7 @@ namespace EasyFlips
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();
             services.AddTransient<SyncWindow>();
-            services.AddTransient<OtpViewModel>();
             services.AddTransient<OtpWindow>();
-            services.AddTransient<ResetPasswordViewModel>();
             services.AddTransient<ResetPasswordWindow>();
             services.AddTransient<LobbyWindow>();
             services.AddTransient<JoinWindow>();
@@ -124,69 +213,82 @@ namespace EasyFlips
 
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
             services.AddSingleton<UserSession>();
-            
-            
         }
 
-        protected override async void OnStartup(StartupEventArgs e)
+        private string GetProfileDatabasePath()
         {
-            base.OnStartup(e);
+            string fileName = $"EasyFlipsAppDB_{ProfileId}.db";
 
-            // [BƯỚC 0]: Migrate Database SQLite Local
+#if DEBUG
+            // Debug: Lưu ngay tại thư mục project để dễ tìm
+            string baseDirectory = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../../../"));
+            return Path.Combine(baseDirectory, fileName);
+#else
+            // Release: Lưu trong AppData
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string appFolder = Path.Combine(appData, "EasyFlips");
+            if (!Directory.Exists(appFolder)) Directory.CreateDirectory(appFolder);
+            return Path.Combine(appFolder, fileName);
+#endif
+        }
+
+        private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            MessageBox.Show($"Lỗi Crash UI: {e.Exception.Message}\n\n{e.Exception.StackTrace}", "Lỗi Nghiêm Trọng");
+            e.Handled = true;
+        }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            var ex = e.ExceptionObject as Exception;
+            MessageBox.Show($"Lỗi Crash AppDomain: {ex?.Message}\n\n{ex?.StackTrace}", "Lỗi Nghiêm Trọng");
+        }
+    }
+
+    // [CLASS QUAN TRỌNG] Tách biệt file session cho từng Profile
+    public class ProfileSessionPersistence : IGotrueSessionPersistence<Session>
+    {
+        private readonly string _filePath;
+
+        public ProfileSessionPersistence()
+        {
+            // Tạo tên file session dựa trên ProfileId (VD: .gotrue_profile1.cache)
+            // Lưu file này cùng chỗ với file exe
+            string directory = AppDomain.CurrentDomain.BaseDirectory;
+            _filePath = Path.Combine(directory, $".gotrue_{App.ProfileId}.cache");
+        }
+
+        public void SaveSession(Session session)
+        {
             try
             {
-                using (var scope = ServiceProvider.CreateScope())
-                {
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    db.Database.Migrate();
-                }
+                var json = JsonConvert.SerializeObject(session);
+                File.WriteAllText(_filePath, json);
             }
-            catch (Exception ex)
+            catch { }
+        }
+
+        public Session LoadSession()
+        {
+            try
             {
-                // Nếu file DB bị hỏng -> Xóa đi làm lại
-                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string dbPath = Path.Combine(appData, "EasyFlips", "EasyFlipsAppDB.db");
-
-                // Xóa cả file trong project root (Debug mode)
-                string projectDbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../../../", "EasyFlipsAppDB.db");
-
-                try { if (File.Exists(dbPath)) File.Delete(dbPath); } catch { }
-                try { if (File.Exists(projectDbPath)) File.Delete(projectDbPath); } catch { }
-
-                MessageBox.Show($"Cơ sở dữ liệu đã được làm mới.\nVui lòng khởi động lại ứng dụng.\n\nChi tiết: {ex.Message}",
-                                "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                Current.Shutdown();
-                return;
+                if (!File.Exists(_filePath)) return null;
+                var json = File.ReadAllText(_filePath);
+                return JsonConvert.DeserializeObject<Session>(json);
             }
-
-            // Kích hoạt NetworkService để bắt đầu theo dõi mạng
-            NetworkService.Instance.Initialize();
-            // [BƯỚC 1]: Khởi tạo Supabase
-            var supabaseService = ServiceProvider.GetRequiredService<SupabaseService>();
-            await supabaseService.InitializeAsync();
-
-            // [BƯỚC 2]: Khôi phục session thông qua Interface
-            var authService = ServiceProvider.GetRequiredService<IAuthService>();
-            bool isLoggedIn = authService.RestoreSession(); // Gọi trực tiếp từ Interface
-
-            // [BƯỚC 2.1]: Nếu đăng nhập thành công, tải thông tin profile từ database
-            if (isLoggedIn)
+            catch
             {
-                await authService.LoadProfileInfoAsync();
+                return null;
             }
+        }
 
-            // [BƯỚC 3]: Điều hướng
-            if (isLoggedIn)
+        public void DestroySession()
+        {
+            try
             {
-                var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
-                mainWindow.DataContext = ServiceProvider.GetRequiredService<MainViewModel>();
-                mainWindow.Show();
+                if (File.Exists(_filePath)) File.Delete(_filePath);
             }
-            else
-            {
-                var loginWindow = ServiceProvider.GetRequiredService<LoginWindow>();
-                loginWindow.Show();
-            }
+            catch { }
         }
     }
 }
