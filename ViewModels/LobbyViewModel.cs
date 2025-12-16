@@ -152,6 +152,7 @@ namespace EasyFlips.ViewModels
                 {
                     StopPolling();
                     MessageBox.Show("Chủ phòng đã giải tán phòng chơi.", "Thông báo");
+                    CanCloseWindow = true;
                     ForceCloseWindow();
                     return;
                 }
