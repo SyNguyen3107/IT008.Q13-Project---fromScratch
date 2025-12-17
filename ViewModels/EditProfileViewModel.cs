@@ -19,7 +19,8 @@ namespace EasyFlips.ViewModels
         // Cần Client để gọi lệnh Update lên Server
         private readonly Supabase.Client _supabaseClient;
 
-
+        [ObservableProperty]
+        private bool _canSave;
         [ObservableProperty] private string userName;
         [ObservableProperty] private string email;
         [ObservableProperty] private string avatarURL;
@@ -69,7 +70,7 @@ namespace EasyFlips.ViewModels
             {
                 // Lưu đường dẫn file local để lát nữa upload
                 _selectedLocalImagePath = openFileDialog.FileName;
-
+                CanSave = true;
                 // 2. Hiển thị ngay lên giao diện (Preview)
                 // WPF tự động hiển thị ảnh từ đường dẫn file cục bộ
                 AvatarURL = _selectedLocalImagePath;
@@ -115,7 +116,7 @@ namespace EasyFlips.ViewModels
                     Debug.WriteLine($"[EditProfile] No new avatar selected. _selectedLocalImagePath={_selectedLocalImagePath}");
                 }
 
-                // 2. Cập nhật thông tin profile lên Supabase (display_name)
+                //2.Cập nhật thông tin profile lên Supabase(display_name)
                 if (!string.IsNullOrEmpty(UserName))
                 {
                     Debug.WriteLine($"[EditProfile] Updating profile: UserName={UserName}, AvatarUrl={finalAvatarUrl}");
@@ -123,13 +124,21 @@ namespace EasyFlips.ViewModels
                 }
 
                 // 3. Cập nhật lại Session cục bộ để hiển thị ngay
-                _userSession.UpdateUserInfo(UserName, finalAvatarUrl);
+                if (_userSession != null)
+                {
+                    _userSession.UpdateUserInfo(UserName, finalAvatarUrl);
+                }
+                else
+                {
+                    Debug.WriteLine("[EditProfile] _userSession is null, cannot update local session.");
+                }
+
 
                 Debug.WriteLine("[EditProfile] Save completed successfully!");
                 MessageBox.Show("Đã lưu thành công!", "Thông báo");
 
                 _selectedLocalImagePath = null;
-
+                CanSave = false;
                 // Đóng cửa sổ sau khi lưu
                 CloseAction?.Invoke();
             }
