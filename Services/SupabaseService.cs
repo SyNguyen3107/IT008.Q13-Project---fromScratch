@@ -160,10 +160,17 @@ namespace EasyFlips.Services
         /// <param name="avatarUrl">Đường dẫn ảnh đại diện mới.</param>
         public async Task<Profile?> UpdateProfileAsync(string userId, string? displayName, string? avatarUrl)
         {
-            var profile = new Profile { Id = userId, DisplayName = displayName, AvatarUrl = avatarUrl, UpdatedAt = DateTime.UtcNow };
-            var result = await _client.From<Profile>().Update(profile);
+            var result = await _client
+                .From<Profile>()
+                .Where(p => p.Id == userId)
+                .Set(p => p.DisplayName, displayName)
+                .Set(p => p.AvatarUrl, avatarUrl)
+                .Set(p => p.UpdatedAt, DateTime.UtcNow)
+                .Update();
+
             return result.Models.FirstOrDefault();
         }
+
 
         /// <summary>
         /// Tìm kiếm người dùng dựa trên email (gần đúng).
