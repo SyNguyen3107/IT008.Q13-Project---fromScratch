@@ -165,6 +165,9 @@ namespace EasyFlips.ViewModels
             _syncTimer?.Stop();
         }
 
+        // Định nghĩa thời gian timeout (Ví dụ: 15 giây không phản hồi thì kick)
+        private const int HEARTBEAT_TIMEOUT_SECONDS = 15;
+
         private async Task RefreshLobbyState()
         {
             try
@@ -185,6 +188,8 @@ namespace EasyFlips.ViewModels
                 // Cập nhật Settings nếu có thay đổi từ Host
                 if (MaxPlayers != room.MaxPlayers) MaxPlayers = room.MaxPlayers;
                 if (TimePerRound != room.TimePerRound) TimePerRound = room.TimePerRound;
+
+                // Logic đồng bộ thời gian (Giữ nguyên theo code bạn gửi)
                 if (room.UpdatedAt != _lastUpdatedAt && !IsHost)
                 {
                     _lastUpdatedAt = room.UpdatedAt;
@@ -194,14 +199,72 @@ namespace EasyFlips.ViewModels
                     AutoStartSeconds = Math.Max(room.WaitTime - elapsed, 0);
                 }
 
+                var myId = _authService.CurrentUserId ?? _userSession.UserId;
+
+                if (!IsHost)
+                {
+                    // Nếu là Member: Gửi tín hiệu "Tôi còn sống"
+                    // Fire and forget để không chặn UI
+                    _ = _supabaseService.SendHeartbeatAsync(_realClassroomIdUUID, myId);
+                }
+
                 // 2. Cập nhật danh sách thành viên
+                // Lưu ý: Đảm bảo MemberWithProfile đã có cột LastActive
                 var currentMembers = await _supabaseService.GetClassroomMembersWithProfileAsync(_realClassroomIdUUID);
+
+                // --- [START] LOGIC HOST TỰ ĐỘNG KICK NGƯỜI MẤT KẾT NỐI ---
+                if (IsHost)
+                {
+                    var now = DateTime.UtcNow;
+                    var usersToKick = new List<string>();
+
+                    foreach (var member in currentMembers)
+                    {
+                        // Bỏ qua chính mình (Host)
+                        if (member.UserId == myId) continue;
+
+                        // Kiểm tra LastActive
+                        // Nếu LastActive quá cũ (quá 15s so với hiện tại) -> Cho vào danh sách kick
+                        // Lưu ý: Nếu LastActive == MinValue (mới vào chưa kịp update) thì tạm tha
+                        if (member.LastActive != DateTime.MinValue)
+                        {
+                            // Chuyển đổi về UTC chuẩn để so sánh
+                            var lastActiveUtc = member.LastActive.Kind == DateTimeKind.Unspecified
+                                                ? DateTime.SpecifyKind(member.LastActive, DateTimeKind.Utc)
+                                                : member.LastActive.ToUniversalTime();
+
+                            if ((now - lastActiveUtc).TotalSeconds > HEARTBEAT_TIMEOUT_SECONDS)
+                            {
+                                usersToKick.Add(member.UserId);
+                            }
+                        }
+                    }
+
+                    // Thực hiện Kick
+                    foreach (var userId in usersToKick)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[AutoKick] Kicking user: {userId}");
+                        // Gọi API xóa thành viên
+                        await _classroomRepository.RemoveMemberAsync(_realClassroomIdUUID, userId);
+
+                        // Xóa luôn khỏi danh sách hiển thị tạm thời để UI cập nhật ngay lập tức
+                        var memberToRemove = currentMembers.FirstOrDefault(x => x.UserId == userId);
+                        if (memberToRemove != null)
+                        {
+                            currentMembers.Remove(memberToRemove);
+                        }
+                    }
+                }
+                // --- [END] LOGIC HOST TỰ ĐỘNG KICK ---
+
+                // Cập nhật danh sách lên UI
                 UpdatePlayerList(currentMembers);
 
                 // 3. (Tuỳ chọn) Kiểm tra trạng thái Game Start
                 if (room.Status == "PLAYING" && !IsHost)
                 {
                     // Logic chuyển màn hình game ở đây
+                    MessageBox.Show("Game Started!"); // Ví dụ
                 }
             }
             catch (Exception ex)

@@ -98,6 +98,25 @@ namespace EasyFlips.Services
             }
         }
 
+        /// <summary>
+        /// Gửi tín hiệu Heartbeat (cập nhật last_active) để báo hiệu user vẫn còn kết nối.
+        /// </summary>
+        public async Task SendHeartbeatAsync(string classroomId, string userId)
+        {
+            try
+            {
+                // Cách tối ưu: Chỉ update cột last_active, không update toàn bộ row
+                await _client.From<Member>()
+                             .Where(x => x.ClassroomId == classroomId && x.UserId == userId)
+                             .Set(x => x.LastActive, DateTime.UtcNow)
+                             .Update();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Heartbeat] Failed: {ex.Message}");
+            }
+        }
+
         #region Profile Operations
 
         /// <summary>
@@ -288,6 +307,7 @@ namespace EasyFlips.Services
                         ClassroomId = member.ClassroomId,
                         Role = member.Role,
                         DisplayName = profile?.DisplayName ?? "Unknown",
+                        LastActive = member.LastActive,
                         AvatarUrl = profile?.AvatarUrl
                     });
                 }

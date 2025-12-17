@@ -100,6 +100,9 @@ namespace EasyFlips.Models
         [Column("joined_at")]
         public DateTime JoinedAt { get; set; }
 
+        [Column("last_active")]
+        public DateTime LastActive { get; set; }
+
         // [MỚI] Thêm thuộc tính này để hứng dữ liệu từ bảng Profile khi Join
         [Reference(typeof(Profile))]
         public Profile Profile { get; set; }
@@ -162,6 +165,8 @@ namespace EasyFlips.Models
         public string DisplayName { get; set; } = "Unknown";
         public string Email { get; set; } = string.Empty;
         public string? AvatarUrl { get; set; }
+
+        public DateTime LastActive { get; set; }
 
         // Thuộc tính hỗ trợ cho UI
         public bool IsHost => Role.Equals("host", StringComparison.OrdinalIgnoreCase);
