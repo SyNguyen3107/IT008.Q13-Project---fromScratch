@@ -124,3 +124,4 @@ namespace EasyFlips.Models
         public bool IsFromHost { get; set; }
     }
 }
+
