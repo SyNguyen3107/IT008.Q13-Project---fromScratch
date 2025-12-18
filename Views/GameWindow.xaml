@@ -340,7 +340,7 @@
                                     <TextBox Grid.Column="0" 
                                              Text="{Binding UserAnswer, UpdateSourceTrigger=PropertyChanged}"
                                              Style="{StaticResource AnswerTextBoxStyle}"
-                                             Height="50">
+                                             VerticalAlignment="Center"> 
                                         <TextBox.InputBindings>
                                             <KeyBinding Key="Enter" Command="{Binding SubmitAnswerCommand}"/> <!-- Enter cũng tính là submit -->
                                         </TextBox.InputBindings>
@@ -368,23 +368,66 @@
 
                             <Border Background="#E1F5FE" CornerRadius="15" Opacity="0.3" Margin="-30"/>
 
-                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <!-- Thông báo kết quả (nếu cần) -->
-                                <TextBlock Text="{Binding ResultMessage}" 
-                                           FontSize="28" FontWeight="Black" Foreground="#FF5E57"
-                                           HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
 
-                                <TextBlock Text="CORRECT ANSWER" FontWeight="Bold" Foreground="#3498DB" Opacity="0.8" FontSize="14" 
-                                           HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <!-- Kết quả so sánh -->
+                                    <ItemsControl ItemsSource="{Binding ComparisonPieces}" HorizontalAlignment="Center">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Text}"
+                                                   Foreground="{Binding Type, Converter={StaticResource DiffTypeToBrushConverter}}"
+                                                   FontWeight="{Binding Type, Converter={StaticResource DiffTypeToFontWeightConverter}}"
+                                                   TextDecorations="{Binding Type, Converter={StaticResource DiffTypeToTextDecorationConverter}}"
+                                                    FontSize="24" Margin="1,0"/>
+                                          </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
 
-                                <TextBlock Text="{Binding CurrentCard.BackText}" d:Text="This is the answer" 
-                                           FontSize="40" FontWeight="Bold" Foreground="#2980B9"
-                                           TextWrapping="Wrap" TextAlignment="Center"/>
+                                    <!-- Điểm số -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                        <TextBlock Text="Score: " Foreground="Gray" FontSize="14" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Score}" Foreground="Red" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    </StackPanel>
 
-                                <Button Command="{Binding NextCardCommand}" Content="NEXT QUESTION ➜"
-                                        Margin="0,40,0,0" Width="200" Height="45"
-                                        Style="{StaticResource SubmitButtonStyle}"/>
-                            </StackPanel>
+                                    <!-- Đáp án đúng -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,15">
+                                        <TextBlock Text="Correct Answer: " Foreground="Gray" FontSize="14" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding CorrectAnswer}" Foreground="#81C784" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <!-- Nội dung mặt sau -->
+                                    <TextBlock Text="{Binding CurrentCard.BackText}" 
+                                       FontSize="28" FontWeight="Bold" Foreground="#2980B9"
+                                       TextWrapping="Wrap" TextAlignment="Center"
+                                       MaxWidth="600" Margin="0,0,0,20"/>
+
+                                    <!-- Ảnh mặt sau -->
+                                    <Image Source="{Binding CurrentCard.BackImagePath}" 
+                                   MaxHeight="300" MaxWidth="600" Stretch="Uniform"
+                                   Margin="0,0,0,10"
+                                   Visibility="{Binding CurrentCard.BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
+
+                                    <!-- Audio mặt sau -->
+                                    <Button Command="{Binding PlayAudioCommand}" CommandParameter="{Binding CurrentCard.BackAudioPath}"
+                                    Visibility="{Binding CurrentCard.BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBlock Text="🔊 Play audio" Foreground="White" FontSize="16"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Nút Next -->
+                                    <Button Command="{Binding NextCardCommand}" Content="NEXT QUESTION ➜"
+                                    Margin="0,20,0,0" Width="200" Height="45"
+                                    Style="{StaticResource SubmitButtonStyle}"/>
+                                </StackPanel>
+                            </ScrollViewer>
                         </Grid>
                     </Grid>
                 </Border>

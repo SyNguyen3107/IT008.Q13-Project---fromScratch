@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DiffPlex.DiffBuilder.Model;
 using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
@@ -9,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace EasyFlips.ViewModels
 {
@@ -17,6 +19,7 @@ namespace EasyFlips.ViewModels
         private readonly IAuthService _authService;
         private readonly SupabaseService _supabaseService;
         private readonly IClassroomRepository _classroomRepository;
+        [ObservableProperty] private int _score;
 
         [ObservableProperty] private string _roomId;
         [ObservableProperty] private string _classroomId;
@@ -44,7 +47,7 @@ namespace EasyFlips.ViewModels
             _classroomRepository = classroomRepository;
         }
 
-        // ✅ Khởi tạo dữ liệu khi mở GameWindow
+    
         public async Task InitializeAsync(string roomId, string classroomId, Deck deck, int maxPlayers, int timePerRound)
         {
             RoomId = roomId;
@@ -82,7 +85,7 @@ namespace EasyFlips.ViewModels
             StartRoundTimer();
         }
 
-        // ✅ Timer cho vòng chơi
+      
         private void StartRoundTimer()
         {
             _roundTimer?.Stop();
@@ -108,24 +111,61 @@ namespace EasyFlips.ViewModels
         }
 
 
-        // ✅ Submit câu trả lời
+
+        private readonly ComparisonService _comparisonService = new ComparisonService();
+
         [RelayCommand]
         private void SubmitAnswer()
         {
-            if (string.Equals(UserAnswer?.Trim(), CurrentCard.BackText, StringComparison.OrdinalIgnoreCase))
+            if (CurrentCard == null) return;
+
+            AnswerText = UserAnswer;
+            CorrectAnswer = CurrentCard.Answer;
+
+            GenerateComparison();
+
+            var me = Players.FirstOrDefault(p => p.Id == (_authService.CurrentUserId));
+            if (me != null && ResultMessage.Contains("Similarity Score"))
             {
-                ResultMessage = "✅ Correct!";
-                var me = Players.FirstOrDefault(p => p.Id == (_authService.CurrentUserId));
-                if (me != null) me.Score += 1;
+                me.Score += 1;
+                Score += 1;
             }
-            else
-            {
-                ResultMessage = "❌ Wrong!";
-            }
+
             IsCardFlipped = true;
         }
 
-    
+        [ObservableProperty] private string _answerText;
+        [ObservableProperty] private string _correctAnswer;
+        public ObservableCollection<DiffPiece> ComparisonPieces { get; } = new();
+
+        private void GenerateComparison()
+        {
+            ComparisonPieces.Clear();
+            if (string.IsNullOrEmpty(CorrectAnswer)) return;
+
+            Score = _comparisonService.SmartScore(UserAnswer ?? "", CorrectAnswer);
+
+            List<DiffPiece> pieces;
+            if (Score < 50)
+            {
+                pieces = _comparisonService.GetWordDiff(UserAnswer ?? "", CorrectAnswer);
+            }
+            else
+            {
+                pieces = _comparisonService.GetCharDiff(UserAnswer ?? "", CorrectAnswer);
+            }
+
+            if (pieces.Count == 0 && !string.IsNullOrEmpty(UserAnswer))
+            {
+                ComparisonPieces.Add(new DiffPiece(UserAnswer, ChangeType.Unchanged));
+            }
+            else
+            {
+                foreach (var piece in pieces) ComparisonPieces.Add(piece);
+            }
+        }
+
+
         [RelayCommand]
         private void NextCard()
         {
@@ -140,20 +180,20 @@ namespace EasyFlips.ViewModels
                 UserAnswer = string.Empty;
                 IsCardFlipped = false;
                 ResultMessage = string.Empty;
-                StartRoundTimer(); // Nếu bạn có timer cho mỗi vòng
+                StartRoundTimer(); 
             }
             else
             {
-                MessageBox.Show("🖐 Game Over!");
+                MessageBox.Show("Game Over!");
                 IsCardFlipped = true;
-                ResultMessage = "🎉 You've completed the deck!";
+                ResultMessage = "You've completed the deck!";
             }
         }
 
-        // ✅ Kết thúc vòng
+     
         private void EndRound()
         {
-            ResultMessage = "⏰ Time's up!";
+            ResultMessage = "Time's up!";
             IsCardFlipped = true;
         }
     }

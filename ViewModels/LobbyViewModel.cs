@@ -263,6 +263,7 @@ namespace EasyFlips.ViewModels
                 // 3. (Tuỳ chọn) Kiểm tra trạng thái Game Start
                 if (room.Status == "PLAYING" && !IsHost)
                 {
+                    CanCloseWindow = true; 
                     _navigationService.ShowGameWindowAsync(
                             RoomId,
                             _realClassroomIdUUID,
@@ -270,6 +271,7 @@ namespace EasyFlips.ViewModels
                             MaxPlayers,
                             TimePerRound
                          );
+                    ForceCloseWindow();
                     MessageBox.Show("Game Started!"); // Ví dụ
                 }
             }
