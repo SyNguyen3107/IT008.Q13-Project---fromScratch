@@ -5,6 +5,7 @@ using Supabase.Gotrue;
 using Supabase.Gotrue.Interfaces;
 using Supabase.Realtime;
 using Supabase.Realtime.Interfaces;
+using Supabase.Realtime.Models;
 using Supabase.Realtime.PostgresChanges;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,11 @@ using Supabase.Postgrest.Responses;
 namespace EasyFlips.Services
 {
     /// <summary>
+    /// Broadcast model cho flashcard sync.
+    /// </summary>
+    public class FlashcardBroadcast : BaseBroadcast<Dictionary<string, object>> { }
+
+    /// <summary>
     /// Service trung gian xử lý mọi giao tiếp với Supabase (Auth, Database, Realtime, Storage).
     /// </summary>
     public class SupabaseService
@@ -29,6 +35,7 @@ namespace EasyFlips.Services
         private readonly Supabase.Client _client;
         private readonly CustomFileSessionHandler _sessionHandler;
         private readonly Dictionary<string, RealtimeChannel> _activeChannels = new Dictionary<string, RealtimeChannel>();
+        private readonly Dictionary<string, RealtimeBroadcast<FlashcardBroadcast>> _activeBroadcasts = new Dictionary<string, RealtimeBroadcast<FlashcardBroadcast>>();
         public Supabase.Client Client => _client;
 
         /// <summary>
@@ -912,6 +919,421 @@ namespace EasyFlips.Services
                 }
             }
         }
+        #endregion
+
+        #region Flashcard Sync Operations
+
+        /// <summary>
+        /// Tham gia kênh đồng bộ flashcard trong phòng học.
+        /// Sử dụng Broadcast để gửi/nhận trạng thái card realtime.
+        /// </summary>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="userId">ID người dùng hiện tại.</param>
+        /// <param name="onStateReceived">Callback khi nhận được trạng thái mới từ Host.</param>
+        public async Task JoinFlashcardSyncChannelAsync(
+            string classroomId, 
+            string userId,
+            Action<FlashcardSyncState> onStateReceived)
+        {
+            try
+            {
+                await _client.Realtime.ConnectAsync();
+
+                string channelName = $"flashcard-sync:{classroomId}";
+
+                // Hủy kênh cũ nếu có
+                if (_activeChannels.TryGetValue(channelName, out var oldChannel))
+                {
+                    oldChannel.Unsubscribe();
+                    _activeChannels.Remove(channelName);
+                    _activeBroadcasts.Remove(channelName);
+                }
+
+                var channel = _client.Realtime.Channel(channelName);
+                _activeChannels[channelName] = channel;
+
+                // Đăng ký Broadcast (true = lắng nghe broadcast, false = không ack)
+                var broadcast = channel.Register<FlashcardBroadcast>(true, false);
+                _activeBroadcasts[channelName] = broadcast;
+
+                // Lắng nghe sự kiện broadcast
+                broadcast.AddBroadcastEventHandler((sender, args) =>
+                {
+                    // Chỉ xử lý event FLASHCARD_SYNC
+                    if (args.Event == "FLASHCARD_SYNC")
+                    {
+                        try
+                        {
+                            var payload = args.Payload;
+                            if (payload != null)
+                            {
+                                var state = ParseFlashcardState(payload);
+                                if (state != null)
+                                {
+                                    Debug.WriteLine($"[FlashcardSync] Nhận trạng thái: {state.Action} - Card {state.CurrentCardIndex + 1}/{state.TotalCards}, Lật: {state.IsFlipped}");
+                                    onStateReceived?.Invoke(state);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[FlashcardSync] Lỗi parse state: {ex.Message}");
+                        }
+                    }
+                });
+
+                await channel.Subscribe();
+                Debug.WriteLine($"[FlashcardSync] Đã tham gia kênh đồng bộ phòng {classroomId}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FlashcardSync] Lỗi tham gia kênh: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Parse Dictionary payload thành FlashcardSyncState.
+        /// </summary>
+        private FlashcardSyncState? ParseFlashcardState(Dictionary<string, object> payload)
+        {
+            try
+            {
+                var state = new FlashcardSyncState
+                {
+                    ClassroomId = payload.GetValueOrDefault("classroom_id")?.ToString() ?? string.Empty,
+                    DeckId = payload.GetValueOrDefault("deck_id")?.ToString() ?? string.Empty,
+                    CurrentCardId = payload.GetValueOrDefault("current_card_id")?.ToString() ?? string.Empty,
+                    CurrentCardIndex = Convert.ToInt32(payload.GetValueOrDefault("current_card_index", 0)),
+                    TotalCards = Convert.ToInt32(payload.GetValueOrDefault("total_cards", 0)),
+                    IsFlipped = Convert.ToBoolean(payload.GetValueOrDefault("is_flipped", false)),
+                    TriggeredBy = payload.GetValueOrDefault("triggered_by")?.ToString() ?? string.Empty,
+                    TimeRemaining = Convert.ToInt32(payload.GetValueOrDefault("time_remaining", 0)),
+                    IsSessionActive = Convert.ToBoolean(payload.GetValueOrDefault("is_session_active", false)),
+                    IsPaused = Convert.ToBoolean(payload.GetValueOrDefault("is_paused", false))
+                };
+
+                // Parse action enum
+                var actionStr = payload.GetValueOrDefault("action")?.ToString();
+                if (Enum.TryParse<FlashcardAction>(actionStr, out var action))
+                {
+                    state.Action = action;
+                }
+
+                // Parse timestamp
+                var timestampStr = payload.GetValueOrDefault("timestamp")?.ToString();
+                if (DateTime.TryParse(timestampStr, out var timestamp))
+                {
+                    state.Timestamp = timestamp;
+                }
+
+                return state;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Broadcast trạng thái flashcard mới tới tất cả client trong phòng.
+        /// Chỉ Host mới nên gọi phương thức này.
+        /// </summary>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="state">Trạng thái cần broadcast.</param>
+        public async Task BroadcastFlashcardStateAsync(string classroomId, FlashcardSyncState state)
+        {
+            try
+            {
+                string channelName = $"flashcard-sync:{classroomId}";
+
+                if (!_activeBroadcasts.TryGetValue(channelName, out var broadcast))
+                {
+                    Debug.WriteLine($"[FlashcardSync] Chưa tham gia kênh {channelName}");
+                    return;
+                }
+
+                state.Timestamp = DateTime.UtcNow;
+                var payload = new Dictionary<string, object>
+                {
+                    { "classroom_id", state.ClassroomId },
+                    { "deck_id", state.DeckId },
+                    { "current_card_id", state.CurrentCardId },
+                    { "current_card_index", state.CurrentCardIndex },
+                    { "total_cards", state.TotalCards },
+                    { "is_flipped", state.IsFlipped },
+                    { "action", state.Action.ToString() },
+                    { "triggered_by", state.TriggeredBy },
+                    { "time_remaining", state.TimeRemaining },
+                    { "timestamp", state.Timestamp.ToString("O") },
+                    { "is_session_active", state.IsSessionActive },
+                    { "is_paused", state.IsPaused }
+                };
+
+                await broadcast.Send("FLASHCARD_SYNC", payload);
+                Debug.WriteLine($"[FlashcardSync] Đã broadcast: {state.Action} - Card {state.CurrentCardIndex + 1}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FlashcardSync] Lỗi broadcast: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Host bắt đầu phiên học flashcard.
+        /// </summary>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="hostId">ID của Host.</param>
+        /// <param name="deckId">ID của bộ thẻ.</param>
+        /// <param name="firstCardId">ID của card đầu tiên.</param>
+        /// <param name="totalCards">Tổng số card trong bộ.</param>
+        /// <param name="timePerCard">Thời gian mỗi card (giây).</param>
+        public async Task StartFlashcardSessionAsync(
+            string classroomId, 
+            string hostId, 
+            string deckId,
+            string firstCardId,
+            int totalCards,
+            int timePerCard)
+        {
+            var state = new FlashcardSyncState
+            {
+                ClassroomId = classroomId,
+                DeckId = deckId,
+                CurrentCardId = firstCardId,
+                CurrentCardIndex = 0,
+                TotalCards = totalCards,
+                IsFlipped = false,
+                Action = FlashcardAction.StartSession,
+                TriggeredBy = hostId,
+                TimeRemaining = timePerCard,
+                IsSessionActive = true,
+                IsPaused = false
+            };
+
+            await BroadcastFlashcardStateAsync(classroomId, state);
+        }
+
+        /// <summary>
+        /// Host hiển thị card (SHOW_CARD).
+        /// </summary>
+        public async Task ShowCardAsync(
+            string classroomId,
+            string hostId,
+            string deckId,
+            string cardId,
+            int cardIndex,
+            int totalCards,
+            int timeRemaining)
+        {
+            var state = new FlashcardSyncState
+            {
+                ClassroomId = classroomId,
+                DeckId = deckId,
+                CurrentCardId = cardId,
+                CurrentCardIndex = cardIndex,
+                TotalCards = totalCards,
+                IsFlipped = false,
+                Action = FlashcardAction.ShowCard,
+                TriggeredBy = hostId,
+                TimeRemaining = timeRemaining,
+                IsSessionActive = true,
+                IsPaused = false
+            };
+
+            await BroadcastFlashcardStateAsync(classroomId, state);
+        }
+
+        /// <summary>
+        /// Host lật card (FLIP_CARD).
+        /// </summary>
+        public async Task FlipCardAsync(
+            string classroomId,
+            string hostId,
+            string deckId,
+            string cardId,
+            int cardIndex,
+            int totalCards,
+            int timeRemaining)
+        {
+            var state = new FlashcardSyncState
+            {
+                ClassroomId = classroomId,
+                DeckId = deckId,
+                CurrentCardId = cardId,
+                CurrentCardIndex = cardIndex,
+                TotalCards = totalCards,
+                IsFlipped = true,
+                Action = FlashcardAction.FlipCard,
+                TriggeredBy = hostId,
+                TimeRemaining = timeRemaining,
+                IsSessionActive = true,
+                IsPaused = false
+            };
+
+            await BroadcastFlashcardStateAsync(classroomId, state);
+        }
+
+        /// <summary>
+        /// Host chuyển sang card tiếp theo (NEXT_CARD).
+        /// Gọi khi Host bấm "Next" hoặc tự động khi hết giờ.
+        /// </summary>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="hostId">ID của Host.</param>
+        /// <param name="deckId">ID của bộ thẻ.</param>
+        /// <param name="nextCardId">ID của card tiếp theo.</param>
+        /// <param name="nextCardIndex">Index của card tiếp theo.</param>
+        /// <param name="totalCards">Tổng số card.</param>
+        /// <param name="timePerCard">Thời gian cho card mới (giây).</param>
+        public async Task NextCardAsync(
+            string classroomId,
+            string hostId,
+            string deckId,
+            string nextCardId,
+            int nextCardIndex,
+            int totalCards,
+            int timePerCard)
+        {
+            var state = new FlashcardSyncState
+            {
+                ClassroomId = classroomId,
+                DeckId = deckId,
+                CurrentCardId = nextCardId,
+                CurrentCardIndex = nextCardIndex,
+                TotalCards = totalCards,
+                IsFlipped = false, // Card mới luôn hiển thị mặt trước
+                Action = FlashcardAction.NextCard,
+                TriggeredBy = hostId,
+                TimeRemaining = timePerCard,
+                IsSessionActive = true,
+                IsPaused = false
+            };
+
+            await BroadcastFlashcardStateAsync(classroomId, state);
+        }
+
+        /// <summary>
+        /// Host quay lại card trước đó (PREVIOUS_CARD).
+        /// </summary>
+        public async Task PreviousCardAsync(
+            string classroomId,
+            string hostId,
+            string deckId,
+            string prevCardId,
+            int prevCardIndex,
+            int totalCards,
+            int timePerCard)
+        {
+            var state = new FlashcardSyncState
+            {
+                ClassroomId = classroomId,
+                DeckId = deckId,
+                CurrentCardId = prevCardId,
+                CurrentCardIndex = prevCardIndex,
+                TotalCards = totalCards,
+                IsFlipped = false,
+                Action = FlashcardAction.PreviousCard,
+                TriggeredBy = hostId,
+                TimeRemaining = timePerCard,
+                IsSessionActive = true,
+                IsPaused = false
+            };
+
+            await BroadcastFlashcardStateAsync(classroomId, state);
+        }
+
+        /// <summary>
+        /// Host tạm dừng phiên học.
+        /// </summary>
+        public async Task PauseSessionAsync(
+            string classroomId,
+            string hostId,
+            FlashcardSyncState currentState)
+        {
+            currentState.Action = FlashcardAction.PauseSession;
+            currentState.TriggeredBy = hostId;
+            currentState.IsPaused = true;
+
+            await BroadcastFlashcardStateAsync(classroomId, currentState);
+        }
+
+        /// <summary>
+        /// Host tiếp tục phiên học.
+        /// </summary>
+        public async Task ResumeSessionAsync(
+            string classroomId,
+            string hostId,
+            FlashcardSyncState currentState)
+        {
+            currentState.Action = FlashcardAction.ResumeSession;
+            currentState.TriggeredBy = hostId;
+            currentState.IsPaused = false;
+
+            await BroadcastFlashcardStateAsync(classroomId, currentState);
+        }
+
+        /// <summary>
+        /// Host kết thúc phiên học flashcard.
+        /// </summary>
+        public async Task EndFlashcardSessionAsync(string classroomId, string hostId)
+        {
+            var state = new FlashcardSyncState
+            {
+                ClassroomId = classroomId,
+                Action = FlashcardAction.EndSession,
+                TriggeredBy = hostId,
+                IsSessionActive = false,
+                IsPaused = false
+            };
+
+            await BroadcastFlashcardStateAsync(classroomId, state);
+        }
+
+        /// <summary>
+        /// Rời khỏi kênh đồng bộ flashcard.
+        /// </summary>
+        public async Task LeaveFlashcardSyncChannelAsync(string classroomId)
+        {
+            string channelName = $"flashcard-sync:{classroomId}";
+            if (_activeChannels.TryGetValue(channelName, out var channel))
+            {
+                try
+                {
+                    channel.Unsubscribe();
+                    _activeChannels.Remove(channelName);
+                    _activeBroadcasts.Remove(channelName);
+                    Debug.WriteLine($"[FlashcardSync] Đã rời kênh đồng bộ phòng {classroomId}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[FlashcardSync] Lỗi rời kênh: {ex.Message}");
+                }
+            }
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Rời tất cả các kênh Realtime đang hoạt động.
+        /// Gọi khi đóng ứng dụng hoặc đăng xuất.
+        /// </summary>
+        public async Task LeaveAllChannelsAsync()
+        {
+            try
+            {
+                foreach (var channel in _activeChannels.Values)
+                {
+                    channel.Unsubscribe();
+                }
+                _activeChannels.Clear();
+                _activeBroadcasts.Clear();
+                Debug.WriteLine("[SupabaseService] Đã rời tất cả các kênh Realtime");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Lỗi rời kênh: {ex.Message}");
+            }
+            await Task.CompletedTask;
+        }
+
         #endregion
     }
 
