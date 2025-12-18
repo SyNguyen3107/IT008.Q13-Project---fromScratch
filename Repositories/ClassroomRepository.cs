@@ -67,13 +67,14 @@ namespace EasyFlips.Repositories
         /// </summary>
         /// <param name="code">Mã phòng học.</param>
         /// <param name="status">Trạng thái mới (VD: "WAITING", "PLAYING").</param>
-        public async Task UpdateStatusAsync(string code, string status)
+        public async Task UpdateStatusAsync(string classroomId, string status)
         {
             await _client.From<Classroom>()
-                         .Filter(x => x.RoomCode, Operator.Equals, code)
+                         .Filter(x => x.Id, Operator.Equals, classroomId)
                          .Set(x => x.Status, status)
                          .Update();
         }
+
 
         //=== XÓA CLASSROOM THEO ROOM CODE ===
         /// <summary>

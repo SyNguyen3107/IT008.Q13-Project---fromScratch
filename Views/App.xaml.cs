@@ -192,6 +192,7 @@ namespace EasyFlips
             services.AddTransient<CreateRoomViewModel>();
             services.AddTransient<OtpViewModel>();
             services.AddTransient<ResetPasswordViewModel>();
+            services.AddTransient<GameWindowViewModel>();
 
             // Windows
             services.AddTransient<MainWindow>();
@@ -210,6 +211,7 @@ namespace EasyFlips
             services.AddTransient<JoinWindow>();
             services.AddTransient<CreateRoomWindow>();
             services.AddTransient<TestRealtimeWindow>();
+            services.AddTransient<GameWindow>();
 
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
             services.AddSingleton<UserSession>();
