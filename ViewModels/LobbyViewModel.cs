@@ -300,15 +300,15 @@ namespace EasyFlips.ViewModels
         /// Sử dụng so sánh giờ UTC chuẩn.
         /// </summary>
         private async Task HandleAutoKickAsync(List<MemberWithProfile> currentMembers, string myId)
-        {
-            var now = DateTime.UtcNow;
+            {
+            var now = DateTime.Now;
             var usersToKick = new List<string>();
-
+            
             foreach (var member in currentMembers)
             {
                 if (member.UserId == myId) continue;
 
-                if (member.LastActive != DateTime.MinValue)
+                if (member.LastActive != DateTime.Now)
                 {
                     DateTime lastActiveUtc;
 
@@ -328,7 +328,7 @@ namespace EasyFlips.ViewModels
                     }
                 }
             }
-
+                    
             // Thực hiện xóa user khỏi DB và list tạm
             foreach (var userId in usersToKick)
             {
