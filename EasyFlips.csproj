@@ -17,12 +17,14 @@
     <None Remove="Resources\fail.gif" />
     <None Remove="Resources\hide.png" />
     <None Remove="Resources\lock.png" />
+    <None Remove="Resources\mute.png" />
     <None Remove="Resources\password.png" />
     <None Remove="Resources\SL-022722-48830-19.jpg" />
     <None Remove="Resources\Sound\Lobby.mp3" />
     <None Remove="Resources\Sound\PlayerJoin.mp3" />
     <None Remove="Resources\view.png" />
     <None Remove="Resources\error.png" />
+    <None Remove="Resources\volume.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,6 +40,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\easyflips.ico" />
+    <Content Include="Resources\mute.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\password.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -48,6 +53,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Sound\PlayerJoin.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\volume.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

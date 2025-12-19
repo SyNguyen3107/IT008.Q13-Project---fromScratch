@@ -107,12 +107,31 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        <Button Command="{Binding ToggleMuteCommand}"
+        Width="40" Height="40"
+        HorizontalAlignment="Left" VerticalAlignment="Top"
+        Margin="15"
+        Style="{StaticResource IconButtonStyle}">
+            <Image Width="24" Height="24" Stretch="Uniform">
+                <Image.Style>
+                    <Style TargetType="Image">
+                        <Setter Property="Source" Value="/Resources/volume.png"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMuted}" Value="True">
+                                <Setter Property="Source" Value="/Resources/mute.png"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Image.Style>
+            </Image>
+        </Button>
+
 
         <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,40,0,20">
            
             <TextBlock Text="ROOM CODE" Foreground="#7F8FA6" FontSize="14" FontWeight="Bold" 
                        HorizontalAlignment="Center" Margin="0,0,0,5"/>
-
+            
             <Grid>
                 <!-- Ô Room Code -->
                 <Border Background="#20000000" CornerRadius="20" BorderBrush="#20FFFFFF" BorderThickness="1" Padding="60,15">

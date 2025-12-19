@@ -547,7 +547,25 @@ namespace EasyFlips.ViewModels
         /// <summary>
         /// Đóng cửa sổ hiện tại an toàn, đảm bảo ngắt mọi kết nối nền.
         /// </summary>
-  
+
+     
+        [ObservableProperty]
+        private bool _isMuted;
+
+        [RelayCommand]
+        private void ToggleMute()
+        {
+            IsMuted = !IsMuted;
+
+            if (IsMuted)
+            {
+                _audioService.StopAudio(); // hoặc giảm volume về 0
+            }
+            else
+            {
+                _audioService.PlayLoopingAudio("Resources/Sound/Lobby.mp3"); // bật lại nhạc
+            }
+        }
 
         [RelayCommand]
         private void CopyRoomCode()
