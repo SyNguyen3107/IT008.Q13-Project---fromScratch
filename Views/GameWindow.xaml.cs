@@ -20,7 +20,7 @@ namespace EasyFlips.Views
     /// </summary>
     public partial class GameWindow : Window
     {
-        public GameWindow(GameWindowViewModel vm)
+        public GameWindow(GameViewModel vm)
         {
             InitializeComponent();
             DataContext = vm; 

@@ -389,7 +389,6 @@ namespace EasyFlips.ViewModels
                   TimePerRound
                 );
             ForceCloseWindow();
-            MessageBox.Show("Game Started!");
         }
 
         private void AutoStart_Tick(object sender, EventArgs e)

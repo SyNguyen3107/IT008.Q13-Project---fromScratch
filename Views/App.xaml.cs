@@ -192,7 +192,7 @@ namespace EasyFlips
             services.AddTransient<CreateRoomViewModel>();
             services.AddTransient<OtpViewModel>();
             services.AddTransient<ResetPasswordViewModel>();
-            services.AddTransient<GameWindowViewModel>();
+            services.AddTransient<GameViewModel>();
 
             // Windows
             services.AddTransient<MainWindow>();

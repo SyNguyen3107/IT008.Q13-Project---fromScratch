@@ -4,72 +4,21 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:EasyFlips.ViewModels"
+        xmlns:cv="clr-namespace:EasyFlips.Converters" 
         mc:Ignorable="d"
         Title="EasyFlips Game" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
         Foreground="White">
 
     <Window.Resources>
-        <!-- Ẩn hiện giao diện -->
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/> 
-        <!-- Nền Background Gradient -->
-        <LinearGradientBrush x:Key="MainBackground" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#141E30" Offset="0.0"/>
-            <GradientStop Color="#243B55" Offset="1.0"/>
-        </LinearGradientBrush>
-        <!-- Style Progress Bar -->
-        <Style x:Key="GlassProgressBarStyle" TargetType="ProgressBar">
-            <Setter Property="Height" Value="10"/>
-            <Setter Property="Foreground" Value="#FF5E57"/>
-            <Setter Property="Background" Value="#30FFFFFF"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ProgressBar">
-                        <Grid x:Name="TemplateRoot">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="5"/>
-                            <Border x:Name="PART_Track" CornerRadius="5"/>
-                            <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="5" HorizontalAlignment="Left">
-                                <Border.Effect>
-                                    <DropShadowEffect Color="#FF5E57" BlurRadius="8" ShadowDepth="0" Opacity="0.8"/>
-                                </Border.Effect>
-                            </Border>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <!-- Style khung chứa thông tin người chơi -->
-        <Style x:Key="SidePlayerCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="#10FFFFFF"/>
-            <Setter Property="BorderBrush" Value="#20FFFFFF"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Margin" Value="0,0,0,10"/>
-            <Setter Property="Padding" Value="10"/>
-        </Style>
-        <!-- Style Icon -->
-        <Style x:Key="IconButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="5" Padding="10,5">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#20FFFFFF"/>
-                                <Setter Property="Foreground" Value="White"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <!-- Style cho TextBox nhập Answer -->
+        <cv:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <cv:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
+
+        <cv:DiffTypeToBrushConverter x:Key="DiffTypeToBrushConverter"/>
+        <cv:DiffTypeToFontWeightConverter x:Key="DiffTypeToFontWeightConverter"/>
+        <cv:DiffTypeToTextDecorationConverter x:Key="DiffTypeToTextDecorationConverter"/>
+
+        <cv:InvertedBooleanToVisibilityConverter x:Key="InvertedBoolToVis"/>
         <Style x:Key="AnswerTextBoxStyle" TargetType="TextBox">
             <Setter Property="FontSize" Value="20"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -97,7 +46,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Style cho Button Check -->
+
         <Style x:Key="SubmitButtonStyle" TargetType="Button">
             <Setter Property="Background">
                 <Setter.Value>
@@ -129,12 +78,82 @@
                                 </Setter>
                                 <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
                             </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bdr" Property="Background" Value="#7F8C8D"/>
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.5"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Style Button Quit Game -->
+
+        <Style x:Key="LockAfterSubmitStyle" TargetType="TextBox" BasedOn="{StaticResource AnswerTextBoxStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsAnswerSubmitted}" Value="True">
+                    <Setter Property="IsEnabled" Value="False"/>
+                    <Setter Property="Opacity" Value="0.6"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="LockBtnAfterSubmitStyle" TargetType="Button" BasedOn="{StaticResource SubmitButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsAnswerSubmitted}" Value="True">
+                    <Setter Property="IsEnabled" Value="False"/>
+                    <Setter Property="Content" Value="WAITING..."/>
+                    <Setter Property="Background" Value="#BDC3C7"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="HostActionButtonStyle" TargetType="Button" BasedOn="{StaticResource SubmitButtonStyle}">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#FF9966" Offset="0"/>
+                        <GradientStop Color="#FF5E62" Offset="1"/>
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <LinearGradientBrush x:Key="MainBackground" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#141E30" Offset="0.0"/>
+            <GradientStop Color="#243B55" Offset="1.0"/>
+        </LinearGradientBrush>
+
+        <Style x:Key="GlassProgressBarStyle" TargetType="ProgressBar">
+            <Setter Property="Height" Value="10"/>
+            <Setter Property="Foreground" Value="#FF5E57"/>
+            <Setter Property="Background" Value="#30FFFFFF"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid x:Name="TemplateRoot">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="5"/>
+                            <Border x:Name="PART_Track" CornerRadius="5"/>
+                            <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="5" HorizontalAlignment="Left">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#FF5E57" BlurRadius="8" ShadowDepth="0" Opacity="0.8"/>
+                                </Border.Effect>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SidePlayerCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#10FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#20FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Padding" Value="10"/>
+        </Style>
+
         <Style x:Key="QuitButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -151,14 +170,11 @@
                                     <GradientStop Color="#F45C43" Offset="1"/>
                                 </LinearGradientBrush>
                             </Border.Background>
-
                             <Border.Effect>
                                 <DropShadowEffect Color="#EB3349" BlurRadius="10" ShadowDepth="0" Opacity="0.4"/>
                             </Border.Effect>
-
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="bdr" Property="Opacity" Value="0.9"/>
@@ -176,6 +192,25 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="StudentOnlyStyle" TargetType="FrameworkElement">
+            <Setter Property="Visibility" Value="Visible"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsHost}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="HostOnlyStyle" TargetType="FrameworkElement">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsHost}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
     </Window.Resources>
 
     <Grid Background="{StaticResource MainBackground}">
@@ -190,7 +225,6 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <!-- Phần Sidebar bên trái -->
                 <StackPanel Grid.Row="0" Margin="0,0,0,20">
                     <TextBlock Text="LEADERBOARD" Foreground="#7F8FA6" FontSize="12" FontWeight="Bold" Margin="0,0,0,5"/>
                     <StackPanel Orientation="Horizontal">
@@ -198,9 +232,8 @@
                         <TextBlock Text=" Players" FontSize="14" Foreground="#BDC3C7" VerticalAlignment="Bottom" Margin="5,0,0,4"/>
                     </StackPanel>
                 </StackPanel>
-                <!-- Cuộn khi có nhiều Players -->
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden">
-                    <ItemsControl ItemsSource="{Binding Players}"> 
+                    <ItemsControl ItemsSource="{Binding Players}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Vertical"/>
@@ -208,7 +241,6 @@
                         </ItemsControl.ItemsPanel>
 
                         <ItemsControl.ItemTemplate>
-                            <!-- Khuôn mẫu hiển thị từng Player -->
                             <DataTemplate>
                                 <Border Style="{StaticResource SidePlayerCardStyle}">
                                     <Grid>
@@ -220,18 +252,31 @@
 
                                         <Ellipse Width="45" Height="45" Stroke="#30FFFFFF" StrokeThickness="2">
                                             <Ellipse.Fill>
-                                                <ImageBrush ImageSource="{Binding AvatarUrl, TargetNullValue='/EasyFlips;component/Image/default.png'}" Stretch="UniformToFill"/>
+                                                <ImageBrush ImageSource="{Binding AvatarUrl, TargetNullValue='/Images/default_user.png'}" Stretch="UniformToFill"/>
                                             </Ellipse.Fill>
                                         </Ellipse>
 
                                         <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding UserName}" FontWeight="Bold" Foreground="White" FontSize="14"/>
-                                            <TextBlock Text="Thinking..." FontSize="12" Foreground="#BDC3C7" Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="White" FontSize="14"/>
+
+                                            <TextBlock FontSize="12" Foreground="#F1C40F" Margin="0,2,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="Player"/>
+                                                        <Setter Property="Foreground" Value="#BDC3C7"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsHost}" Value="True">
+                                                                <Setter Property="Text" Value="HOST 👑"/>
+                                                                <Setter Property="Foreground" Value="#F1C40F"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
                                         </StackPanel>
-                                        <!-- Điểm số -->
                                         <Border Grid.Column="2" VerticalAlignment="Center" Background="#20F59E0B" CornerRadius="5" Padding="8,4">
                                             <TextBlock Text="{Binding Score}" FontSize="14" FontWeight="Bold" Foreground="#F59E0B"/>
-                                        </Border> 
+                                        </Border>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -253,7 +298,6 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <!-- Hiển thị Player đang ở câu nào (nếu cần)  -->
                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
                     <TextBlock Text="QUESTION" Foreground="#7F8FA6" FontSize="11" FontWeight="Bold" />
                     <TextBlock Text="{Binding CurrentQuestionInfo}" FontSize="24" FontWeight="ExtraBold" Foreground="White">
@@ -262,7 +306,6 @@
                         </TextBlock.Effect>
                     </TextBlock>
                 </StackPanel>
-                <!-- Đồng hồ & Progress bar -->
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Width="280">
                     <Border Background="#20FFFFFF" CornerRadius="25" Padding="30,5" BorderBrush="#30FFFFFF" BorderThickness="1" HorizontalAlignment="Center">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -274,26 +317,24 @@
                             </TextBlock>
                         </StackPanel>
                     </Border>
-
                     <ProgressBar Margin="0,10,0,0"
                                  Style="{StaticResource GlassProgressBarStyle}"
                                  Value="{Binding TimePerRound}" 
-                                 Maximum="{Binding TotalTimePerRound, FallbackValue=30}"/> <!-- Liên kết với tổng thời gian vòng chơi, sẽ tụt từ 100% về 0% -->
+                                 Maximum="{Binding TotalTimePerRound, FallbackValue=30}"/>
                 </StackPanel>
 
-                <Button Grid.Column="2" Content="QUIT GAME" HorizontalAlignment="Right"
+                <Button Grid.Column="2" Command="{Binding QuitGameCommand}" Content="QUIT GAME" HorizontalAlignment="Right"
                         Style="{StaticResource QuitButtonStyle}" FontSize="12" Foreground="White" FontWeight="SemiBold"/>
             </Grid>
 
             <Grid Grid.Row="1" Margin="30,10,30,30">
-                <!-- Khung Card -->
                 <Border x:Name="CardBorder" Background="White" CornerRadius="20" Margin="10">
                     <Border.Effect>
                         <DropShadowEffect Color="Black" Opacity="0.3" ShadowDepth="8" BlurRadius="25"/>
                     </Border.Effect>
-                    <!-- Mặt trước -->
-                    <Grid Margin="30">
-                        <Grid x:Name="FrontSide">
+
+                    <Grid>
+                        <Grid Margin="30">
                             <Grid.Style>
                                 <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Visible"/>
@@ -315,7 +356,6 @@
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <!-- Nội dung mặt trước (ảnh nếu có) -->
                                 <Image Grid.Row="0" Source="{Binding CurrentCard.FrontImagePath}" 
                                        Stretch="Uniform" MaxHeight="250" Margin="0,0,0,15"/>
 
@@ -325,35 +365,46 @@
                                                FontSize="24" FontWeight="SemiBold" Foreground="#2C3E50"/>
                                 </ScrollViewer>
                             </Grid>
-                            <!-- Phần ANSWER -->
+
                             <StackPanel Grid.Row="1">
-                                <TextBlock Text="TYPE YOUR ANSWER" 
-                                           FontSize="12" Foreground="#3c3c3c" FontWeight="Bold" 
-                                           Margin="0,0,0,8"/>
 
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
+                                <Button Content="REVEAL ANSWER 👁"
+                                        Command="{Binding FlipCardCommand}"
+                                        Style="{StaticResource HostActionButtonStyle}"
+                                        Width="200" Height="50" Margin="0,0,0,10"/>
 
-                                    <TextBox Grid.Column="0" 
-                                             Text="{Binding UserAnswer, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource AnswerTextBoxStyle}"
-                                             VerticalAlignment="Center"> 
-                                        <TextBox.InputBindings>
-                                            <KeyBinding Key="Enter" Command="{Binding SubmitAnswerCommand}"/> <!-- Enter cũng tính là submit -->
-                                        </TextBox.InputBindings>
-                                    </TextBox>
-                                    <!-- Button CHECK (Submit) -->
-                                    <Button Grid.Column="1" Command="{Binding SubmitAnswerCommand}"
-                                            Content="CHECK" 
-                                            Style="{StaticResource SubmitButtonStyle}"
-                                            Width="100" Height="50" Margin="15,0,0,0"/>
-                                </Grid>
+                                <StackPanel Style="{StaticResource StudentOnlyStyle}">
+                                    <TextBlock Text="TYPE YOUR ANSWER" 
+                                               FontSize="12" Foreground="#3c3c3c" FontWeight="Bold" 
+                                               Margin="0,0,0,8"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBox Grid.Column="0" 
+                                                 Text="{Binding UserAnswer, UpdateSourceTrigger=PropertyChanged}"
+                                                 Style="{StaticResource LockAfterSubmitStyle}"
+                                                 VerticalAlignment="Center">
+                                            <TextBox.InputBindings>
+                                                <KeyBinding Key="Enter" Command="{Binding SubmitAnswerCommand}"/>
+                                            </TextBox.InputBindings>
+                                        </TextBox>
+
+                                        <Button Grid.Column="1" Command="{Binding SubmitAnswerCommand}"
+                                                Content="CHECK" 
+                                                Style="{StaticResource LockBtnAfterSubmitStyle}"
+                                                Width="100" Height="50" Margin="15,0,0,0"/>
+                                    </Grid>
+
+                                    <TextBlock Text="Đã nộp bài! Đang chờ Host..." Foreground="#27AE60" 
+                                               HorizontalAlignment="Center" Margin="0,10,0,0"
+                                               Visibility="{Binding IsAnswerSubmitted, Converter={StaticResource BoolToVis}}"/>
+                                </StackPanel>
                             </StackPanel>
                         </Grid>
-                        <!-- Mặt sau (Đáp án) -->
+
                         <Grid x:Name="BackSide">
                             <Grid.Style>
                                 <Style TargetType="Grid">
@@ -371,7 +422,6 @@
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
 
-                                    <!-- Kết quả so sánh -->
                                     <ItemsControl ItemsSource="{Binding ComparisonPieces}" HorizontalAlignment="Center">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -381,51 +431,50 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding Text}"
-                                                   Foreground="{Binding Type, Converter={StaticResource DiffTypeToBrushConverter}}"
-                                                   FontWeight="{Binding Type, Converter={StaticResource DiffTypeToFontWeightConverter}}"
-                                                   TextDecorations="{Binding Type, Converter={StaticResource DiffTypeToTextDecorationConverter}}"
-                                                    FontSize="24" Margin="1,0"/>
-                                          </DataTemplate>
+                                                           Foreground="{Binding Type, Converter={StaticResource DiffTypeToBrushConverter}}"
+                                                           FontWeight="{Binding Type, Converter={StaticResource DiffTypeToFontWeightConverter}}"
+                                                           TextDecorations="{Binding Type, Converter={StaticResource DiffTypeToTextDecorationConverter}}"
+                                                           FontSize="24" Margin="1,0"/>
+                                            </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
 
-                                    <!-- Điểm số -->
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
                                         <TextBlock Text="Score: " Foreground="Gray" FontSize="14" VerticalAlignment="Center"/>
                                         <TextBlock Text="{Binding Score}" Foreground="Red" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
                                     </StackPanel>
 
-                                    <!-- Đáp án đúng -->
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,15">
                                         <TextBlock Text="Correct Answer: " Foreground="Gray" FontSize="14" VerticalAlignment="Center"/>
                                         <TextBlock Text="{Binding CorrectAnswer}" Foreground="#81C784" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
                                     </StackPanel>
 
-                                    <!-- Nội dung mặt sau -->
                                     <TextBlock Text="{Binding CurrentCard.BackText}" 
-                                       FontSize="28" FontWeight="Bold" Foreground="#2980B9"
-                                       TextWrapping="Wrap" TextAlignment="Center"
-                                       MaxWidth="600" Margin="0,0,0,20"/>
+                                               FontSize="28" FontWeight="Bold" Foreground="#2980B9"
+                                               TextWrapping="Wrap" TextAlignment="Center"
+                                               MaxWidth="600" Margin="0,0,0,20"/>
 
-                                    <!-- Ảnh mặt sau -->
                                     <Image Source="{Binding CurrentCard.BackImagePath}" 
-                                   MaxHeight="300" MaxWidth="600" Stretch="Uniform"
-                                   Margin="0,0,0,10"
-                                   Visibility="{Binding CurrentCard.BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
+                                           MaxHeight="300" MaxWidth="600" Stretch="Uniform"
+                                           Margin="0,0,0,10"
+                                           Visibility="{Binding CurrentCard.BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
 
-                                    <!-- Audio mặt sau -->
                                     <Button Command="{Binding PlayAudioCommand}" CommandParameter="{Binding CurrentCard.BackAudioPath}"
-                                    Visibility="{Binding CurrentCard.BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
-                                    Background="Transparent" BorderThickness="0" Cursor="Hand">
+                                            Visibility="{Binding CurrentCard.BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
+                                            Background="Transparent" BorderThickness="0" Cursor="Hand">
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                             <TextBlock Text="🔊 Play audio" Foreground="White" FontSize="16"/>
                                         </StackPanel>
                                     </Button>
 
-                                    <!-- Nút Next -->
                                     <Button Command="{Binding NextCardCommand}" Content="NEXT QUESTION ➜"
-                                    Margin="0,20,0,0" Width="200" Height="45"
-                                    Style="{StaticResource SubmitButtonStyle}"/>
+                                            Margin="0,20,0,0" Width="200" Height="45"
+                                            Style="{StaticResource HostActionButtonStyle}"/>
+
+                                    <TextBlock Text="Waiting for Host..." 
+                                               Style="{StaticResource StudentOnlyStyle}"
+                                               Foreground="#7F8C8D" FontStyle="Italic" 
+                                               HorizontalAlignment="Center" Margin="0,20,0,0"/>
                                 </StackPanel>
                             </ScrollViewer>
                         </Grid>

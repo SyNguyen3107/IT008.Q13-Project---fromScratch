@@ -238,7 +238,7 @@ namespace EasyFlips.Services
         {
             var window = _serviceProvider.GetRequiredService<GameWindow>();
 
-            if (window.DataContext is GameWindowViewModel vm)
+            if (window.DataContext is GameViewModel vm)
             {
                 await vm.InitializeAsync(roomId, classroomId, selectedDeck, maxPlayers, timePerRound);
             }
