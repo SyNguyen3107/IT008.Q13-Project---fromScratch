@@ -105,10 +105,9 @@ namespace EasyFlips.Services
         {
             try
             {
-                // Cách tối ưu: Chỉ update cột last_active, không update toàn bộ row
                 await _client.From<Member>()
                              .Where(x => x.ClassroomId == classroomId && x.UserId == userId)
-                             .Set(x => x.LastActive, DateTime.UtcNow)
+                             .Set(x => x.LastActive, DateTime.UtcNow) // Cập nhật cột LastActive theo giờ UTC
                              .Update();
             }
             catch (Exception ex)

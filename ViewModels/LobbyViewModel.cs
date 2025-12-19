@@ -136,7 +136,7 @@ namespace EasyFlips.ViewModels
                         ForceCloseWindow();
                     }
                 }
-                
+
 
                 // Load danh sách thành viên lần đầu
                 await RefreshLobbyState();
@@ -228,11 +228,19 @@ namespace EasyFlips.ViewModels
                         // Lưu ý: Nếu LastActive == MinValue (mới vào chưa kịp update) thì tạm tha
                         if (member.LastActive != DateTime.MinValue)
                         {
-                            // Chuyển đổi về UTC chuẩn để so sánh
-                            var lastActiveUtc = member.LastActive.Kind == DateTimeKind.Unspecified
-                                                ? DateTime.SpecifyKind(member.LastActive, DateTimeKind.Utc)
-                                                : member.LastActive.ToUniversalTime();
+                            // [SỬA] Logic chuẩn hóa về UTC an toàn hơn
+                            DateTime lastActiveUtc;
 
+                            // Nếu Supabase trả về Unspecified (thường gặp), ta coi nó là UTC (vì Bước 1 đã gửi UTC)
+                            if (member.LastActive.Kind == DateTimeKind.Unspecified)
+                            {
+                                lastActiveUtc = DateTime.SpecifyKind(member.LastActive, DateTimeKind.Utc);
+                            }
+                            else
+                            {
+                                // Nếu nó đã là Local hoặc UTC, hàm này sẽ đưa về chuẩn UTC
+                                lastActiveUtc = member.LastActive.ToUniversalTime();
+                            }
                             if ((now - lastActiveUtc).TotalSeconds > HEARTBEAT_TIMEOUT_SECONDS)
                             {
                                 usersToKick.Add(member.UserId);
@@ -303,7 +311,7 @@ namespace EasyFlips.ViewModels
                 }
             });
         }
-        
+
 
         private void AutoStart_Tick(object sender, EventArgs e)
         {
