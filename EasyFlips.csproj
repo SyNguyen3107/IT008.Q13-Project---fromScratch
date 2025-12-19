@@ -13,11 +13,14 @@
 
   <ItemGroup>
     <None Remove="Resources\cards.png" />
+    <None Remove="Resources\copy.png" />
     <None Remove="Resources\fail.gif" />
     <None Remove="Resources\hide.png" />
     <None Remove="Resources\lock.png" />
     <None Remove="Resources\password.png" />
     <None Remove="Resources\SL-022722-48830-19.jpg" />
+    <None Remove="Resources\Sound\Lobby.mp3" />
+    <None Remove="Resources\Sound\PlayerJoin.mp3" />
     <None Remove="Resources\view.png" />
     <None Remove="Resources\error.png" />
   </ItemGroup>
@@ -31,12 +34,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Resources\copy.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\easyflips.ico" />
     <Content Include="Resources\password.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\SL-022722-48830-19.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Sound\Lobby.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Sound\PlayerJoin.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 

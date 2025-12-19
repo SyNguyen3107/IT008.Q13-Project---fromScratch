@@ -26,7 +26,7 @@ namespace EasyFlips.ViewModels
         private readonly IDeckRepository _deckRepository;
         private readonly IClassroomRepository _classroomRepository;
         private readonly SupabaseService _supabaseService;
-
+        private readonly AudioService _audioService;
         private DateTime _lastUpdatedAt = DateTime.MinValue;
         private DispatcherTimer _syncTimer;
         private DispatcherTimer _autoStartTimer;
@@ -78,7 +78,8 @@ namespace EasyFlips.ViewModels
             UserSession userSession,
             IDeckRepository deckRepository,
             IClassroomRepository classroomRepository,
-            SupabaseService supabaseService)
+            SupabaseService supabaseService,
+            AudioService audioService)
         {
             _authService = authService;
             _navigationService = navigationService;
@@ -91,6 +92,7 @@ namespace EasyFlips.ViewModels
 
             _autoStartTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _autoStartTimer.Tick += AutoStart_Tick;
+            _audioService = audioService;
         }
 
         /// <summary>
@@ -136,6 +138,8 @@ namespace EasyFlips.ViewModels
                 // Tải dữ liệu lần đầu và bắt đầu Polling
                 await RefreshLobbyState();
                 StartPolling();
+                _audioService.PlayLoopingAudio("Resources/Sound/Lobby.mp3");
+
             }
             catch (Exception ex)
             {
@@ -190,6 +194,7 @@ namespace EasyFlips.ViewModels
                 CanCloseWindow = true;
                 ForceCloseWindow();
             }
+            _audioService.PlayOneShot("Resources/Sound/PlayerJoin.mp3");
         }
 
         /// <summary>
@@ -343,6 +348,7 @@ namespace EasyFlips.ViewModels
             }
         }
 
+        private HashSet<string> _knownPlayerIds = new HashSet<string>();
         /// <summary>
         /// Đồng bộ danh sách hiển thị trên UI với dữ liệu từ Server.
         /// Đảm bảo thread-safety khi thao tác với ObservableCollection.
@@ -352,12 +358,14 @@ namespace EasyFlips.ViewModels
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                var currentIds = serverMembers.Select(m => m.UserId).ToHashSet();
+
                 // Xóa người không còn trong phòng
                 var idsFromServer = serverMembers.Select(x => x.UserId).ToHashSet();
                 var playersToRemove = Players.Where(p => !idsFromServer.Contains(p.Id)).ToList();
-
                 foreach (var p in playersToRemove) Players.Remove(p);
 
+                var joinedIds = currentIds.Except(_knownPlayerIds).ToList();
                 // Thêm người mới vào phòng
                 foreach (var member in serverMembers)
                 {
@@ -370,8 +378,16 @@ namespace EasyFlips.ViewModels
                             AvatarUrl = !string.IsNullOrEmpty(member.AvatarUrl) ? member.AvatarUrl : "/Images/default_user.png",
                             IsHost = (member.Role == "owner" || member.Role == "host")
                         });
+                       
                     }
                 }
+                _knownPlayerIds = currentIds;
+
+                if (joinedIds.Any())
+                {
+                    _audioService.PlayOneShot("Resources/Sound/PlayerJoin.mp3");
+                }
+
             });
         }
 
@@ -389,6 +405,7 @@ namespace EasyFlips.ViewModels
                   TimePerRound
                 );
             ForceCloseWindow();
+            
             MessageBox.Show("Game Started!");
         }
 
@@ -530,11 +547,23 @@ namespace EasyFlips.ViewModels
         /// <summary>
         /// Đóng cửa sổ hiện tại an toàn, đảm bảo ngắt mọi kết nối nền.
         /// </summary>
+  
+
+        [RelayCommand]
+        private void CopyRoomCode()
+        {
+            if (!string.IsNullOrEmpty(RoomId))
+            {
+                Clipboard.SetText(RoomId);
+                MessageBox.Show("Room Code đã được copy vào clipboard!");
+            }
+        }
+
         private void ForceCloseWindow()
         {
             _autoStartTimer?.Stop();
             StopPolling();
-
+            _audioService.StopAudio();
             Application.Current.Dispatcher.Invoke(() =>
             {
                 foreach (Window window in Application.Current.Windows)
@@ -547,5 +576,6 @@ namespace EasyFlips.ViewModels
                 }
             });
         }
+
     }
 }

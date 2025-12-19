@@ -113,16 +113,29 @@
             <TextBlock Text="ROOM CODE" Foreground="#7F8FA6" FontSize="14" FontWeight="Bold" 
                        HorizontalAlignment="Center" Margin="0,0,0,5"/>
 
-            <Border Background="#20000000" CornerRadius="20" BorderBrush="#20FFFFFF" BorderThickness="1" Padding="60,15">
-                <TextBlock Text="{Binding RoomId, TargetNullValue='LOADING'}" 
-                           FontSize="56" FontWeight="Black" Foreground="White"
-                           HorizontalAlignment="Center">
-                    <TextBlock.Effect>
-                        <DropShadowEffect Color="White" BlurRadius="15" Opacity="0.6" ShadowDepth="0"/>
-                    </TextBlock.Effect>
-                </TextBlock>
-            </Border>
+            <Grid>
+                <!-- Ô Room Code -->
+                <Border Background="#20000000" CornerRadius="20" BorderBrush="#20FFFFFF" BorderThickness="1" Padding="60,15">
+                    <TextBlock Text="{Binding RoomId, TargetNullValue='LOADING'}" 
+                   FontSize="56" FontWeight="Black" Foreground="White"
+                   HorizontalAlignment="Center">
+                        <TextBlock.Effect>
+                            <DropShadowEffect Color="White" BlurRadius="15" Opacity="0.6" ShadowDepth="0"/>
+                        </TextBlock.Effect>
+                    </TextBlock>
+                </Border>
 
+                <!-- Nút Copy nhỏ ở góc phải trên -->
+                <Button Command="{Binding CopyRoomCodeCommand}"
+                    Width="28" Height="28"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="5"
+                    Style="{StaticResource IconButtonStyle}">
+                <Image Source="/Resources/copy.png"
+                       Width="20" Height="20"
+                       Stretch="Uniform"/>
+                </Button>
+            </Grid>
 
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
