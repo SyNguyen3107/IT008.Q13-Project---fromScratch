@@ -271,7 +271,15 @@ namespace EasyFlips.ViewModels
                 // 3. (Tuỳ chọn) Kiểm tra trạng thái Game Start
                 if (room.Status == "PLAYING" && !IsHost)
                 {
-                    // Logic chuyển màn hình game ở đây
+                    CanCloseWindow = true; 
+                    _navigationService.ShowGameWindowAsync(
+                            RoomId,
+                            _realClassroomIdUUID,
+                            SelectedDeck,
+                            MaxPlayers,
+                            TimePerRound
+                         );
+                    ForceCloseWindow();
                     MessageBox.Show("Game Started!"); // Ví dụ
                 }
             }
@@ -390,15 +398,30 @@ namespace EasyFlips.ViewModels
 
         // [FIX] Đổi tên hàm từ StartGameCommand -> StartGame để tránh lỗi sinh code trùng lặp
         [RelayCommand]
-        private void StartGame()
+        private async Task StartGame()
         {
-            StopAutoStart();
-            StopPolling();
+            try
+            {
+                StopAutoStart();
+                StopPolling();
 
-            // TODO: Cập nhật status phòng thành PLAYING trong DB để các Client khác biết
-            // _classroomRepository.UpdateStatusAsync(RoomId, "PLAYING");
+                await _classroomRepository.UpdateStatusAsync(_realClassroomIdUUID, "PLAYING");
 
-            MessageBox.Show("Game starting...", "Info");
+                _navigationService.ShowGameWindowAsync(
+                            RoomId,
+                            _realClassroomIdUUID,
+                            SelectedDeck,
+                            MaxPlayers,
+                            TimePerRound
+                         );
+
+                CanCloseWindow = true;
+                ForceCloseWindow();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error starting game: {ex.Message}", "Error");
+            }
         }
 
         [RelayCommand]

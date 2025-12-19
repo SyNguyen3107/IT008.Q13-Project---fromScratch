@@ -9,6 +9,7 @@ namespace EasyFlips.Models
         public string AvatarUrl { get; set; }
         public bool IsHost { get; set; }
 
+        public byte Score { get; set; }
 
     }
 }

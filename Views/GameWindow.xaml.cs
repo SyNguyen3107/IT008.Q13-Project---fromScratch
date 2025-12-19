@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EasyFlips.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,9 +20,10 @@ namespace EasyFlips.Views
     /// </summary>
     public partial class GameWindow : Window
     {
-        public GameWindow()
+        public GameWindow(GameWindowViewModel vm)
         {
             InitializeComponent();
+            DataContext = vm; 
         }
     }
 }
