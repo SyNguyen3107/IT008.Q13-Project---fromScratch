@@ -13,42 +13,64 @@ using System.Windows.Threading;
 
 namespace EasyFlips.ViewModels
 {
+    /// <summary>
+    /// ViewModel quản lý logic của màn hình Sảnh chờ (Lobby).
+    /// Chịu trách nhiệm đồng bộ dữ liệu phòng, danh sách người chơi, và xử lý đếm ngược bắt đầu game.
+    /// </summary>
     public partial class LobbyViewModel : ObservableObject
     {
+        #region Private Services & Fields
         private readonly IAuthService _authService;
         private readonly INavigationService _navigationService;
         private readonly UserSession _userSession;
         private readonly IDeckRepository _deckRepository;
         private readonly IClassroomRepository _classroomRepository;
         private readonly SupabaseService _supabaseService;
+
         private DateTime _lastUpdatedAt = DateTime.MinValue;
-
-
-        // [POLLING] Timer để cập nhật dữ liệu định kỳ
         private DispatcherTimer _syncTimer;
-
-        [ObservableProperty] private string _roomId;
+        private DispatcherTimer _autoStartTimer;
         private string _realClassroomIdUUID;
+        private const int HEARTBEAT_TIMEOUT_SECONDS = 15;
+        #endregion
 
+        #region Observable Properties
+        [ObservableProperty] private string _roomId;
         [ObservableProperty] private string _currentUserName;
-        [ObservableProperty][NotifyPropertyChangedFor(nameof(IsStudent))] private bool _isHost = false;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsStudent))]
+        private bool _isHost = false;
+
         public bool IsStudent => !IsHost;
         public bool CanCloseWindow { get; set; } = false;
 
-        private DispatcherTimer _autoStartTimer;
-        [ObservableProperty][NotifyPropertyChangedFor(nameof(AutoStartStatus))] private int _autoStartSeconds;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(AutoStartStatus))]
+        private int _autoStartSeconds;
+
         [ObservableProperty] private int _totalWaitTime;
-        [ObservableProperty][NotifyPropertyChangedFor(nameof(AutoStartStatus))] private bool _isAutoStartActive;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(AutoStartStatus))]
+        private bool _isAutoStartActive;
+
         public string AutoStartStatus => $"Starting in: {TimeSpan.FromSeconds(AutoStartSeconds):mm\\:ss}";
 
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
+
         [ObservableProperty] private Deck _selectedDeck;
 
         public string MaxPlayersString => $"/ {MaxPlayers}";
-        [ObservableProperty][NotifyPropertyChangedFor(nameof(MaxPlayersString))] private int _maxPlayers = 30;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(MaxPlayersString))]
+        private int _maxPlayers = 30;
+
         [ObservableProperty] private int _timePerRound = 15;
 
         public ObservableCollection<PlayerInfo> Players { get; } = new ObservableCollection<PlayerInfo>();
+        #endregion
 
         public LobbyViewModel(
             IAuthService authService,
@@ -71,6 +93,14 @@ namespace EasyFlips.ViewModels
             _autoStartTimer.Tick += AutoStart_Tick;
         }
 
+        /// <summary>
+        /// Khởi tạo dữ liệu ban đầu cho phòng chờ.
+        /// </summary>
+        /// <param name="roomId">Mã phòng hiển thị (Room Code).</param>
+        /// <param name="isHost">True nếu người dùng là chủ phòng.</param>
+        /// <param name="deck">Bộ thẻ bài được chọn (nếu có).</param>
+        /// <param name="maxPlayers">Số lượng người chơi tối đa.</param>
+        /// <param name="waitTime">Thời gian chờ tự động bắt đầu (giây).</param>
         public async Task InitializeAsync(string roomId, bool isHost, Deck deck = null, int? maxPlayers = null, int? waitTime = null)
         {
             RoomId = roomId;
@@ -88,60 +118,23 @@ namespace EasyFlips.ViewModels
 
                 _realClassroomIdUUID = roomInfo.Id;
 
-                // Load settings ban đầu
+                // Cài đặt thông số phòng ban đầu
                 MaxPlayers = maxPlayers ?? roomInfo.MaxPlayers;
                 TimePerRound = roomInfo.TimePerRound > 0 ? roomInfo.TimePerRound : 15;
                 TotalWaitTime = roomInfo.WaitTime;
-                // Nếu server có lưu thời điểm bắt đầu auto start
                 AutoStartSeconds = roomInfo.WaitTime;
 
                 if (IsHost)
                 {
-                    var decks = await _deckRepository.GetAllAsync();
-                    AvailableDecks.Clear();
-                    foreach (var d in decks) AvailableDecks.Add(d);
-                    SelectedDeck = deck ?? decks.FirstOrDefault();
-                    if (waitTime.HasValue && waitTime.Value > 0)
-                    {
-                        IsAutoStartActive = true;
-                        _autoStartTimer.Start();
-                    }
+                    await InitializeHostAsync(deck, waitTime);
                 }
                 else
                 {
-                    // Student tự động join vào members table
-                    var myId = _authService.CurrentUserId ?? _userSession.UserId;
-                    // Gọi repository để join (hoặc SupabaseService)
-                    await _supabaseService.AddMemberAsync(_realClassroomIdUUID, myId);
-                    var updatedUtc = DateTime.SpecifyKind(roomInfo.UpdatedAt, DateTimeKind.Utc);
-                    var elapsed = (int)(DateTime.Now - updatedUtc).TotalSeconds;
-                    System.Diagnostics.Debug.WriteLine($"[DEBUG] Room UpdatedAt (UTC): {updatedUtc}, Now (UTC): {DateTime.Now}, Elapsed: {elapsed}s");
-                    _lastUpdatedAt = roomInfo.UpdatedAt;
-                    AutoStartSeconds = Math.Max(roomInfo.WaitTime - elapsed, 0);
-
-
-
-                    if (waitTime.HasValue && waitTime.Value > 0)
-                    {
-                        IsAutoStartActive = true;
-                        _autoStartTimer.Start();
-                        System.Diagnostics.Debug.WriteLine($"[DEBUG] AutoStartActive={IsAutoStartActive}, AutoStartSeconds={AutoStartSeconds}, TotalWaitTime={TotalWaitTime}, TimerEnabled={_autoStartTimer.IsEnabled}");
-                    }
-                    else
-                    {
-                        MessageBox.Show("⏰ Hết giờ, bạn không thể join vào phòng này nữa.", "Thông báo");
-                        AutoStartSeconds = 0;
-                        IsAutoStartActive = false;
-                        CanCloseWindow = true;
-                        ForceCloseWindow();
-                    }
+                    await InitializeStudentAsync(roomInfo, waitTime);
                 }
 
-
-                // Load danh sách thành viên lần đầu
+                // Tải dữ liệu lần đầu và bắt đầu Polling
                 await RefreshLobbyState();
-
-                // [POLLING] Bắt đầu vòng lặp kiểm tra (3 giây/lần)
                 StartPolling();
             }
             catch (Exception ex)
@@ -151,128 +144,120 @@ namespace EasyFlips.ViewModels
             }
         }
 
-        // --- CƠ CHẾ POLLING ---
+        /// <summary>
+        /// Logic khởi tạo dành riêng cho Host (Load bộ bài, setup timer).
+        /// </summary>
+        private async Task InitializeHostAsync(Deck deck, int? waitTime)
+        {
+            var decks = await _deckRepository.GetAllAsync();
+            AvailableDecks.Clear();
+            foreach (var d in decks) AvailableDecks.Add(d);
+
+            SelectedDeck = deck ?? decks.FirstOrDefault();
+
+            if (waitTime.HasValue && waitTime.Value > 0)
+            {
+                IsAutoStartActive = true;
+                _autoStartTimer.Start();
+            }
+        }
+
+        /// <summary>
+        /// Logic khởi tạo dành riêng cho Student (Join phòng, đồng bộ thời gian chờ).
+        /// </summary>
+        private async Task InitializeStudentAsync(Classroom roomInfo, int? waitTime)
+        {
+            var myId = _authService.CurrentUserId ?? _userSession.UserId;
+            await _supabaseService.AddMemberAsync(_realClassroomIdUUID, myId);
+
+            // Tính toán thời gian trôi qua để đồng bộ Timer
+            var updatedUtc = DateTime.SpecifyKind(roomInfo.UpdatedAt, DateTimeKind.Utc);
+            var elapsed = (int)(DateTime.Now - updatedUtc).TotalSeconds;
+
+            _lastUpdatedAt = roomInfo.UpdatedAt;
+            AutoStartSeconds = Math.Max(roomInfo.WaitTime - elapsed, 0);
+
+            if (waitTime.HasValue && waitTime.Value > 0)
+            {
+                IsAutoStartActive = true;
+                _autoStartTimer.Start();
+            }
+            else
+            {
+                MessageBox.Show("⏰ Hết giờ, bạn không thể join vào phòng này nữa.", "Thông báo");
+                AutoStartSeconds = 0;
+                IsAutoStartActive = false;
+                CanCloseWindow = true;
+                ForceCloseWindow();
+            }
+        }
+
+        /// <summary>
+        /// Bắt đầu vòng lặp cập nhật trạng thái phòng (3 giây/lần).
+        /// </summary>
         private void StartPolling()
         {
             _syncTimer = new DispatcherTimer();
-            _syncTimer.Interval = TimeSpan.FromSeconds(3); // Cập nhật mỗi 3 giây
+            _syncTimer.Interval = TimeSpan.FromSeconds(3);
             _syncTimer.Tick += async (s, e) => await RefreshLobbyState();
             _syncTimer.Start();
         }
 
+        /// <summary>
+        /// Dừng vòng lặp cập nhật.
+        /// </summary>
         private void StopPolling()
         {
             _syncTimer?.Stop();
         }
 
-        // Định nghĩa thời gian timeout (Ví dụ: 15 giây không phản hồi thì kick)
-        private const int HEARTBEAT_TIMEOUT_SECONDS = 15;
-
+        /// <summary>
+        /// Hàm cốt lõi để đồng bộ dữ liệu:
+        /// 1. Kiểm tra trạng thái phòng.
+        /// 2. Gửi Heartbeat (nếu là Member).
+        /// 3. Cập nhật danh sách thành viên.
+        /// 4. Kick thành viên AFK (nếu là Host).
+        /// 5. Kiểm tra trạng thái bắt đầu game.
+        /// </summary>
         private async Task RefreshLobbyState()
         {
             try
             {
-                // 1. Kiểm tra xem phòng còn tồn tại không
+                // 1. Kiểm tra phòng tồn tại
                 var room = await _supabaseService.GetClassroomAsync(_realClassroomIdUUID);
-
-                // Nếu phòng null hoặc không active -> Bị giải tán
                 if (room == null || !room.IsActive)
                 {
-                    StopPolling();
-                    MessageBox.Show("Chủ phòng đã giải tán phòng chơi.", "Thông báo");
-                    CanCloseWindow = true;
-                    ForceCloseWindow();
+                    HandleRoomDissolved();
                     return;
                 }
 
-                // Cập nhật Settings nếu có thay đổi từ Host
-                if (MaxPlayers != room.MaxPlayers) MaxPlayers = room.MaxPlayers;
-                if (TimePerRound != room.TimePerRound) TimePerRound = room.TimePerRound;
-
-                // Logic đồng bộ thời gian (Giữ nguyên theo code bạn gửi)
-                if (room.UpdatedAt != _lastUpdatedAt && !IsHost)
-                {
-                    _lastUpdatedAt = room.UpdatedAt;
-                    TotalWaitTime = room.WaitTime;
-                    var updatedUtc = DateTime.SpecifyKind(room.UpdatedAt, DateTimeKind.Utc);
-                    var elapsed = (int)(DateTime.Now - updatedUtc).TotalSeconds;
-                    AutoStartSeconds = Math.Max(room.WaitTime - elapsed, 0);
-                }
+                // 2. Đồng bộ Settings
+                SyncRoomSettings(room);
 
                 var myId = _authService.CurrentUserId ?? _userSession.UserId;
 
+                // 3. Gửi Heartbeat (Member only)
                 if (!IsHost)
                 {
-                    // Nếu là Member: Gửi tín hiệu "Tôi còn sống"
-                    // Fire and forget để không chặn UI
                     _ = _supabaseService.SendHeartbeatAsync(_realClassroomIdUUID, myId);
                 }
 
-                // 2. Cập nhật danh sách thành viên
-                // Lưu ý: Đảm bảo MemberWithProfile đã có cột LastActive
+                // 4. Lấy danh sách thành viên mới nhất
                 var currentMembers = await _supabaseService.GetClassroomMembersWithProfileAsync(_realClassroomIdUUID);
 
-                // --- [START] LOGIC HOST TỰ ĐỘNG KICK NGƯỜI MẤT KẾT NỐI ---
+                // 5. Host xử lý kick người dùng mất kết nối
                 if (IsHost)
                 {
-                    var now = DateTime.UtcNow;
-                    var usersToKick = new List<string>();
-
-                    foreach (var member in currentMembers)
-                    {
-                        // Bỏ qua chính mình (Host)
-                        if (member.UserId == myId) continue;
-
-                        // Kiểm tra LastActive
-                        // Nếu LastActive quá cũ (quá 15s so với hiện tại) -> Cho vào danh sách kick
-                        // Lưu ý: Nếu LastActive == MinValue (mới vào chưa kịp update) thì tạm tha
-                        if (member.LastActive != DateTime.MinValue)
-                        {
-                            // [SỬA] Logic chuẩn hóa về UTC an toàn hơn
-                            DateTime lastActiveUtc;
-
-                            // Nếu Supabase trả về Unspecified (thường gặp), ta coi nó là UTC (vì Bước 1 đã gửi UTC)
-                            if (member.LastActive.Kind == DateTimeKind.Unspecified)
-                            {
-                                lastActiveUtc = DateTime.SpecifyKind(member.LastActive, DateTimeKind.Utc);
-                            }
-                            else
-                            {
-                                // Nếu nó đã là Local hoặc UTC, hàm này sẽ đưa về chuẩn UTC
-                                lastActiveUtc = member.LastActive.ToUniversalTime();
-                            }
-                            if ((now - lastActiveUtc).TotalSeconds > HEARTBEAT_TIMEOUT_SECONDS)
-                            {
-                                usersToKick.Add(member.UserId);
-                            }
-                        }
-                    }
-
-                    // Thực hiện Kick
-                    foreach (var userId in usersToKick)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[AutoKick] Kicking user: {userId}");
-                        // Gọi API xóa thành viên
-                        await _classroomRepository.RemoveMemberAsync(_realClassroomIdUUID, userId);
-
-                        // Xóa luôn khỏi danh sách hiển thị tạm thời để UI cập nhật ngay lập tức
-                        var memberToRemove = currentMembers.FirstOrDefault(x => x.UserId == userId);
-                        if (memberToRemove != null)
-                        {
-                            currentMembers.Remove(memberToRemove);
-                        }
-                    }
+                    await HandleAutoKickAsync(currentMembers, myId);
                 }
-                // --- [END] LOGIC HOST TỰ ĐỘNG KICK ---
 
-                // Cập nhật danh sách lên UI
+                // 6. Cập nhật UI
                 UpdatePlayerList(currentMembers);
 
-                // 3. (Tuỳ chọn) Kiểm tra trạng thái Game Start
+                // 7. Kiểm tra trạng thái Game Start
                 if (room.Status == "PLAYING" && !IsHost)
                 {
-                    // Logic chuyển màn hình game ở đây
-                    MessageBox.Show("Game Started!"); // Ví dụ
+                    NavigateToGame();
                 }
             }
             catch (Exception ex)
@@ -281,20 +266,99 @@ namespace EasyFlips.ViewModels
             }
         }
 
+        /// <summary>
+        /// Cập nhật các thiết lập phòng nếu có thay đổi từ server.
+        /// </summary>
+        private void SyncRoomSettings(Classroom room)
+        {
+            if (MaxPlayers != room.MaxPlayers) MaxPlayers = room.MaxPlayers;
+            if (TimePerRound != room.TimePerRound) TimePerRound = room.TimePerRound;
+
+            if (room.UpdatedAt != _lastUpdatedAt && !IsHost)
+            {
+                _lastUpdatedAt = room.UpdatedAt;
+                TotalWaitTime = room.WaitTime;
+                var updatedUtc = DateTime.SpecifyKind(room.UpdatedAt, DateTimeKind.Utc);
+                var elapsed = (int)(DateTime.Now - updatedUtc).TotalSeconds;
+                AutoStartSeconds = Math.Max(room.WaitTime - elapsed, 0);
+            }
+        }
+
+        /// <summary>
+        /// Xử lý khi phòng bị giải tán.
+        /// </summary>
+        private void HandleRoomDissolved()
+        {
+            StopPolling();
+            MessageBox.Show("Chủ phòng đã giải tán phòng chơi.", "Thông báo");
+            CanCloseWindow = true;
+            ForceCloseWindow();
+        }
+
+        /// <summary>
+        /// Logic Host tự động kick thành viên không phản hồi quá thời gian quy định.
+        /// Sử dụng so sánh giờ UTC chuẩn.
+        /// </summary>
+        private async Task HandleAutoKickAsync(List<MemberWithProfile> currentMembers, string myId)
+        {
+            var now = DateTime.UtcNow;
+            var usersToKick = new List<string>();
+
+            foreach (var member in currentMembers)
+            {
+                if (member.UserId == myId) continue;
+
+                if (member.LastActive != DateTime.MinValue)
+                {
+                    DateTime lastActiveUtc;
+
+                    // Chuẩn hóa thời gian về UTC để so sánh chính xác
+                    if (member.LastActive.Kind == DateTimeKind.Unspecified)
+                    {
+                        lastActiveUtc = DateTime.SpecifyKind(member.LastActive, DateTimeKind.Utc);
+                    }
+                    else
+                    {
+                        lastActiveUtc = member.LastActive.ToUniversalTime();
+                    }
+
+                    if ((now - lastActiveUtc).TotalSeconds > HEARTBEAT_TIMEOUT_SECONDS)
+                    {
+                        usersToKick.Add(member.UserId);
+                    }
+                }
+            }
+
+            // Thực hiện xóa user khỏi DB và list tạm
+            foreach (var userId in usersToKick)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AutoKick] Kicking user: {userId}");
+                await _classroomRepository.RemoveMemberAsync(_realClassroomIdUUID, userId);
+
+                var memberToRemove = currentMembers.FirstOrDefault(x => x.UserId == userId);
+                if (memberToRemove != null)
+                {
+                    currentMembers.Remove(memberToRemove);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Đồng bộ danh sách hiển thị trên UI với dữ liệu từ Server.
+        /// Đảm bảo thread-safety khi thao tác với ObservableCollection.
+        /// </summary>
+        /// <param name="serverMembers">Danh sách thành viên lấy từ server.</param>
         private void UpdatePlayerList(List<MemberWithProfile> serverMembers)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                // Tìm những người cần xóa (có trong UI nhưng không có trong Server)
+                // Xóa người không còn trong phòng
                 var idsFromServer = serverMembers.Select(x => x.UserId).ToHashSet();
                 var playersToRemove = Players.Where(p => !idsFromServer.Contains(p.Id)).ToList();
 
-                foreach (var p in playersToRemove)
-                {
-                    Players.Remove(p);
-                }
+                foreach (var p in playersToRemove) Players.Remove(p);
 
-                // Tìm những người cần thêm (có trong Server nhưng chưa có trong UI)
+                // Thêm người mới vào phòng
                 foreach (var member in serverMembers)
                 {
                     if (!Players.Any(p => p.Id == member.UserId))
@@ -303,7 +367,6 @@ namespace EasyFlips.ViewModels
                         {
                             Id = member.UserId,
                             Name = member.DisplayName ?? "Unknown",
-                            // [FIX] Xử lý Avatar null để tránh lỗi WPF
                             AvatarUrl = !string.IsNullOrEmpty(member.AvatarUrl) ? member.AvatarUrl : "/Images/default_user.png",
                             IsHost = (member.Role == "owner" || member.Role == "host")
                         });
@@ -312,6 +375,22 @@ namespace EasyFlips.ViewModels
             });
         }
 
+        /// <summary>
+        /// Chuyển hướng sang màn hình Game khi nhận tín hiệu bắt đầu.
+        /// </summary>
+        private void NavigateToGame()
+        {
+            CanCloseWindow = true;
+            _navigationService.ShowGameWindowAsync(
+                  RoomId,
+                  _realClassroomIdUUID,
+                  SelectedDeck,
+                  MaxPlayers,
+                  TimePerRound
+                );
+            ForceCloseWindow();
+            MessageBox.Show("Game Started!");
+        }
 
         private void AutoStart_Tick(object sender, EventArgs e)
         {
@@ -324,20 +403,20 @@ namespace EasyFlips.ViewModels
                 StopAutoStart();
                 if (IsHost)
                 {
-                    StartGame(); // Gọi trực tiếp hàm StartGame
+                    StartGameCommand.Execute(null);
                 }
             }
         }
 
         private void StopAutoStart()
         {
-            if (_autoStartTimer.IsEnabled)
-            {
-                _autoStartTimer.Stop();
-            }
+            if (_autoStartTimer.IsEnabled) _autoStartTimer.Stop();
             IsAutoStartActive = false;
         }
 
+        /// <summary>
+        /// Lệnh rời phòng (dành cho Member).
+        /// </summary>
         [RelayCommand]
         private async Task LeaveRoom()
         {
@@ -345,14 +424,12 @@ namespace EasyFlips.ViewModels
             {
                 try
                 {
-                    StopPolling(); // Dừng polling ngay lập tức
-
+                    StopPolling();
                     if (!IsHost)
                     {
                         var myId = _authService.CurrentUserId ?? _userSession.UserId;
                         await _classroomRepository.RemoveMemberAsync(_realClassroomIdUUID, myId);
                     }
-
                     CanCloseWindow = true;
                     ForceCloseWindow();
                 }
@@ -363,6 +440,9 @@ namespace EasyFlips.ViewModels
             }
         }
 
+        /// <summary>
+        /// Lệnh giải tán phòng (dành cho Host).
+        /// </summary>
         [RelayCommand]
         private async Task CloseRoom()
         {
@@ -371,13 +451,10 @@ namespace EasyFlips.ViewModels
                 try
                 {
                     StopPolling();
-
                     if (IsHost)
                     {
-                        // Xóa phòng, database cascade sẽ xóa members -> Polling của Client sẽ bắt được sự kiện này
                         await _classroomRepository.DeleteClassroomAsync(RoomId);
                     }
-
                     CanCloseWindow = true;
                     ForceCloseWindow();
                 }
@@ -388,19 +465,29 @@ namespace EasyFlips.ViewModels
             }
         }
 
-        // [FIX] Đổi tên hàm từ StartGameCommand -> StartGame để tránh lỗi sinh code trùng lặp
+        /// <summary>
+        /// Lệnh bắt đầu game ngay lập tức.
+        /// </summary>
         [RelayCommand]
-        private void StartGame()
+        private async Task StartGame()
         {
-            StopAutoStart();
-            StopPolling();
+            try
+            {
+                StopAutoStart();
+                StopPolling();
 
-            // TODO: Cập nhật status phòng thành PLAYING trong DB để các Client khác biết
-            // _classroomRepository.UpdateStatusAsync(RoomId, "PLAYING");
-
-            MessageBox.Show("Game starting...", "Info");
+                await _classroomRepository.UpdateStatusAsync(_realClassroomIdUUID, "PLAYING");
+                NavigateToGame();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error starting game: {ex.Message}", "Error");
+            }
         }
 
+        /// <summary>
+        /// Mở cửa sổ cài đặt phòng (chỉ Host).
+        /// </summary>
         [RelayCommand]
         private async Task OpenSettings()
         {
@@ -410,11 +497,10 @@ namespace EasyFlips.ViewModels
             {
                 var settingsVm = new SettingsViewModel(_deckRepository, SelectedDeck, MaxPlayers, TimePerRound, TotalWaitTime);
                 var settingsWindow = new Views.SettingsWindow(settingsVm);
-                var result = settingsWindow.ShowDialog();
 
-                if (result == true)
+                if (settingsWindow.ShowDialog() == true)
                 {
-                    // Cập nhật vào DB
+                    // Cập nhật cài đặt lên DB
                     await _classroomRepository.UpdateClassroomSettingsAsync(
                         _realClassroomIdUUID,
                         settingsVm.SelectedDeck?.Id,
@@ -422,24 +508,28 @@ namespace EasyFlips.ViewModels
                         settingsVm.TimePerRound,
                         settingsVm.WaitTimeMinutes * 60
                     );
-                    // Cập nhật ngay lập tức cho host
+
+                    // Cập nhật Local state
                     TotalWaitTime = settingsVm.WaitTimeMinutes * 60;
                     AutoStartSeconds = TotalWaitTime;
                     MaxPlayers = settingsVm.MaxPlayers;
+
+                    // Restart Auto-start timer
                     IsAutoStartActive = true;
                     _autoStartTimer.Start();
 
-
-                    // Polling sẽ tự động cập nhật UI cho mọi người sau tối đa 3s
-                    MessageBox.Show("Room settings updated successfully.", "Success");
+                    MessageBox.Show("Cập nhật cài đặt phòng thành công.", "Thành công");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error opening settings: {ex.Message}", "Error");
+                MessageBox.Show($"Lỗi mở cài đặt: {ex.Message}", "Lỗi");
             }
         }
 
+        /// <summary>
+        /// Đóng cửa sổ hiện tại an toàn, đảm bảo ngắt mọi kết nối nền.
+        /// </summary>
         private void ForceCloseWindow()
         {
             _autoStartTimer?.Stop();

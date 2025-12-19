@@ -234,5 +234,22 @@ namespace EasyFlips.Services
             window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             window.ShowDialog(); // Chặn cửa sổ chính
         }
+        public async Task ShowGameWindowAsync(string roomId, string classroomId, Deck selectedDeck, int maxPlayers = 30, int timePerRound = 15)
+        {
+            var window = _serviceProvider.GetRequiredService<GameWindow>();
+
+            if (window.DataContext is GameWindowViewModel vm)
+            {
+                await vm.InitializeAsync(roomId, classroomId, selectedDeck, maxPlayers, timePerRound);
+            }
+
+            if (Application.Current.MainWindow != null)
+                window.Owner = Application.Current.MainWindow;
+
+            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            window.ShowDialog();
+        }
+
+
     }
 }
