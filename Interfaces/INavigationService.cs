@@ -22,6 +22,10 @@ namespace EasyFlips.Interfaces
         void ShowJoinWindow();
         void ShowCreateRoomWindow();
         Task ShowGameWindowAsync(string roomId, string classroomId, Deck selectedDeck, int maxPlayers , int timePerRound );
+        Task ShowCreateRoomWindowAsync();
+        Task ShowHostLobbyWindowAsync(string roomId);
+        Task ShowMemberLobbyWindowAsync(string roomId);
+        void CloseCurrentWindow();
 
     }
 }

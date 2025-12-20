@@ -18,6 +18,7 @@ namespace EasyFlips.ViewModels
         private readonly IClassroomRepository _classroomRepository;
         private readonly IAuthService _authService;
         private readonly SupabaseService _supabaseService;
+        private readonly UserSession _userSession;
 
         // Dữ liệu binding ra UI
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
@@ -33,12 +34,14 @@ namespace EasyFlips.ViewModels
             IDeckRepository deckRepository,
             IClassroomRepository classroomRepository,
             IAuthService authService,
-            SupabaseService supabaseService)
+            SupabaseService supabaseService,
+            UserSession userSession)
         {
             _navigationService = navigationService;
             _deckRepository = deckRepository;
             _classroomRepository = classroomRepository;
             _authService = authService;
+            _userSession = userSession;
             _supabaseService = supabaseService; // [FIX]: Gán giá trị
 
             LoadDecks();
@@ -69,7 +72,7 @@ namespace EasyFlips.ViewModels
                 MessageBox.Show("Vui lòng chọn một bộ thẻ (Deck) để giảng dạy!", "Thông báo");
                 return;
             }
-
+            var hostId = _userSession.UserId; // Lấy ID người dùng hiện tại
             // 1. Sinh mã phòng ngẫu nhiên (6 ký tự)
             var random = new Random();
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -98,12 +101,22 @@ namespace EasyFlips.ViewModels
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
+                if (newRoom != null)
+                {
+                    // 2. Thêm Host vào danh sách thành viên với role 'owner'
+                    //await _supabaseService.AddMemberAsync(newRoom.Id, hostId, "owner");
 
-                // Gọi Repository
-                await _classroomRepository.CreateClassroomAsync(newRoom);
+                    // 3. CHUYỂN HƯỚNG SANG HOST LOBBY
+                    // Truyền RoomCode để Lobby load lại thông tin
+                    await _classroomRepository.CreateClassroomAsync(newRoom);
 
-                _navigationService.ShowLobbyWindow(roomId, isHost: true, deck: SelectedDeck, MaxPlayers, newRoom.WaitTime);
-                CloseWindow();
+                    await _navigationService.ShowHostLobbyWindowAsync(newRoom.RoomCode);
+                }
+                else
+                {
+                    MessageBox.Show("Lỗi khi tạo phòng, vui lòng thử lại.");
+                }
+                
             }
             catch (Exception ex)
             {

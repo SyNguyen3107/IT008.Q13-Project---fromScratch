@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Interfaces;
+using EasyFlips.Models;
 using EasyFlips.Services;
 using System;
 using System.Linq;
@@ -16,6 +17,9 @@ namespace EasyFlips.ViewModels
 
         [ObservableProperty]
         private string _roomIdInput;
+
+        [ObservableProperty]
+        private string _roomCode; // Binding với TextBox nhập mã
 
         // [UPDATE] Constructor nhận thêm IClassroomRepository
         public JoinViewModel(INavigationService navigationService, IClassroomRepository classroomRepository)
@@ -67,8 +71,7 @@ namespace EasyFlips.ViewModels
                 }
 
                 // 3. Hợp lệ -> Vào Lobby
-                _navigationService.ShowLobbyWindow(code, isHost: false);
-                CloseWindow();
+                await _navigationService.ShowMemberLobbyWindowAsync(code);
             }
             catch (Exception ex)
             {
@@ -78,8 +81,27 @@ namespace EasyFlips.ViewModels
 
         private void CloseWindow()
         {
-            Application.Current.Windows.OfType<Window>()
-                .FirstOrDefault(w => w.DataContext == this)?.Close();
+            // 1. Kiểm tra nếu App đang shutdown thì không làm gì cả
+            if (Application.Current == null) return;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    // 2. Dùng .ToList() để tạo bản sao danh sách cửa sổ TRƯỚC khi duyệt
+                    // Điều này ngăn lỗi "Collection was modified" khi cửa sổ đang đóng
+                    var window = Application.Current.Windows
+                        .OfType<Window>()
+                        .ToList()
+                        .FirstOrDefault(w => w.DataContext == this);
+
+                    window?.Close();
+                }
+                catch (Exception)
+                {
+                    // Bỏ qua lỗi nếu cửa sổ đã đóng hoặc không thể truy cập
+                }
+            });
         }
     }
 }

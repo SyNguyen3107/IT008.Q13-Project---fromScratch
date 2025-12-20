@@ -166,11 +166,6 @@ namespace EasyFlips.Services
             var window = _serviceProvider.GetRequiredService<LoginWindow>();
             window.Show();
         }
-        public void ShowMainWindow()
-        {
-            var window = _serviceProvider.GetRequiredService<MainWindow>();
-            window.Show();
-        }
         public void OpenSyncWindow()
         {
             var syncWindow = _serviceProvider.GetRequiredService<SyncWindow>();
@@ -249,7 +244,86 @@ namespace EasyFlips.Services
             window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             window.ShowDialog();
         }
+        public async Task ShowCreateRoomWindowAsync()
+        {
+            var vm = _serviceProvider.GetRequiredService<CreateRoomViewModel>();
+            var window = _serviceProvider.GetRequiredService<CreateRoomWindow>();
+            window.DataContext = vm;
+            window.Show();
+            // Không đóng JoinWindow ở đây ngay để tránh ứng dụng bị tắt nếu shutdown mode là OnLastWindowClose
+            // Ta sẽ đóng nó sau khi window mới hiện lên (Logic CloseOldWindows)
+            CloseSpecificWindows(typeof(JoinWindow), typeof(MainWindow));
+        }
 
+        public async Task ShowHostLobbyWindowAsync(string roomId)
+        {
+            var vm = _serviceProvider.GetRequiredService<HostLobbyViewModel>();
+            await vm.InitializeAsync(roomId);
+
+            var window = _serviceProvider.GetRequiredService<HostLobbyWindow>();
+            window.DataContext = vm;
+            window.Show();
+
+            // Đóng tất cả cửa sổ cũ không cần thiết
+            CloseSpecificWindows(typeof(CreateRoomWindow), typeof(JoinWindow), typeof(MainWindow));
+        }
+
+        public async Task ShowMemberLobbyWindowAsync(string roomId)
+        {
+            var vm = _serviceProvider.GetRequiredService<MemberLobbyViewModel>();
+            await vm.InitializeAsync(roomId);
+
+            var window = _serviceProvider.GetRequiredService<MemberLobbyWindow>();
+            window.DataContext = vm;
+            window.Show();
+
+            // Đóng tất cả cửa sổ cũ không cần thiết
+            CloseSpecificWindows(typeof(JoinWindow), typeof(MainWindow));
+        }
+        /// <summary>
+        /// Mở lại MainWindow (Gọi khi rời phòng)
+        /// </summary>
+        public void ShowMainWindow()
+        {
+            // Kiểm tra xem MainWindow đã mở chưa để tránh mở trùng
+            if (!Application.Current.Windows.OfType<MainWindow>().Any())
+            {
+                var vm = _serviceProvider.GetRequiredService<MainViewModel>();
+                var window = _serviceProvider.GetRequiredService<MainWindow>();
+                window.DataContext = vm;
+                window.Show();
+            }
+        }
+
+        /// <summary>
+        /// Hàm Helper: Đóng các cửa sổ thuộc các loại được chỉ định
+        /// </summary>
+        private void CloseSpecificWindows(params Type[] windowTypesToClose)
+        {
+            // Dùng ToList() để tạo bản sao danh sách cửa sổ trước khi duyệt để tránh lỗi collection modified
+            foreach (Window window in Application.Current.Windows.OfType<Window>().ToList())
+            {
+                // Nếu cửa sổ hiện tại nằm trong danh sách cần đóng -> Đóng nó
+                if (windowTypesToClose.Contains(window.GetType()))
+                {
+                    window.Close();
+                }
+            }
+        }
+        public void CloseCurrentWindow()
+        {
+            // Logic đóng cửa sổ hiện tại an toàn
+            foreach (Window window in Application.Current.Windows)
+            {
+                if (window.IsActive) // Hoặc logic xác định cửa sổ nào cần đóng
+                {
+                    window.Close(); 
+                    // Cẩn thận: Nếu đóng MainWindow thì app sẽ tắt. 
+                    // Thường ta chỉ đóng cửa sổ "trước đó" sau khi cửa sổ mới đã hiện.
+                    // Bạn có thể để ViewModel tự gọi ForceCloseWindow() như code ở phần trước.
+                }
+            }
+        }
 
     }
 }
