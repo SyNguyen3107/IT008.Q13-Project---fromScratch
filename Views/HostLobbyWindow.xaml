@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         Title="EasyFlips - Host Lobby" Height="600" Width="900"
         WindowStartupLocation="CenterScreen"
-        ResizeMode="CanResize"
+        ResizeMode="CanMinimize"
         WindowState="Maximized">
 
     <Window.Resources>
@@ -116,30 +116,70 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="ROOM CODE" Foreground="#7F8FA6" FontSize="14" FontWeight="Bold" 
-                       HorizontalAlignment="Center" Margin="0,0,0,5" VerticalAlignment="Center"/>
-                    <Border Margin="15, 0, 0 ,0" Background="#20000000" CornerRadius="20" BorderBrush="#20FFFFFF" BorderThickness="1" Padding="60,15">
-                        <TextBlock Text="{Binding RoomId, TargetNullValue='LOADING'}" 
-                               FontSize="56" FontWeight="Black" Foreground="White"
-                               HorizontalAlignment="Center">    
-                            <TextBlock.Effect>
-                                <DropShadowEffect Color="White" BlurRadius="15" Opacity="0.6" ShadowDepth="0"/>
-                            </TextBlock.Effect>
-                        </TextBlock>
-                    </Border>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"  Margin="20,0,0,0">
+                    <!-- Tiêu đề ROOM CODE bên trái -->
+                    <TextBlock Text="ROOM CODE"
+               Foreground="#7F8FA6"
+               FontSize="28"
+               FontWeight="Bold"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               Margin="0,5,10,5"/>
 
-                    <Button Command="{Binding CopyRoomCodeCommand}" Margin="15,0,0,0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="Sao chép mã">
-                        <Image Source="/Resources/copy.png" Width="20" Height="20"/>
-                    </Button>
+                    <!-- Khung RoomId -->
+                    <Border Background="#20000000"
+                        CornerRadius="20"
+                        BorderBrush="#20FFFFFF"
+                        BorderThickness="1" 
+                             Padding="15"
+                         HorizontalAlignment="Center">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- RoomId ở giữa khung -->
+                            <TextBlock Grid.Row="0"
+                               Text="{Binding RoomId, TargetNullValue='LOADING'}"
+                               FontSize="56"
+                               FontWeight="Black"
+                               Foreground="White"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Bottom">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect Color="White"
+                                      BlurRadius="15"
+                                      Opacity="0.6"
+                                      ShadowDepth="0"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
+
+                            <!-- Nút Copy ở hàng dưới, góc phải -->
+                            <Button Grid.Row="1"
+                    Command="{Binding CopyRoomCodeCommand}"
+                    Width="28" Height="28"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0"
+                    Style="{StaticResource IconButtonStyle}"
+                     ToolTip="Sao chép mã phòng">
+                                <Image Source="/Resources/copy.png"
+                       Width="20" Height="20"
+                       Stretch="Uniform"/>
+                            </Button>
+                        </Grid>
+                    </Border>
                 </StackPanel>
 
+
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button VerticalAlignment="Center" Command="{Binding ToggleMuteCommand}"
+                    <Button VerticalAlignment="Top" Command="{Binding ToggleMuteCommand}"
                             Width="40" Height="40"
                             HorizontalAlignment="Left"
                             Margin="15"
                             Style="{StaticResource IconButtonStyle}">
+                        
                         <Image Width="24" Height="24" Stretch="Uniform">
                             <Image.Style>
                                 <Style TargetType="Image">
@@ -159,7 +199,7 @@
 
         <Grid Grid.Row="1" Margin="20">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
 
@@ -170,7 +210,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal"  HorizontalAlignment="Center">
                         <Ellipse Width="10" Height="10" Fill="#4CD137" Margin="0,0,8,0"/>
                         <TextBlock Text="ONLINE: " Foreground="#BDC3C7" FontWeight="Bold" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding Players.Count}" Foreground="White" FontWeight="Bold" Margin="5,0,0,0" VerticalAlignment="Center"/>
@@ -179,7 +219,7 @@
                                      Value="{Binding AutoStartSeconds}" Maximum="{Binding TotalWaitTime}"
                                      Width="300" Height="6"
                                      BorderThickness="0" Background="#334155" Foreground="#F59E0B"
-                                     Margin="15, 0, 0, 0">
+                                     Margin="15, 0, 10, 0">
                             <ProgressBar.Resources>
                                 <Style TargetType="ProgressBar">
                                     <Setter Property="Template">
@@ -279,18 +319,18 @@
 
                     <Grid Margin="0,0,0,10">
                         <TextBlock Text="Thời gian mỗi câu:" Foreground="#666"/>
-                        <TextBlock Text="{Binding TimePerRound, StringFormat='{}{0} giây'}" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        <TextBlock Text="{Binding TimePerRound, StringFormat='{}{0} giây'}"  Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
                     </Grid>
                     <Grid Margin="0,0,0,20">
                         <TextBlock Text="Số người tối đa:" Foreground="#666"/>
-                        <TextBlock Text="{Binding MaxPlayers}" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        <TextBlock Text="{Binding MaxPlayers}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Right"/>
                     </Grid>
 
                     <Button Command="{Binding OpenSettingsCommand}"
                             Style="{StaticResource ModernButtonStyle}"
                             Content="Thay đổi cài đặt"
                             Background="White" BorderBrush="#CCC" BorderThickness="1" Foreground="#333"
-                            Height="40" Margin="0,0,0,10"/>
+                            Height="40" Margin="10,0,10,10"/>
                 </StackPanel>
             </Border>
         </Grid>
