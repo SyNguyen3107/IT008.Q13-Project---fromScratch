@@ -1,8 +1,10 @@
 ﻿using EasyFlips.Interfaces;
+using EasyFlips.Models;
 using EasyFlips.Properties;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
+using static Supabase.Postgrest.Constants;
 
 
 namespace EasyFlips.Services
@@ -275,6 +277,8 @@ namespace EasyFlips.Services
 
             return false;
         }
+
+        
 
 
 

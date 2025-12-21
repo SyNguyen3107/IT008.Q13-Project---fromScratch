@@ -37,9 +37,9 @@ namespace EasyFlips.ViewModels
 
         [ObservableProperty] private string _roomId;
         [ObservableProperty] private string _classroomId;
-
+        public ObservableCollection<PlayerInfo> Players { get; } = new ObservableCollection<PlayerInfo>();
         [ObservableProperty] private Deck _currentDeck;
-        [ObservableProperty] private Card _currentCard;
+        [ObservableProperty] public Card _currentCard;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ProgressText))]
@@ -90,6 +90,7 @@ namespace EasyFlips.ViewModels
                 TotalCards = CurrentDeck.Cards.Count;
             }
 
+            
             await SubscribeToRealtimeChannel();
         }
 
@@ -128,6 +129,7 @@ namespace EasyFlips.ViewModels
             }
         }
 
+
         /// <summary>
         /// Logic thoát game đặc thù (Host thì EndSession, Member thì chỉ Leave)
         /// </summary>
@@ -147,6 +149,27 @@ namespace EasyFlips.ViewModels
                     }
                 }
             });
+
         }
+        public async Task LoadPlayers()
+        {
+            var members = await _supabaseService.GetClassroomMembersWithProfileAsync(ClassroomId);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Players.Clear();
+                foreach (var m in members)
+                {
+                    Players.Add(new PlayerInfo
+                    {
+                        Id = m.UserId,
+                        Name = m.DisplayName ?? "Unknown",
+                        AvatarUrl = !string.IsNullOrEmpty(m.AvatarUrl) ? m.AvatarUrl : "/Images/default_user.png",
+                        IsHost = (m.Role == "owner" || m.Role == "host"),
+                        Score = 0
+                    });
+                }
+            });
+        }
+
     }
 }

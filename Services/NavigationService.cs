@@ -297,19 +297,45 @@ namespace EasyFlips.Services
         }
         public async Task ShowHostGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound)
         {
-            // 1. Resolve ViewModel & Window từ DI
-            var vm = _serviceProvider.GetRequiredService<HostGameViewModel>();
+            HostGameViewModel vm;
+            try
+            {
+                vm = _serviceProvider.GetRequiredService<HostGameViewModel>();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Resolve error: {ex.Message}");
+                return;
+            }
 
-            // 2. Initialize dữ liệu
-            await vm.InitializeAsync(roomId, classroomId, deck, timePerRound);
+            try
+            {
+                await vm.InitializeAsync(roomId, classroomId, deck, timePerRound);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Init error: {ex.Message}");
+                return;
+            }
 
-            var window = _serviceProvider.GetRequiredService<HostGameWindow>();
+            HostGameWindow window;
+            try
+            {
+                window = _serviceProvider.GetRequiredService<HostGameWindow>();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Window resolve error: {ex.Message}");
+                return;
+            }
+
             window.DataContext = vm;
+            Application.Current.MainWindow = window; // gán lại MainWindow
             window.Show();
 
-            // 3. Đóng Lobby (HostLobbyWindow)
             CloseSpecificWindows(typeof(HostLobbyWindow));
         }
+
 
         public async Task ShowMemberGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound)
         {

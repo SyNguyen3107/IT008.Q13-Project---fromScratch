@@ -22,6 +22,7 @@ namespace EasyFlips.Views
         public HostGameWindow()
         {
             InitializeComponent();
+            
         }
     }
 }

@@ -3,22 +3,23 @@ using Newtonsoft.Json;
 using Supabase;
 using Supabase.Gotrue;
 using Supabase.Gotrue.Interfaces;
+using Supabase.Postgrest.Models;
+using Supabase.Postgrest.Responses;
 using Supabase.Realtime;
 using Supabase.Realtime.Interfaces;
 using Supabase.Realtime.Models;
 using Supabase.Realtime.PostgresChanges;
+using Supabase.Realtime.Presence;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using static Supabase.Postgrest.Constants;
 using static Supabase.Realtime.Constants;
 using static Supabase.Realtime.PostgresChanges.PostgresChangesOptions;
 using RealtimeConstants = Supabase.Realtime.Constants;
-using Supabase.Realtime.Presence;
-using Supabase.Postgrest.Models;
-using Supabase.Postgrest.Responses;
 
 namespace EasyFlips.Services
 {
@@ -279,6 +280,27 @@ namespace EasyFlips.Services
             {
                 Debug.WriteLine($"[SupabaseService] Dissolve classroom error: {ex.Message}");
                 return (false, $"Lỗi khi giải tán phòng: {ex.Message}");
+            }
+        }
+        public async Task<(bool Success, string Message)> DeleteClassroomAsync(string classroomId)
+        {
+            try
+            {
+                // Xoá tất cả members trước (tránh lỗi khoá ngoại)
+                await _client.From<Member>()
+                    .Filter("classroom_id", Operator.Equals, classroomId)
+                    .Delete();
+
+                // Xoá classroom
+                await _client.From<Classroom>()
+                    .Filter("id", Operator.Equals, classroomId)
+                    .Delete();
+
+                return (true, "Đã xoá phòng thành công.");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi khi xoá phòng: {ex.Message}");
             }
         }
 
