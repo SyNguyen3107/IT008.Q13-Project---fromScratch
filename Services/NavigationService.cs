@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Windows;
+using System.Linq;
 
 namespace EasyFlips.Services
 {
@@ -294,7 +295,37 @@ namespace EasyFlips.Services
                 window.Show();
             }
         }
+        public async Task ShowHostGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound)
+        {
+            // 1. Resolve ViewModel & Window từ DI
+            var vm = _serviceProvider.GetRequiredService<HostGameViewModel>();
 
+            // 2. Initialize dữ liệu
+            await vm.InitializeAsync(roomId, classroomId, deck, timePerRound);
+
+            var window = _serviceProvider.GetRequiredService<HostGameWindow>();
+            window.DataContext = vm;
+            window.Show();
+
+            // 3. Đóng Lobby (HostLobbyWindow)
+            CloseSpecificWindows(typeof(HostLobbyWindow));
+        }
+
+        public async Task ShowMemberGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound)
+        {
+            var vm = _serviceProvider.GetRequiredService<MemberGameViewModel>();
+
+            // Lưu ý: Member có thể chưa có Deck ngay lúc này nếu logic tải Deck nằm ở Lobby
+            // Nếu Deck null, MemberViewModel sẽ phải tự tải lại từ API trong InitializeAsync
+            await vm.InitializeAsync(roomId, classroomId, deck, timePerRound);
+
+            var window = _serviceProvider.GetRequiredService<MemberGameWindow>();
+            window.DataContext = vm;
+            window.Show();
+
+            // 3. Đóng Lobby (MemberLobbyWindow)
+            CloseSpecificWindows(typeof(MemberLobbyWindow));
+        }
         /// <summary>
         /// Hàm Helper: Đóng các cửa sổ thuộc các loại được chỉ định
         /// </summary>
