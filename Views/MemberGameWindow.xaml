@@ -1,0 +1,207 @@
+﻿<Window x:Class="EasyFlips.Views.MemberGameWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:EasyFlips.ViewModels"
+        xmlns:cv="clr-namespace:EasyFlips.Converters"
+        mc:Ignorable="d"
+        Title="EasyFlips - Member Game" Height="720" Width="1080"
+        WindowStartupLocation="CenterScreen"
+        Foreground="White">
+
+    <Window.Resources>
+        <cv:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <cv:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
+
+        <LinearGradientBrush x:Key="MainBackground" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#141E30" Offset="0.0"/>
+            <GradientStop Color="#243B55" Offset="1.0"/>
+        </LinearGradientBrush>
+
+        <Style x:Key="BigCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="20"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" Opacity="0.3" ShadowDepth="8" BlurRadius="25"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MemberInputStyle" TargetType="TextBox">
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="15,10"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="#F8F9FA"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="10">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="5"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#3498DB"/>
+                                <Setter TargetName="border" Property="Background" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MemberSubmitBtnStyle" TargetType="Button">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#11998e" Offset="0"/>
+                        <GradientStop Color="#38ef7d" Offset="1"/>
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.9"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.98" ScaleY="0.98"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bdr" Property="Background" Value="#7F8C8D"/>
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.5"/>
+                                <Setter Property="Content" Value="WAITING..."/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{StaticResource MainBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="20">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <TextBlock Text="SCORE: " Foreground="#BDC3C7" FontSize="18" FontWeight="Bold"/>
+                <TextBlock Text="{Binding Score}" Foreground="#F1C40F" FontSize="24" FontWeight="ExtraBold" Margin="5,-4,0,0"/>
+            </StackPanel>
+
+            <TextBlock Text="{Binding ConnectionStatus}" 
+                       HorizontalAlignment="Right" 
+                       Foreground="#7F8FA6" FontStyle="Italic"/>
+        </Grid>
+
+        <Viewbox Grid.Row="1" Margin="40,10,40,20" Stretch="Uniform">
+            <Border Width="600" Height="400" Style="{StaticResource BigCardStyle}">
+                <Grid Margin="30">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Image Grid.Row="0" 
+                           Source="{Binding CurrentCard.FrontImagePath}" 
+                           Visibility="{Binding CurrentCard.FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"
+                           Stretch="Uniform" 
+                           Margin="0,0,0,20"/>
+
+                    <TextBlock Grid.Row="1" 
+                               Text="{Binding CurrentCard.FrontText, TargetNullValue='Waiting for question...'}" 
+                               TextWrapping="Wrap" 
+                               TextAlignment="Center" 
+                               VerticalAlignment="Center"
+                               FontSize="32" 
+                               FontWeight="Bold" 
+                               Foreground="#2C3E50"/>
+
+                    <TextBlock Grid.RowSpan="2" 
+                               d:Text="Get Ready..." 
+                               Visibility="{Binding CurrentCard, Converter={StaticResource NullToCollapsedConverter}, ConverterParameter=Inverse}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               FontSize="40" Foreground="#BDC3C7"/>
+                </Grid>
+            </Border>
+        </Viewbox>
+
+        <Grid Grid.Row="2" Margin="0,0,0,50" Width="700" HorizontalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox Grid.Column="0"
+                     Text="{Binding UserAnswer, UpdateSourceTrigger=PropertyChanged}"
+                     IsEnabled="{Binding IsInputEnabled}"
+                     Height="60">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding SubmitAnswerCommand}"/>
+                </TextBox.InputBindings>
+                <TextBox.Resources>
+                    <VisualBrush x:Key="HelpBrush" TileMode="None" Opacity="0.3" Stretch="None" AlignmentX="Left">
+                        <VisualBrush.Visual>
+                            <TextBlock Text="Type your answer here..." FontStyle="Italic" FontSize="18" Foreground="White"/>
+                        </VisualBrush.Visual>
+                    </VisualBrush>
+                </TextBox.Resources>
+                <TextBox.Style>
+                    <Style TargetType="TextBox" BasedOn="{StaticResource MemberInputStyle}">
+                        <Style.Triggers>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Text" Value="{x:Null}"/>
+                                    <Condition Property="IsKeyboardFocusWithin" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Background" Value="{StaticResource HelpBrush}"/>
+                            </MultiTrigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Text" Value=""/>
+                                    <Condition Property="IsKeyboardFocusWithin" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Background" Value="{StaticResource HelpBrush}"/>
+                            </MultiTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+
+            <Button Grid.Column="1"
+                    Content="SUBMIT"
+                    Command="{Binding SubmitAnswerCommand}"
+                    IsEnabled="{Binding IsInputEnabled}"
+                    Style="{StaticResource MemberSubmitBtnStyle}"
+                    Width="140" Height="60" Margin="15,0,0,0"/>
+        </Grid>
+
+    </Grid>
+</Window>
