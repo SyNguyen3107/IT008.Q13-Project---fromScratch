@@ -289,14 +289,14 @@ namespace EasyFlips.ViewModels
             // Để đơn giản, Member truyền null cho Deck, GameViewModel sẽ tự load dựa trên Room Settings.
             Deck deckToPass = GetSelectedDeck();
 
-            _navigationService.ShowGameWindowAsync(
+            _navigationService.ShowHostGameWindowAsync(
                   RoomId,
                   _realClassroomIdUUID,
                   deckToPass,
-                  MaxPlayers,
                   TimePerRound
                 );
             ForceCloseWindow();
+            
         }
 
         protected virtual Deck GetSelectedDeck() => null; // Member trả về null

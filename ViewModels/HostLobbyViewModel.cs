@@ -41,7 +41,15 @@ namespace EasyFlips.ViewModels
             foreach (var d in decks) AvailableDecks.Add(d);
 
             // Chọn mặc định bộ đầu tiên hoặc bộ đã lưu trong setting phòng (nếu có logic đó)
-            SelectedDeck = decks.FirstOrDefault();
+            if (!string.IsNullOrEmpty(roomInfo.DeckId))
+            {
+                SelectedDeck = decks.FirstOrDefault(d => d.Id == roomInfo.DeckId);
+            }
+            else
+            {
+                // Nếu chưa có thì chọn mặc định bộ đầu tiên
+                SelectedDeck = decks.FirstOrDefault();
+            }
 
             // 2. Kích hoạt Timer nếu có thời gian chờ
             if (AutoStartSeconds > 0)

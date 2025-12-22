@@ -51,4 +51,5 @@ namespace EasyFlips.Models
         [JsonIgnore]
         public CardProgress Progress { get; set; }
     }
+
 }

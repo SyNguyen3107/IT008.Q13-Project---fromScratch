@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Windows;
+using System.Linq;
 
 namespace EasyFlips.Services
 {
@@ -294,7 +295,63 @@ namespace EasyFlips.Services
                 window.Show();
             }
         }
+        public async Task ShowHostGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound)
+        {
+            HostGameViewModel vm;
+            try
+            {
+                vm = _serviceProvider.GetRequiredService<HostGameViewModel>();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Resolve error: {ex.Message}");
+                return;
+            }
 
+            try
+            {
+                await vm.InitializeAsync(roomId, classroomId, deck, timePerRound);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Init error: {ex.Message}");
+                return;
+            }
+
+            HostGameWindow window;
+            try
+            {
+                window = _serviceProvider.GetRequiredService<HostGameWindow>();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Window resolve error: {ex.Message}");
+                return;
+            }
+
+            window.DataContext = vm;
+            Application.Current.MainWindow = window; // gán lại MainWindow
+            window.Show();
+
+            CloseSpecificWindows(typeof(HostLobbyWindow));
+        }
+
+
+        public async Task ShowMemberGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound)
+        {
+            var vm = _serviceProvider.GetRequiredService<MemberGameViewModel>();
+
+            // Lưu ý: Member có thể chưa có Deck ngay lúc này nếu logic tải Deck nằm ở Lobby
+            // Nếu Deck null, MemberViewModel sẽ phải tự tải lại từ API trong InitializeAsync
+            await vm.InitializeAsync(roomId, classroomId, deck, timePerRound);
+
+            var window = _serviceProvider.GetRequiredService<MemberGameWindow>();
+            window.DataContext = vm;
+            window.Show();
+
+            // 3. Đóng Lobby (MemberLobbyWindow)
+            CloseSpecificWindows(typeof(MemberLobbyWindow));
+        }
         /// <summary>
         /// Hàm Helper: Đóng các cửa sổ thuộc các loại được chỉ định
         /// </summary>

@@ -16,15 +16,24 @@ namespace EasyFlips.Converters
 
             try
             {
-                // Lấy đường dẫn đầy đủ dựa trên máy tính hiện tại
-                string fullPath = PathHelper.GetFullPath(fileName);
-
-                if (File.Exists(fullPath))
+                // Nếu là URL http/https thì load trực tiếp
+                if (fileName.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Load ảnh bitmap (Dùng CacheOption để không khóa file ảnh)
                     var bitmap = new BitmapImage();
                     bitmap.BeginInit();
-                    bitmap.UriSource = new Uri(fullPath);
+                    bitmap.UriSource = new Uri(fileName, UriKind.Absolute);
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    return bitmap;
+                }
+
+                // Nếu là file cục bộ
+                string fullPath = PathHelper.GetFullPath(fileName);
+                if (File.Exists(fullPath))
+                {
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.UriSource = new Uri(fullPath, UriKind.Absolute);
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
                     bitmap.EndInit();
                     return bitmap;
@@ -36,6 +45,7 @@ namespace EasyFlips.Converters
             }
             return null;
         }
+
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {

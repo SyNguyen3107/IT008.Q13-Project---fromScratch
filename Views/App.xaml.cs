@@ -195,6 +195,8 @@ namespace EasyFlips
             services.AddTransient<GameViewModel>();
             services.AddTransient<HostLobbyViewModel>();
             services.AddTransient<MemberLobbyViewModel>();
+            services.AddTransient<HostGameViewModel>();
+            services.AddTransient<MemberGameViewModel>();
 
             // Windows
             services.AddTransient<MainWindow>();
@@ -216,6 +218,8 @@ namespace EasyFlips
             services.AddTransient<GameWindow>();
             services.AddTransient<HostLobbyWindow>();
             services.AddTransient<MemberLobbyWindow>();
+            services.AddTransient<HostGameWindow>();
+            services.AddTransient<MemberGameWindow>();
 
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
             services.AddSingleton<UserSession>();
