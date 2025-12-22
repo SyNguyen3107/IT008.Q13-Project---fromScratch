@@ -945,6 +945,116 @@ namespace EasyFlips.Services
         #region Flashcard Sync Operations
 
         /// <summary>
+        /// [WRAPPER] Subscribe vào kênh flashcard sync của phòng học.
+        /// Đây là hàm wrapper đơn giản hóa việc tham gia kênh Realtime.
+        /// </summary>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="onStateReceived">Callback khi nhận được trạng thái mới.</param>
+        /// <returns>Kết quả subscribe (Success/Fail).</returns>
+        public async Task<ChannelSubscriptionResult> SubscribeToFlashcardChannelAsync(
+            string classroomId,
+            Action<FlashcardSyncState> onStateReceived)
+        {
+            var result = new ChannelSubscriptionResult
+            {
+                ChannelName = $"flashcard-sync:{classroomId}"
+            };
+
+            try
+            {
+                await _client.Realtime.ConnectAsync();
+
+                // Hủy kênh cũ nếu có
+                if (_activeChannels.TryGetValue(result.ChannelName, out var oldChannel))
+                {
+                    oldChannel.Unsubscribe();
+                    _activeChannels.Remove(result.ChannelName);
+                    _activeBroadcasts.Remove(result.ChannelName);
+                }
+
+                var channel = _client.Realtime.Channel(result.ChannelName);
+                _activeChannels[result.ChannelName] = channel;
+
+                var broadcast = channel.Register<FlashcardBroadcast>(true, false);
+                _activeBroadcasts[result.ChannelName] = broadcast;
+
+                broadcast.AddBroadcastEventHandler((sender, args) =>
+                {
+                    if (args.Event == "FLASHCARD_SYNC")
+                    {
+                        try
+                        {
+                            var payload = args.Payload;
+                            if (payload != null)
+                            {
+                                var state = ParseFlashcardState(payload);
+                                if (state != null)
+                                {
+                                    // Log JSON để debug
+                                    var json = JsonConvert.SerializeObject(state, Formatting.Indented);
+                                    Debug.WriteLine($"[FlashcardSync] Received JSON:\n{json}");
+                                    
+                                    onStateReceived?.Invoke(state);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[FlashcardSync] Parse error: {ex.Message}");
+                        }
+                    }
+                });
+
+                await channel.Subscribe();
+
+                result.Success = true;
+                Debug.WriteLine($"[FlashcardSync] Subscribed to channel: {result.ChannelName}");
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.ErrorMessage = ex.Message;
+                Debug.WriteLine($"[FlashcardSync] Subscribe failed: {ex.Message}");
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// [TEST] Gửi gói tin mẫu để test broadcast.
+        /// </summary>
+        public async Task<bool> SendTestBroadcastAsync(string classroomId, string hostId)
+        {
+            try
+            {
+                var testState = new FlashcardSyncState
+                {
+                    ClassroomId = classroomId,
+                    DeckId = "test-deck-001",
+                    CurrentCardId = "test-card-001",
+                    CurrentCardIndex = 0,
+                    TotalCards = 10,
+                    IsFlipped = false,
+                    Action = FlashcardAction.ShowCard,
+                    TriggeredBy = hostId,
+                    TimeRemaining = 15,
+                    IsSessionActive = true,
+                    IsPaused = false,
+                    Phase = GamePhase.Question
+                };
+
+                await BroadcastFlashcardStateAsync(classroomId, testState);
+                Debug.WriteLine($"[TEST] Sent test broadcast to room {classroomId}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[TEST] Send test broadcast failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Tham gia kênh đồng bộ flashcard trong phòng học.
         /// Sử dụng Broadcast để gửi/nhận trạng thái card realtime.
         /// </summary>
@@ -1040,6 +1150,13 @@ namespace EasyFlips.Services
                     state.Action = action;
                 }
 
+                // Parse phase enum
+                var phaseStr = payload.GetValueOrDefault("phase")?.ToString();
+                if (Enum.TryParse<GamePhase>(phaseStr, out var phase))
+                {
+                    state.Phase = phase;
+                }
+
                 // Parse timestamp
                 var timestampStr = payload.GetValueOrDefault("timestamp")?.ToString();
                 if (DateTime.TryParse(timestampStr, out var timestamp))
@@ -1087,11 +1204,15 @@ namespace EasyFlips.Services
                     { "time_remaining", state.TimeRemaining },
                     { "timestamp", state.Timestamp.ToString("O") },
                     { "is_session_active", state.IsSessionActive },
-                    { "is_paused", state.IsPaused }
+                    { "is_paused", state.IsPaused },
+                    { "phase", state.Phase.ToString() }
                 };
 
                 await broadcast.Send("FLASHCARD_SYNC", payload);
-                Debug.WriteLine($"[FlashcardSync] Đã broadcast: {state.Action} - Card {state.CurrentCardIndex + 1}");
+                
+                // Log JSON đã gửi
+                var json = JsonConvert.SerializeObject(payload, Formatting.Indented);
+                Debug.WriteLine($"[FlashcardSync] Broadcast sent:\n{json}");
             }
             catch (Exception ex)
             {

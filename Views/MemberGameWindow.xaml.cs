@@ -23,8 +23,7 @@ namespace EasyFlips.Views
         public MemberGameWindow()
         {
             InitializeComponent();
-            // Gắn "Bộ não" (ViewModel) vào "Giao diện" (Window)
-            this.DataContext = new MemberGameViewModel();
+            // DataContext được gán từ NavigationService
         }
     }
 }
