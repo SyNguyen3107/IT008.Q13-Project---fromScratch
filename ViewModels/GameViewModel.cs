@@ -363,5 +363,47 @@ namespace EasyFlips.ViewModels
             }
             catch { }
         }
+        // --  LOGIC SẮP XẾP BẢNG XẾP HẠNG --
+        /// <summary>
+        /// Cập nhật điểm cho một người chơi và tự động sắp xếp lại danh sách
+        /// </summary>
+        /// 
+        public void UpdatePlayerScore(string userId, int newScore)
+        {
+            // Tìm người chơi trong danh sách
+            var player = Players.FirstOrDefault(p => p.Id == userId);
+            if (player != null)
+            {
+                // Cập nhật điểm
+                player.Score = newScore;
+
+                // Gọi hàm sắp xếp (sẽ kích hoạt Animation bên View)
+                SortPlayersDescending();
+            }
+        }
+        /// <summary>
+        /// Sắp xếp danh sách Players từ điểm cao xuống thấp
+        /// Sử dụng lệnh Move() để kích hoạt hiệu ứng trượt trên giao diện
+        /// </summary>
+        private void SortPlayersDescending()
+        {
+            // 1. Tạo bản sao danh sách đã sắp xếp đúng
+            var sortedList = Players.OrderByDescending(p => p.Score).ToList();
+
+            // 2. So sánh và di chuyển các phần tử sai vị trí
+            for (int i = 0; i < sortedList.Count; i++)
+            {
+                var item = sortedList[i];
+                int oldIndex = Players.IndexOf(item);
+
+                // Nếu vị trí hiện tại không đúng với vị trí sau khi sắp xếp
+                if (oldIndex != i)
+                {
+                    // Di chuyển item về đúng vị trí
+                    // Lệnh Move này sẽ được FluidMoveBehavior bên View bắt được và tạo hiệu ứng trượt
+                    Players.Move(oldIndex, i);
+                }
+            }
+        }
     }
 }

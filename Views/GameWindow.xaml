@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:vm="clr-namespace:EasyFlips.ViewModels"
         xmlns:cv="clr-namespace:EasyFlips.Converters" 
         mc:Ignorable="d"
@@ -13,12 +14,11 @@
     <Window.Resources>
         <cv:BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <cv:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
-
         <cv:DiffTypeToBrushConverter x:Key="DiffTypeToBrushConverter"/>
         <cv:DiffTypeToFontWeightConverter x:Key="DiffTypeToFontWeightConverter"/>
         <cv:DiffTypeToTextDecorationConverter x:Key="DiffTypeToTextDecorationConverter"/>
-
         <cv:InvertedBooleanToVisibilityConverter x:Key="InvertedBoolToVis"/>
+
         <Style x:Key="AnswerTextBoxStyle" TargetType="TextBox">
             <Setter Property="FontSize" Value="20"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -210,7 +210,6 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
     </Window.Resources>
 
     <Grid Background="{StaticResource MainBackground}">
@@ -225,6 +224,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
+
                 <StackPanel Grid.Row="0" Margin="0,0,0,20">
                     <TextBlock Text="LEADERBOARD" Foreground="#7F8FA6" FontSize="12" FontWeight="Bold" Margin="0,0,0,5"/>
                     <StackPanel Orientation="Horizontal">
@@ -232,8 +232,10 @@
                         <TextBlock Text=" Players" FontSize="14" Foreground="#BDC3C7" VerticalAlignment="Bottom" Margin="5,0,0,4"/>
                     </StackPanel>
                 </StackPanel>
+
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden">
                     <ItemsControl ItemsSource="{Binding Players}">
+
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Vertical"/>
@@ -258,7 +260,6 @@
 
                                         <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="White" FontSize="14"/>
-
                                             <TextBlock FontSize="12" Foreground="#F1C40F" Margin="0,2,0,0">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
@@ -274,10 +275,20 @@
                                                 </TextBlock.Style>
                                             </TextBlock>
                                         </StackPanel>
+
                                         <Border Grid.Column="2" VerticalAlignment="Center" Background="#20F59E0B" CornerRadius="5" Padding="8,4">
                                             <TextBlock Text="{Binding Score}" FontSize="14" FontWeight="Bold" Foreground="#F59E0B"/>
                                         </Border>
                                     </Grid>
+
+                                    <i:Interaction.Behaviors>
+                                        <i:FluidMoveBehavior AppliesTo="Self" Duration="0:0:0.5">
+                                            <i:FluidMoveBehavior.EaseY>
+                                                <CubicEase EasingMode="EaseOut"/>
+                                            </i:FluidMoveBehavior.EaseY>
+                                        </i:FluidMoveBehavior>
+                                    </i:Interaction.Behaviors>
+
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -298,6 +309,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
+
                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
                     <TextBlock Text="QUESTION" Foreground="#7F8FA6" FontSize="11" FontWeight="Bold" />
                     <TextBlock Text="{Binding CurrentQuestionInfo}" FontSize="24" FontWeight="ExtraBold" Foreground="White">
@@ -306,6 +318,7 @@
                         </TextBlock.Effect>
                     </TextBlock>
                 </StackPanel>
+
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Width="280">
                     <Border Background="#20FFFFFF" CornerRadius="25" Padding="30,5" BorderBrush="#30FFFFFF" BorderThickness="1" HorizontalAlignment="Center">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -367,11 +380,11 @@
                             </Grid>
 
                             <StackPanel Grid.Row="1">
-
                                 <Button Content="REVEAL ANSWER 👁"
                                         Command="{Binding FlipCardCommand}"
                                         Style="{StaticResource HostActionButtonStyle}"
-                                        Width="200" Height="50" Margin="0,0,0,10"/>
+                                        Width="200" Height="50" Margin="0,0,0,10"
+                                        Visibility="{Binding IsHost, Converter={StaticResource BoolToVis}}"/>
 
                                 <StackPanel Style="{StaticResource StudentOnlyStyle}">
                                     <TextBlock Text="TYPE YOUR ANSWER" 
@@ -469,7 +482,8 @@
 
                                     <Button Command="{Binding NextCardCommand}" Content="NEXT QUESTION ➜"
                                             Margin="0,20,0,0" Width="200" Height="45"
-                                            Style="{StaticResource HostActionButtonStyle}"/>
+                                            Style="{StaticResource HostActionButtonStyle}"
+                                            Visibility="{Binding IsHost, Converter={StaticResource BoolToVis}}"/>
 
                                     <TextBlock Text="Waiting for Host..." 
                                                Style="{StaticResource StudentOnlyStyle}"

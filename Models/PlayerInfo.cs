@@ -8,8 +8,8 @@ namespace EasyFlips.Models
         public string Name { get; set; }
         public string AvatarUrl { get; set; }
         public bool IsHost { get; set; }
-
-        public byte Score { get; set; }
+        [ObservableProperty]
+        private int score;
 
     }
 }
