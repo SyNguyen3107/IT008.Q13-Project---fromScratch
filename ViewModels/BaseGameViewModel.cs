@@ -151,7 +151,7 @@ namespace EasyFlips.ViewModels
             });
 
         }
-        public async Task LoadPlayers()
+        public virtual async Task LoadPlayers()
         {
             var members = await _supabaseService.GetClassroomMembersWithProfileAsync(ClassroomId);
             Application.Current.Dispatcher.Invoke(() =>

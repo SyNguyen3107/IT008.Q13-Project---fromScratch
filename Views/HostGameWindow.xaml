@@ -299,30 +299,62 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                    <TextBlock Text="QUESTION" Foreground="#7F8FA6" FontSize="11" FontWeight="Bold" />
-                    <TextBlock Text="{Binding CurrentQuestionInfo}" FontSize="24" FontWeight="ExtraBold" Foreground="White">
-                        <TextBlock.Effect>
-                            <DropShadowEffect Color="#000" BlurRadius="10" Opacity="0.5" ShadowDepth="2"/>
-                        </TextBlock.Effect>
-                    </TextBlock>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,0">
+                    <!-- Số người đã nộp: màu xanh -->
+                    <TextBlock Text="{Binding SubmittedCount}" 
+               FontSize="24" FontWeight="Bold" Foreground="#27AE60"/>
+
+                    <TextBlock Text="/" 
+               FontSize="24" FontWeight="Bold" Foreground="White" Margin="5,0"/>
+
+                    <!-- Tổng số người chơi: màu đỏ -->
+                    <TextBlock Text="{Binding Players.Count}" 
+               FontSize="24" FontWeight="Bold" Foreground="#E74C3C"/>
+
+                    <TextBlock Text=" Submitted" 
+               FontSize="14" Foreground="#BDC3C7" VerticalAlignment="Bottom" Margin="5,0,0,4"/>
                 </StackPanel>
+
+
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Width="280">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CurrentPhase}" Value="Waiting">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    
+
                     <Border Background="#20FFFFFF" CornerRadius="25" Padding="30,5" BorderBrush="#30FFFFFF" BorderThickness="1" HorizontalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="⏳" FontSize="20" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding TimeRemaining}" FontSize="32" FontWeight="Black" Foreground="#FF5E57" Width="50" TextAlignment="Center">
-                                <TextBlock.Effect>
-                                    <DropShadowEffect Color="#FF5E57" BlurRadius="15" Opacity="0.4" ShadowDepth="0"/>
-                                </TextBlock.Effect>
-                            </TextBlock>
+                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding StatusMessage}" 
+                       FontSize="16" 
+                       FontWeight="Bold" 
+                       Foreground="{Binding StatusColor}" 
+                       TextAlignment="Center"/>
+                            <TextBlock Text="{Binding TimeRemaining}" 
+                       FontSize="32" 
+                       FontWeight="Black" 
+                       Foreground="{Binding StatusColor}" 
+                       TextAlignment="Center"/>
                         </StackPanel>
                     </Border>
+                    
                     <ProgressBar Margin="0,10,0,0"
-                                 Style="{StaticResource GlassProgressBarStyle}"
-                                 Value="{Binding TimeRemaining}" 
-                                 Maximum="{Binding TotalTimePerRound, FallbackValue=30}"/>
+                     Style="{StaticResource GlassProgressBarStyle}"
+                     Value="{Binding TimeRemaining}"
+                     Maximum="{Binding ProgressMaximum}"/>
+
+
+
+
+
                 </StackPanel>
+
 
                 <Button Grid.Column="2" Command="{Binding QuitGameCommand}" Content="QUIT GAME" HorizontalAlignment="Right"
                         Style="{StaticResource QuitButtonStyle}" FontSize="12" Foreground="White" FontWeight="SemiBold"/>
@@ -335,14 +367,44 @@
                     </Border.Effect>
 
                     <Grid>
+
+                        <!-- COUNTDOWN VIEW -->
+                        <Grid>
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CurrentPhase}" Value="Waiting">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="GET READY"
+                           FontSize="20" FontWeight="Bold" Foreground="#7F8FA6"
+                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding TimeRemaining}"
+                           FontSize="72" FontWeight="Black" Foreground="#FF5E57"
+                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- FRONT CARD (QUESTION) -->
                         <Grid Margin="30">
                             <Grid.Style>
                                 <Style TargetType="Grid">
-                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsCardFlipped}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
+                                        <!-- Chỉ hiển thị khi đang Question và chưa flip -->
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding CurrentPhase}" Value="Question"/>
+                                                <Condition Binding="{Binding IsCardFlipped}" Value="False"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Grid.Style>
@@ -352,92 +414,57 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <Grid Grid.Row="0" VerticalAlignment="Center" Margin="0,0,0,20">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Image Grid.Row="0"  Source="{Binding CurrentCard.FrontImagePath, Converter={StaticResource ImagePathConverter}}" 
-                                    Stretch="Uniform" MaxHeight="250" Margin="0,0,0,15"/>
+                            <StackPanel Grid.Row="0" VerticalAlignment="Center">
+                                <Image Source="{Binding CurrentCard.FrontImagePath, Converter={StaticResource ImagePathConverter}}"
+                       Stretch="Uniform" MaxHeight="250" Margin="0,0,0,20"/>
+                                <TextBlock Text="{Binding CurrentCard.FrontText}"
+                           TextWrapping="Wrap" TextAlignment="Center"
+                           FontSize="26" FontWeight="SemiBold" Foreground="#2C3E50"/>
+                            </StackPanel>
 
-                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="100">
-                                    <TextBlock Text="{Binding CurrentCard.FrontText}" d:Text="This is the question" 
-                               TextWrapping="Wrap" TextAlignment="Center" 
-                               FontSize="24" FontWeight="SemiBold" Foreground="#2C3E50"/>
-                                </ScrollViewer>
+                            <Grid Grid.Row="1" Margin="0,20,0,0">
+                                <Button Content="SHOW ANSWER" Command="{Binding FlipCardCommand}" Style="{StaticResource HostActionButtonStyle}" Width="200" Height="50" HorizontalAlignment="Center"/>
                             </Grid>
-
-                            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                                <Button Content="SHOW ANSWER"
-                            Command="{Binding FlipCardCommand}"
-                            Style="{StaticResource HostActionButtonStyle}"
-                            Width="200" Height="50" Margin="0,0,10,0"/>
-                                                <Button Command="{Binding NextCardCommand}" Content="NEXT QUESTION ➜"
-                            Style="{StaticResource NextCardButtonStyle}"
-                            Width="200" Height="50"/>
-                                            </StackPanel>
-
                         </Grid>
 
-                        <Grid x:Name="BackSide">
+                        <!-- BACK CARD (ANSWER/RESULT) -->
+                        <Grid Margin="30">
                             <Grid.Style>
                                 <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
+                                        <!-- Hiển thị khi đã flip hoặc đang ở pha Result -->
                                         <DataTrigger Binding="{Binding IsCardFlipped}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding CurrentPhase}" Value="Result">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Grid.Style>
 
-                           
-
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,15">
-                                        <TextBlock Text="Correct Answer: " Foreground="Gray" FontSize="14" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding CorrectAnswer}" Foreground="#81C784" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="{Binding CurrentCard.BackText}" 
-                                               FontSize="28" FontWeight="Bold" Foreground="#2980B9"
-                                               TextWrapping="Wrap" TextAlignment="Center"
-                                               MaxWidth="600" Margin="0,0,0,20"/>
-
-                                    <Image Source="{Binding CurrentCard.BackImagePath, Converter={StaticResource ImagePathConverter}}" 
-                                           MaxHeight="300" MaxWidth="600" Stretch="Uniform"
-                                           Margin="0,0,0,10"
-                                           Visibility="{Binding CurrentCard.BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
-
-                                    <Button Command="{Binding PlayAudioCommand}" CommandParameter="{Binding CurrentCard.BackAudioPath}"
-                                            Visibility="{Binding CurrentCard.BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
-                                            Background="Transparent" BorderThickness="0" Cursor="Hand">
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBlock Text="🔊 Play audio" Foreground="White" FontSize="16"/>
-                                        </StackPanel>
-                                    </Button>
-
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
-                                        <Button Command="{Binding BackToFrontCommand}" Content="⬅ BACK TO QUESTION"
-                                        Width="200" Height="45" Margin="0,0,10,0"
-                                        Style="{StaticResource HostActionButtonStyle}"/>
-                         
-                                    </StackPanel>
-
-                                    <TextBlock Text="Đang đợi Player review..." 
-                                   Style="{StaticResource HostOnlyStyle}"
-                                   Foreground="#27AE60" FontWeight="Bold"
-                                   HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                                    <TextBlock Text="Correct Answer:" Foreground="Gray" FontSize="14"/>
+                                    <TextBlock Text="{Binding CorrectAnswer}" Foreground="#27AE60" FontSize="20" FontWeight="Bold" Margin="0,5,0,20"/>
+                                    <TextBlock Text="{Binding CurrentCard.BackText}" FontSize="28" FontWeight="Bold" Foreground="#2980B9"
+                               TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,20"/>
+                                    <Image Source="{Binding CurrentCard.BackImagePath, Converter={StaticResource ImagePathConverter}}"
+                                             Stretch="Uniform" MaxHeight="300" Margin="0,0,0,20"/>
 
 
-
+                                    <Button Content="BACK TO QUESTION"
+                            Command="{Binding BackToFrontCommand}"
+                            Width="220" Height="45"
+                            Style="{StaticResource HostActionButtonStyle}"/>
                                 </StackPanel>
                             </ScrollViewer>
                         </Grid>
+
                     </Grid>
                 </Border>
+
             </Grid>
         </Grid>
     </Grid>
