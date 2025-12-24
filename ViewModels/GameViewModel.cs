@@ -247,6 +247,7 @@ namespace EasyFlips.ViewModels
             {
                 Score += 10; // Cộng điểm cục bộ (Hiển thị vui)
                 ResultMessage = "Chính xác! (+10 điểm)";
+                UpdatePlayerScore(_authService.CurrentUserId, Score);
             }
             else
             {
