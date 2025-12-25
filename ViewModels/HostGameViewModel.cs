@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
-using System.Collections.ObjectModel;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -11,332 +11,231 @@ using GamePhaseModel = EasyFlips.Models.GamePhase;
 
 namespace EasyFlips.ViewModels
 {
-    internal partial class HostGameViewModel : BaseGameViewModel
+    public partial class HostGameViewModel : BaseGameViewModel
     {
-        [ObservableProperty] private string _correctAnswer;
-        [ObservableProperty] private bool _isCardFlipped;
-        [ObservableProperty] private bool _isTimeUp;
-        [ObservableProperty] private string _currentQuestionInfo;
-        [ObservableProperty] private string _statusMessage;
-        [ObservableProperty] private string _statusColor = "Red"; // mặc định countdown màu đỏ
-        [ObservableProperty] private int _submittedCount;
-        [ObservableProperty] private int _progressMaximum;
-
-
-
-<<<<<<< HEAD
-        public ObservableCollection<PlayerInfo> Players { get; } = new();
-=======
-
-     
->>>>>>> 390a71690886eb779546bf7f6d48b73085954af9
-
         private DispatcherTimer _roundTimer;
+        public GamePhase Phase { get; set; }   
+
+        [ObservableProperty] private bool _isCardFlipped;
+        [ObservableProperty] private string _statusMessage;
+        [ObservableProperty] private string _statusColor = "#FF5E57";
+        [ObservableProperty] private string _currentQuestionInfo;
+        [ObservableProperty] private int _progressMaximum;
+        [ObservableProperty]    private string _correctAnswer;
+
 
         public HostGameViewModel(
             IAuthService authService,
             SupabaseService supabaseService,
             INavigationService navigationService,
-            AudioService audioService
-        ) : base(authService, supabaseService, navigationService, audioService)
+            AudioService audioService)
+            : base(authService, supabaseService, navigationService, audioService)
         {
         }
 
-        public override async Task InitializeAsync(string roomId, string classroomId, Deck deck, int timePerRound)
+        #region INIT
+
+        public override async Task InitializeAsync(
+            string roomId,
+            string classroomId,
+            Deck deck,
+            int timePerRound)
         {
             await base.InitializeAsync(roomId, classroomId, deck, timePerRound);
 
-            if (CurrentDeck?.Cards?.Any() == true)
-            {
-                CurrentCard = CurrentDeck.Cards.First();
-                CurrentIndex = 0;
-                IsCardFlipped = false;
-                CorrectAnswer = string.Empty;
-                CurrentQuestionInfo = $"1/{CurrentDeck.Cards.Count}";
+            CurrentIndex = 0;
+            CurrentCard = deck.Cards.First();
+            CurrentQuestionInfo = $"{CurrentIndex + 1}/{deck.Cards.Count}";
+            await _supabaseService.StartFlashcardSessionAsync(
+                ClassroomId,
+                _authService.CurrentUserId,
+                deck.Id,
+                CurrentCard.Id,
+                deck.Cards.Count,
+                timePerRound
+            );
 
-                await _supabaseService.StartFlashcardSessionAsync(
-                    ClassroomId,
-                    _authService.CurrentUserId,
-                    CurrentDeck.Id,
-                    CurrentCard.Id,
-                    CurrentDeck.Cards.Count,
-                    TotalTimePerRound
-                );
-
-                // Subscribe to score events
-                await _supabaseService.SubscribeToFlashcardChannelAsync(
-                    ClassroomId,
-                    OnFlashcardStateReceived,
-                    OnScoreReceived
-                );
-
-                // Bắt đầu countdown 3-2-1 trước khi hiển thị câu hỏi
-                await StartCountdownAsync(3);
-            }
+            await SubscribeToRealtimeChannel();
+            StartCountdown();
         }
 
-        private async Task StartCountdownAsync(int seconds)
+        #endregion
+
+        #region TIMER FLOW
+
+        private void StartCountdown()
         {
-            TimeRemaining = seconds;
             CurrentPhase = GamePhase.Waiting;
             StatusMessage = "Chuẩn bị bắt đầu";
-            StatusColor = "#FF5E57"; // đỏ
-            ProgressMaximum = seconds;
-            var countdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            countdownTimer.Tick += async (s, e) =>
-            {
-                if (TimeRemaining > 1)
-                {
-                    TimeRemaining--;
-                }
-                else
-                {
-                    countdownTimer.Stop();
-                    CurrentPhase = GamePhase.Question;
-                    // ✅ Countdown xong mới gọi ShowCard
-                    await ShowCardAsync();
-                }
-            };
-            countdownTimer.Start();
+            StatusColor = "#FF5E57";
 
-            await Task.CompletedTask;
+            StartTimer(3);
         }
-        private async Task ShowCardAsync()
+
+        private void StartQuestion()
         {
             CurrentPhase = GamePhase.Question;
-            TimeRemaining = TotalTimePerRound;
             StatusMessage = "Trả lời câu hỏi";
-            StatusColor = "#FF5E57"; // vẫn màu đỏ khi đang trả lời
-            ProgressMaximum = TotalTimePerRound;
-            var state = new FlashcardSyncState
+            StatusColor = "#FF5E57";
+
+            BroadcastPhase(GamePhase.Question);
+            StartTimer(TotalTimePerRound);
+        }
+
+        private void StartResult()
+        {
+            CurrentPhase = GamePhase.Result;
+            StatusMessage = "Xem kết quả";
+            StatusColor = "#27AE60";
+
+            BroadcastPhase(GamePhase.Result);
+            StartTimer(10);
+        }
+
+        private void StartTimer(int seconds)
+        {
+            _roundTimer?.Stop();
+
+            TimeRemaining = seconds;
+            ProgressMaximum = seconds;
+
+            // ⚠️ FIX QUAN TRỌNG
+            if (seconds <= 0)
             {
-                ClassroomId = ClassroomId,
-                Action = FlashcardAction.ShowCard,
-                TriggeredBy = _authService.CurrentUserId,
-                DeckId = CurrentDeck.Id,
-                CurrentCardId = CurrentCard.Id,
-                CurrentCardIndex = CurrentIndex,
-                TotalCards = CurrentDeck.Cards.Count,
-                TimeRemaining = TotalTimePerRound,
-                IsSessionActive = true,
-                IsPaused = false,
-                Phase = GamePhaseModel.Question
+                HandleTimeUp();
+                return;
+            }
+
+            _roundTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
             };
 
-            await _supabaseService.BroadcastFlashcardStateAsync(ClassroomId, state);
-
-            StartRoundTimer(TotalTimePerRound);
-        }
-
-
-
-
-        protected override Task SubscribeToRealtimeChannel() => Task.CompletedTask;
-
-        protected override async Task OnQuitSpecificAsync()
-        {
-            await _supabaseService.EndFlashcardSessionAsync(ClassroomId, _authService.CurrentUserId);
-            await _supabaseService.DeleteClassroomAsync(ClassroomId);
-        }
-
-        [RelayCommand]
-        public async Task NextCard()
-        {
-            if (CurrentDeck == null) return;
-
-            var cardsList = CurrentDeck.Cards.ToList();
-            var currentIndex = cardsList.IndexOf(CurrentCard);
-            var nextIndex = currentIndex + 1;
-
-            if (nextIndex < cardsList.Count)
+            _roundTimer.Tick += (_, __) =>
             {
-                var nextCard = cardsList[nextIndex];
-                CurrentCard = nextCard;
-                CurrentIndex = nextIndex;
-                IsCardFlipped = false;
-                CorrectAnswer = string.Empty;
-                CurrentQuestionInfo = $"{nextIndex + 1}/{cardsList.Count}";
+                TimeRemaining--;
 
-                await _supabaseService.NextCardAsync(
-                    ClassroomId,
-                    _authService.CurrentUserId,
-                    CurrentDeck.Id,
-                    nextCard.Id,
-                    nextIndex,
-                    cardsList.Count,
-                    TotalTimePerRound
-                );
-
-              
-                StopRoundTimer();
-                
-                await StartCountdownAsync(3);
-            }
-            else
-            {
-                await _supabaseService.EndFlashcardSessionAsync(ClassroomId, _authService.CurrentUserId);
-
-                var state = new FlashcardSyncState
+                if (TimeRemaining <= 0)
                 {
-                    ClassroomId = ClassroomId,
-                    Action = FlashcardAction.EndSession,
-                    TriggeredBy = _authService.CurrentUserId,
-                    IsSessionActive = false,
-                    IsPaused = false,
-                    Phase = GamePhaseModel.Finished
-                };
+                    _roundTimer.Stop();
+                    HandleTimeUp();
+                }
+            };
 
-                await _supabaseService.BroadcastFlashcardStateAsync(ClassroomId, state);
-
-                CurrentPhase = GamePhase.Finished;
-                await EndAndNavigateToLeaderboardAsync();
-            }
-
+            _roundTimer.Start();
         }
 
-       
+        private async void HandleTimeUp()
+        {
+            switch (CurrentPhase)
+            {
+                case GamePhase.Waiting:
+                    StartQuestion();
+                    break;
+
+                case GamePhase.Question:
+                    _ = FlipCard();
+                    StartResult();
+
+                    break;
+
+                case GamePhase.Result:
+                    _ = NextCardOrEnd();
+                    break;
+            }
+        }
+
+        #endregion
+
+        #region GAME FLOW
+
         [RelayCommand]
         public async Task FlipCard()
         {
-            if (CurrentCard == null) return;
-
-            var cardsList = CurrentDeck.Cards.ToList();
-            var currentIndex = cardsList.IndexOf(CurrentCard);
-
+            ShowCard();
+            CorrectAnswer = CurrentCard?.Answer;
             await _supabaseService.FlipCardAsync(
                 ClassroomId,
                 _authService.CurrentUserId,
                 CurrentDeck.Id,
                 CurrentCard.Id,
-                currentIndex,
-                cardsList.Count,
+                CurrentIndex,
+                CurrentDeck.Cards.Count,
                 TimeRemaining
             );
-
-            IsCardFlipped = true;
-            CorrectAnswer = CurrentCard.Answer;
-
-           
         }
 
-
-        [RelayCommand]
-        public void BackToFront()
+        private async Task NextCardOrEnd()
         {
-            if (CurrentCard == null) return;
+            if (CurrentIndex + 1 >= CurrentDeck.Cards.Count)
+            {
+                await EndGame();
+                return;
+            }
+
+            CurrentIndex++;
+            var cardsList = CurrentDeck.Cards.ToList();
+            CurrentCard = cardsList[CurrentIndex];
+            CurrentQuestionInfo = $"{CurrentIndex + 1}/{CurrentDeck.Cards.Count}";
             IsCardFlipped = false;
-            CorrectAnswer = string.Empty;
-            CurrentPhase = GamePhase.Question; 
+
+            StartCountdown();
         }
-
-
-        private void StartRoundTimer(int seconds)
+        [RelayCommand]
+        private void BackToFront()
         {
-            _roundTimer?.Stop();
-            TimeRemaining = seconds;
-            IsTimeUp = false;
-            ProgressMaximum = seconds;
-            _roundTimer = new DispatcherTimer { Interval = System.TimeSpan.FromSeconds(1) };
-            _roundTimer.Tick += async (s, e) =>
-            {
-                if (TimeRemaining > 0)
-                {
-                    TimeRemaining--;
-                }
-                else
-                {
-                    _roundTimer.Stop();
-                    if (!IsCardFlipped && CurrentCard != null)
-                    {
-                        await FlipCard();
-                    }
-                    IsTimeUp = true;
+            // Đặt lại trạng thái để hiển thị mặt trước
+            IsCardFlipped = false;
 
-                    CurrentPhase = GamePhase.Result;
-                    TimeRemaining = 10;
-
-                    var state = new FlashcardSyncState
-                    {
-                        ClassroomId = ClassroomId,
-                        Action = FlashcardAction.FlipCard,
-                        TriggeredBy = _authService.CurrentUserId,
-                        DeckId = CurrentDeck.Id,
-                        CurrentCardId = CurrentCard.Id,
-                        CurrentCardIndex = CurrentIndex,
-                        TotalCards = CurrentDeck.Cards.Count,
-                        TimeRemaining = 10,
-                        IsSessionActive = true,
-                        IsPaused = false,
-                        Phase = GamePhaseModel.Result
-                    };
-
-                    await _supabaseService.BroadcastFlashcardStateAsync(ClassroomId, state);
-
-                    StartResultTimer(10);
-
-                }
-            };
-            _roundTimer.Start();
+            
         }
-
-        private void StartResultTimer(int seconds)
+        [RelayCommand]
+        private void ShowCard()
         {
-            _roundTimer?.Stop();
-            TimeRemaining = seconds;
-            StatusMessage = "Đang review kết quả";
-            StatusColor = "#27AE60"; // xanh lá
-            ProgressMaximum = seconds;
-
-            _roundTimer = new DispatcherTimer { Interval = System.TimeSpan.FromSeconds(1) };
-            _roundTimer.Tick += async (s, e) =>
-            {
-                if (TimeRemaining > 0)
-                {
-                    TimeRemaining--;
-                }
-                else
-                {
-                    _roundTimer.Stop();
-
-                    // Nếu còn card thì sang card mới
-                    var cardsList = CurrentDeck.Cards.ToList();
-                    if (CurrentIndex + 1 < cardsList.Count)
-                    {
-                        await NextCard();
-                    }
-                    else
-                    {
-                        // Hết bài -> EndSession sau khi chờ đủ 10s
-                        var state = new FlashcardSyncState
-                        {
-                            ClassroomId = ClassroomId,
-                            Action = FlashcardAction.EndSession,
-                            TriggeredBy = _authService.CurrentUserId,
-                            IsSessionActive = false,
-                            IsPaused = false,
-                            Phase = GamePhaseModel.Finished
-                        };
-
-                        await _supabaseService.BroadcastFlashcardStateAsync(ClassroomId, state);
-
-                        CurrentPhase = GamePhase.Finished;
-                        ForceCloseWindow();
-                    }
-                }
-            };
-            _roundTimer.Start();
+            // Chỉ lật thẻ trên UI, không gửi đi đâu cả
+            IsCardFlipped = true;
+            CorrectAnswer = CurrentCard?.Answer;
         }
 
 
-        private void StopRoundTimer() => _roundTimer?.Stop();
+        private async Task EndGame()
+        {
+            await _supabaseService.EndFlashcardSessionAsync(
+                ClassroomId,
+                _authService.CurrentUserId);
+
+            await BroadcastPhase(GamePhase.Finished);
+            CurrentPhase = GamePhase.Finished;
+
+            ForceCloseWindow();
+        }
+
+        #endregion
+
+        #region BROADCAST
+        protected override async Task SubscribeToRealtimeChannel()
+        {
+            await _supabaseService.SubscribeToFlashcardChannelAsync(
+                ClassroomId,
+                OnFlashcardStateReceived,
+                OnScoreReceived
+            );
+        }
+
+        private void OnFlashcardStateReceived(FlashcardSyncState state)
+        {
+            // Bạn có thể xử lý trạng thái đồng bộ tại đây nếu cần
+            System.Diagnostics.Debug.WriteLine($"[Realtime] Phase: {state.Phase}, Action: {state.Action}");
+        }
 
         private void OnScoreReceived(ScoreSubmission submission)
         {
-            // tìm player theo UserId
+            // Tìm player theo UserId
             var player = Players.FirstOrDefault(p => p.Id == submission.UserId);
+
             if (player == null)
             {
-                // nếu chưa có thì thêm mới
+                // Nếu chưa có thì thêm mới
                 player = new PlayerInfo
                 {
                     Id = submission.UserId,
@@ -345,9 +244,54 @@ namespace EasyFlips.ViewModels
                 };
                 Players.Add(player);
             }
-            // cộng player.Score += submission.Score
+
+            // Cộng điểm
             player.Score += submission.Score;
-            // Optionally: sort or update UI
+
+            // Debug log
+            System.Diagnostics.Debug.WriteLine($"[Score] {player.Name} hiện có {player.Score} điểm");
         }
+
+
+
+        private async Task BroadcastPhase(GamePhase phase)
+        {
+            FlashcardPhase syncPhase = phase switch
+            {
+                GamePhase.Question => FlashcardPhase.Question,
+                GamePhase.Result => FlashcardPhase.Result,
+                GamePhase.Finished => FlashcardPhase.Finished,
+                _ => FlashcardPhase.None
+            };
+
+            var state = new FlashcardSyncState
+            {
+                ClassroomId = ClassroomId,
+                DeckId = CurrentDeck.Id,
+                CurrentCardId = CurrentCard?.Id,
+                CurrentCardIndex = CurrentIndex,
+                TotalCards = CurrentDeck.Cards.Count,
+                Phase = phase, 
+
+
+
+                Action = phase switch
+                {
+                    GamePhase.Question => FlashcardAction.ShowCard,
+                    GamePhase.Result => FlashcardAction.FlipCard,
+                    GamePhase.Finished => FlashcardAction.EndSession,
+                    _ => FlashcardAction.None
+                },
+
+                IsFlipped = IsCardFlipped,
+                TimeRemaining = TimeRemaining,
+                TriggeredBy = _authService.CurrentUserId,
+                IsSessionActive = phase != GamePhase.Finished
+            };
+
+            await _supabaseService.BroadcastFlashcardStateAsync(ClassroomId, state);
+        }
+
+        #endregion
     }
 }

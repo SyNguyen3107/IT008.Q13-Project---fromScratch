@@ -22,6 +22,7 @@ using static Supabase.Realtime.Constants;
 using static Supabase.Realtime.PostgresChanges.PostgresChangesOptions;
 using RealtimeConstants = Supabase.Realtime.Constants;
 
+
 namespace EasyFlips.Services
 {
     /// <summary>
@@ -1457,6 +1458,8 @@ namespace EasyFlips.Services
             await broadcast.Send("FLASHCARD_SCORE", payload);
             Debug.WriteLine($"[FlashcardSync] Sent FLASHCARD_SCORE: {JsonConvert.SerializeObject(payload)}");
         }
+
+
 
         /// <summary>
         /// Subscribe vào kênh flashcard sync, hỗ trợ nhận cả sự kiện điểm số.

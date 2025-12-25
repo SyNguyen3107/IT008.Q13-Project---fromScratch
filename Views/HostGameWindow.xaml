@@ -300,19 +300,12 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,0">
-                    <!-- Số người đã nộp: màu xanh -->
-                    <TextBlock Text="{Binding SubmittedCount}" 
-               FontSize="24" FontWeight="Bold" Foreground="#27AE60"/>
-
-                    <TextBlock Text="/" 
-               FontSize="24" FontWeight="Bold" Foreground="White" Margin="5,0"/>
-
-                    <!-- Tổng số người chơi: màu đỏ -->
-                    <TextBlock Text="{Binding Players.Count}" 
-               FontSize="24" FontWeight="Bold" Foreground="#E74C3C"/>
-
-                    <TextBlock Text=" Submitted" 
-               FontSize="14" Foreground="#BDC3C7" VerticalAlignment="Bottom" Margin="5,0,0,4"/>
+                    
+                    <TextBlock Text="{Binding CurrentQuestionInfo}" 
+           FontSize="24" FontWeight="Bold" Foreground="#27AE60"/>
+                    <TextBlock Text=" Questions" 
+                    FontSize="14" Foreground="#BDC3C7" VerticalAlignment="Bottom" Margin="5,0,0,4"/>
+   
                 </StackPanel>
 
 
@@ -423,7 +416,7 @@
                             </StackPanel>
 
                             <Grid Grid.Row="1" Margin="0,20,0,0">
-                                <Button Content="SHOW ANSWER" Command="{Binding FlipCardCommand}" Style="{StaticResource HostActionButtonStyle}" Width="200" Height="50" HorizontalAlignment="Center"/>
+                                <Button Content="SHOW ANSWER" Command="{Binding ShowCardCommand}" Style="{StaticResource HostActionButtonStyle}" Width="200" Height="50" HorizontalAlignment="Center"/>
                             </Grid>
                         </Grid>
 
@@ -454,10 +447,21 @@
                                              Stretch="Uniform" MaxHeight="300" Margin="0,0,0,20"/>
 
 
-                                    <Button Content="BACK TO QUESTION"
-                            Command="{Binding BackToFrontCommand}"
-                            Width="220" Height="45"
-                            Style="{StaticResource HostActionButtonStyle}"/>
+                                        <Button Content="BACK TO QUESTION"
+                                            Command="{Binding BackToFrontCommand}"
+                                            Width="220" Height="45">
+                                            <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource SubmitButtonStyle}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CurrentPhase}" Value="Result">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
                                 </StackPanel>
                             </ScrollViewer>
                         </Grid>

@@ -11,6 +11,7 @@ namespace EasyFlips.Models
     /// </summary>
     public enum FlashcardAction
     {
+        None = 0,
         ShowCard,
         FlipCard,
         NextCard,

@@ -1,15 +1,18 @@
-﻿using EasyFlips.Interfaces;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
+using EasyFlips.Views;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using System.Windows;
+using System.Windows.Navigation;
 
 namespace EasyFlips.ViewModels
 {
@@ -18,6 +21,7 @@ namespace EasyFlips.ViewModels
         private readonly SupabaseService _supabaseService;
         private readonly ComparisonService _comparisonService;
         private readonly IAuthService _authService;
+        private readonly INavigationService _navigationService;
 
         private string _roomId = string.Empty;
         private string _classroomId = string.Empty;
@@ -105,7 +109,7 @@ namespace EasyFlips.ViewModels
                     case FlashcardAction.EndSession:
                         IsInputEnabled = false;
                         Debug.WriteLine("[MemberGame] Session ended");
-                        _ = EndAndNavigateToLeaderboardAsync();
+                        _navigationService.ShowLeaderBoardWindow();
                         break;
                 }
             });
@@ -120,7 +124,8 @@ namespace EasyFlips.ViewModels
             // Lấy đáp án đúng từ _deck.Cards (dùng BackText/Answer)
             if (state != null && _deck != null && state.CurrentCardIndex < _deck.Cards.Count)
             {
-                _correctAnswer = _deck.Cards[state.CurrentCardIndex].Answer;
+                _correctAnswer = ((List<Card>)_deck.Cards)[state.CurrentCardIndex].Answer;
+
             }
             else
             {
@@ -160,5 +165,9 @@ namespace EasyFlips.ViewModels
         {
             return IsInputEnabled;
         }
+
+ 
+
+
     }
 }

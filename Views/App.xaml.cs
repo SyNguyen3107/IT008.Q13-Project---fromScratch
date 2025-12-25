@@ -198,6 +198,8 @@ namespace EasyFlips
             services.AddTransient<MemberLobbyViewModel>();
             services.AddTransient<HostGameViewModel>();
             services.AddTransient<MemberGameViewModel>();
+            services.AddTransient<LeaderBoardViewModel>();
+            services.AddTransient<LeaderBoardWindow>(); // hoặc LeaderBoardWindow nếu dùng WPF
 
             // Windows
             services.AddTransient<MainWindow>();
