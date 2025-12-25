@@ -1471,6 +1471,129 @@ namespace EasyFlips.Services
         }
 
        
+        /// <summary>
+        /// Gửi điểm của member lên host qua broadcast event FLASHCARD_SCORE.
+        /// </summary>
+        public async Task BroadcastScoreSubmissionAsync(string classroomId, ScoreSubmission submission)
+        {
+            string channelName = $"flashcard-sync:{classroomId}";
+            if (!_activeBroadcasts.TryGetValue(channelName, out var broadcast))
+            {
+                Debug.WriteLine($"[FlashcardSync] Chưa tham gia kênh {channelName}");
+                return;
+            }
+            var payload = new Dictionary<string, object>
+            {
+                { "user_id", submission.UserId },
+                { "display_name", submission.DisplayName },
+                { "card_index", submission.CardIndex },
+                { "answer", submission.Answer },
+                { "is_correct", submission.IsCorrect },
+                { "score", submission.Score },
+                { "time_taken_ms", submission.TimeTakenMs },
+                { "submitted_at", submission.SubmittedAt.ToString("O") }
+            };
+            await broadcast.Send("FLASHCARD_SCORE", payload);
+            Debug.WriteLine($"[FlashcardSync] Sent FLASHCARD_SCORE: {JsonConvert.SerializeObject(payload)}");
+        }
+
+        /// <summary>
+        /// Subscribe vào kênh flashcard sync, hỗ trợ nhận cả sự kiện điểm số.
+        /// </summary>
+        public async Task<SubscribeResult> SubscribeToFlashcardChannelAsync(
+            string classroomId,
+            Action<FlashcardSyncState> onStateReceived,
+            Action<ScoreSubmission>? onScoreReceived = null
+        )
+        {
+            var result = new SubscribeResult { ChannelName = $"flashcard-sync:{classroomId}" };
+            try
+            {
+                await _client.Realtime.ConnectAsync();
+
+                string channelName = $"flashcard-sync:{classroomId}";
+
+                // Hủy kênh cũ nếu có
+                if (_activeChannels.TryGetValue(channelName, out var oldChannel))
+                {
+                    oldChannel.Unsubscribe();
+                    _activeChannels.Remove(channelName);
+                    _activeBroadcasts.Remove(channelName);
+                }
+
+                var channel = _client.Realtime.Channel(channelName);
+                _activeChannels[channelName] = channel;
+
+                // Đăng ký Broadcast (true = lắng nghe broadcast, false = không ack)
+                var broadcast = channel.Register<FlashcardBroadcast>(true, false);
+                _activeBroadcasts[channelName] = broadcast;
+
+                // Lắng nghe sự kiện broadcast
+                broadcast.AddBroadcastEventHandler((sender, args) =>
+                {
+                    if (args.Event == "FLASHCARD_SYNC")
+                    {
+                        try
+                        {
+                            var payload = args.Payload;
+                            if (payload != null)
+                            {
+                                var state = ParseFlashcardState(payload);
+                                if (state != null)
+                                {
+                                    Debug.WriteLine($"[FlashcardSync] Nhận trạng thái: {state.Action} - Card {state.CurrentCardIndex + 1}/{state.TotalCards}, Lật: {state.IsFlipped}");
+                                    onStateReceived?.Invoke(state);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[FlashcardSync] Parse error: {ex.Message}");
+                        }
+                    }
+                    else if (args.Event == "FLASHCARD_SCORE" && onScoreReceived != null)
+                    {
+                        try
+                        {
+                            var payload = args.Payload;
+                            if (payload != null)
+                            {
+                                var submission = new ScoreSubmission
+                                {
+                                    UserId = payload.GetValueOrDefault("user_id")?.ToString() ?? string.Empty,
+                                    DisplayName = payload.GetValueOrDefault("display_name")?.ToString() ?? string.Empty,
+                                    CardIndex = Convert.ToInt32(payload.GetValueOrDefault("card_index", 0)),
+                                    Answer = payload.GetValueOrDefault("answer")?.ToString() ?? string.Empty,
+                                    IsCorrect = Convert.ToBoolean(payload.GetValueOrDefault("is_correct", false)),
+                                    Score = Convert.ToInt32(payload.GetValueOrDefault("score", 0)),
+                                    TimeTakenMs = Convert.ToInt64(payload.GetValueOrDefault("time_taken_ms", 0)),
+                                    SubmittedAt = DateTime.TryParse(payload.GetValueOrDefault("submitted_at")?.ToString(), out var dt) ? dt : DateTime.UtcNow
+                                };
+                                Debug.WriteLine($"[FlashcardSync] Nhận FLASHCARD_SCORE: {JsonConvert.SerializeObject(submission)}");
+                                onScoreReceived(submission);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[FlashcardSync] Parse score error: {ex.Message}");
+                        }
+                    }
+                });
+
+                await channel.Subscribe();
+
+                result.Success = true;
+                Debug.WriteLine($"[FlashcardSync] Subscribed to channel: {result.ChannelName}");
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.ErrorMessage = ex.Message;
+                Debug.WriteLine($"[FlashcardSync] Subscribe failed: {ex.Message}");
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// Rời khỏi kênh đồng bộ flashcard.

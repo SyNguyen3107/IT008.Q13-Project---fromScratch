@@ -308,16 +308,6 @@ namespace EasyFlips.Services
                 return;
             }
 
-            try
-            {
-                await vm.InitializeAsync(roomId, classroomId, deck, timePerRound);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Init error: {ex.Message}");
-                return;
-            }
-
             HostGameWindow window;
             try
             {
@@ -330,10 +320,21 @@ namespace EasyFlips.Services
             }
 
             window.DataContext = vm;
-            Application.Current.MainWindow = window; // gán lại MainWindow
+            Application.Current.MainWindow = window;
             window.Show();
 
             CloseSpecificWindows(typeof(HostLobbyWindow));
+
+            // Gọi InitializeAsync SAU khi Window đã hiển thị
+            try
+            {
+                await vm.InitializeAsync(roomId, classroomId, deck, timePerRound);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Init error: {ex.Message}");
+                // Nếu lỗi, vẫn giữ Window mở để người dùng thấy thông báo
+            }
         }
 
 
@@ -367,6 +368,18 @@ namespace EasyFlips.Services
                 }
             }
         }
+        public void ShowLeaderBoardWindow(string roomId = null, string classroomId = null, IEnumerable<PlayerInfo> players = null)
+        {
+            var window = _serviceProvider.GetRequiredService<LeaderBoardWindow>();
+            // Optionally set DataContext if you want to pass data
+            if (window.DataContext is LeaderBoardViewModel vm && players != null)
+            {
+                vm.Initialize(roomId, classroomId, players);
+            }
+            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            window.Show();
+        }
+
         public void CloseCurrentWindow()
         {
             // Logic đóng cửa sổ hiện tại an toàn

@@ -175,6 +175,7 @@ namespace EasyFlips
             services.AddSingleton<IAuthService, SupabaseAuthService>();
             services.AddTransient<SyncService>();
             services.AddSingleton<RealtimeService>();
+            services.AddSingleton<ComparisonService>();
 
             // ViewModels
             services.AddTransient<MainViewModel>();
