@@ -367,6 +367,18 @@ namespace EasyFlips.Services
                 }
             }
         }
+        public void ShowLeaderBoardWindow(string roomId = null, string classroomId = null, IEnumerable<PlayerInfo> players = null)
+        {
+            var window = _serviceProvider.GetRequiredService<LeaderBoardWindow>();
+            // Optionally set DataContext if you want to pass data
+            if (window.DataContext is LeaderBoardViewModel vm && players != null)
+            {
+                vm.Initialize(roomId, classroomId, players);
+            }
+            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            window.Show();
+        }
+
         public void CloseCurrentWindow()
         {
             // Logic đóng cửa sổ hiện tại an toàn

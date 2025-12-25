@@ -28,6 +28,7 @@ namespace EasyFlips.Interfaces
         Task ShowHostGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound);
         Task ShowMemberGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound);
         void CloseCurrentWindow();
+        void ShowLeaderBoardWindow(string roomId = null, string classroomId = null, IEnumerable<PlayerInfo> players = null);
 
     }
 }

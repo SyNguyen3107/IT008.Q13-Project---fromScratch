@@ -26,6 +26,20 @@ namespace EasyFlips.ViewModels
     /// </summary>
     public abstract partial class BaseGameViewModel : ObservableObject
     {
+        /// <summary>
+        /// Dọn dẹp tài nguyên và chuyển sang màn hình LeaderBoard
+        /// </summary>
+        protected virtual async Task EndAndNavigateToLeaderboardAsync()
+        {
+            // Rời kênh realtime
+            await _supabaseService.LeaveFlashcardSyncChannelAsync(ClassroomId);
+
+            // Điều hướng sang LeaderBoard
+            _navigationService.ShowLeaderBoardWindow(RoomId, ClassroomId, Players);
+
+            // Đóng cửa sổ hiện tại
+            ForceCloseWindow();
+        }
         #region Services
         protected readonly IAuthService _authService;
         protected readonly SupabaseService _supabaseService;

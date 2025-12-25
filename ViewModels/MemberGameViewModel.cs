@@ -16,6 +16,8 @@ namespace EasyFlips.ViewModels
     public partial class MemberGameViewModel : ObservableObject
     {
         private readonly SupabaseService _supabaseService;
+        private readonly ComparisonService _comparisonService;
+        private readonly IAuthService _authService;
 
         private string _roomId = string.Empty;
         private string _classroomId = string.Empty;
@@ -33,9 +35,14 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private FlashcardSyncState? currentState;
 
-        public MemberGameViewModel(SupabaseService supabaseService)
+        private bool _submittedThisCard = false;
+        private string _correctAnswer = string.Empty;
+
+        public MemberGameViewModel(SupabaseService supabaseService, ComparisonService comparisonService, IAuthService authService)
         {
             _supabaseService = supabaseService;
+            _comparisonService = comparisonService;
+            _authService = authService;
             IsInputEnabled = false;
         }
 
@@ -70,7 +77,6 @@ namespace EasyFlips.ViewModels
         /// </summary>
         private void OnFlashcardStateReceived(FlashcardSyncState state)
         {
-            // Chạy trên UI thread
             Application.Current.Dispatcher.Invoke(() =>
             {
                 CurrentState = state;
@@ -80,37 +86,71 @@ namespace EasyFlips.ViewModels
                 {
                     case FlashcardAction.ShowCard:
                     case FlashcardAction.StartSession:
-                        OnQuestionReceived();
+                        OnQuestionReceived(state);
                         break;
 
                     case FlashcardAction.FlipCard:
+                        // Nếu chưa submit thì auto-submit đáp án đang gõ dở
+                        if (!_submittedThisCard && IsInputEnabled)
+                        {
+                            SubmitAnswer();
+                        }
                         IsInputEnabled = false;
                         break;
 
                     case FlashcardAction.NextCard:
-                        OnQuestionReceived();
+                        OnQuestionReceived(state);
                         break;
 
                     case FlashcardAction.EndSession:
                         IsInputEnabled = false;
                         Debug.WriteLine("[MemberGame] Session ended");
+                        _ = EndAndNavigateToLeaderboardAsync();
                         break;
                 }
             });
         }
 
         // Gọi hàm này khi nhận tín hiệu "Question" từ Server/Host
-        public void OnQuestionReceived()
+        public void OnQuestionReceived(FlashcardSyncState? state = null)
         {
             UserAnswer = "";
             IsInputEnabled = true;
+            _submittedThisCard = false;
+            // Lấy đáp án đúng từ _deck.Cards (dùng BackText/Answer)
+            if (state != null && _deck != null && state.CurrentCardIndex < _deck.Cards.Count)
+            {
+                _correctAnswer = _deck.Cards[state.CurrentCardIndex].Answer;
+            }
+            else
+            {
+                _correctAnswer = string.Empty;
+            }
         }
         // Hàm xử lý nộp bài(Dùng cho cả Nút Submit và Phím Enter)
         [RelayCommand(CanExecute = nameof(CanSubmit))]
-        private void SubmitAnswer()
+        private async void SubmitAnswer()
         {
-            // Xử lý logic nộp bài ở đây
-            MessageBox.Show($"Đã nộp đáp án: {UserAnswer}");
+            if (_submittedThisCard || !IsInputEnabled) return;
+            _submittedThisCard = true;
+
+            // So sánh đáp án
+            bool isCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, _correctAnswer);
+            int deltaScore = isCorrect ? 10 : 0; // Ví dụ: đúng +10
+
+            // Gửi điểm lên Host
+            var submission = new ScoreSubmission
+            {
+                UserId = _authService.CurrentUserId,
+                DisplayName = "", // Có thể lấy từ profile nếu cần
+                CardIndex = CurrentState?.CurrentCardIndex ?? 0,
+                Answer = UserAnswer,
+                IsCorrect = isCorrect,
+                Score = deltaScore,
+                TimeTakenMs = 0, // Có thể tính thời gian nếu muốn
+                SubmittedAt = DateTime.UtcNow
+            };
+            await _supabaseService.BroadcastScoreSubmissionAsync(_classroomId, submission);
 
             // Sau khi nộp xong thì KHÓA lại ngay
             IsInputEnabled = false;

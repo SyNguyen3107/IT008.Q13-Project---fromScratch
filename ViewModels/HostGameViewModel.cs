@@ -24,7 +24,6 @@ namespace EasyFlips.ViewModels
 
 
 
-
         public ObservableCollection<PlayerInfo> Players { get; } = new();
 
         private DispatcherTimer _roundTimer;
@@ -57,6 +56,13 @@ namespace EasyFlips.ViewModels
                     CurrentCard.Id,
                     CurrentDeck.Cards.Count,
                     TotalTimePerRound
+                );
+
+                // Subscribe to score events
+                await _supabaseService.SubscribeToFlashcardChannelAsync(
+                    ClassroomId,
+                    OnFlashcardStateReceived,
+                    OnScoreReceived
                 );
 
                 // Bắt đầu countdown 3-2-1 trước khi hiển thị câu hỏi
@@ -178,7 +184,7 @@ namespace EasyFlips.ViewModels
                 await _supabaseService.BroadcastFlashcardStateAsync(ClassroomId, state);
 
                 CurrentPhase = GamePhase.Finished;
-                ForceCloseWindow();
+                await EndAndNavigateToLeaderboardAsync();
             }
 
         }
@@ -318,5 +324,25 @@ namespace EasyFlips.ViewModels
 
 
         private void StopRoundTimer() => _roundTimer?.Stop();
+
+        private void OnScoreReceived(ScoreSubmission submission)
+        {
+            // tìm player theo UserId
+            var player = Players.FirstOrDefault(p => p.Id == submission.UserId);
+            if (player == null)
+            {
+                // nếu chưa có thì thêm mới
+                player = new PlayerInfo
+                {
+                    Id = submission.UserId,
+                    Name = submission.DisplayName,
+                    Score = 0
+                };
+                Players.Add(player);
+            }
+            // cộng player.Score += submission.Score
+            player.Score += submission.Score;
+            // Optionally: sort or update UI
+        }
     }
 }
