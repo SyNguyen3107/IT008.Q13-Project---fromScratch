@@ -308,16 +308,6 @@ namespace EasyFlips.Services
                 return;
             }
 
-            try
-            {
-                await vm.InitializeAsync(roomId, classroomId, deck, timePerRound);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Init error: {ex.Message}");
-                return;
-            }
-
             HostGameWindow window;
             try
             {
@@ -330,10 +320,21 @@ namespace EasyFlips.Services
             }
 
             window.DataContext = vm;
-            Application.Current.MainWindow = window; // gán lại MainWindow
+            Application.Current.MainWindow = window;
             window.Show();
 
             CloseSpecificWindows(typeof(HostLobbyWindow));
+
+            // Gọi InitializeAsync SAU khi Window đã hiển thị
+            try
+            {
+                await vm.InitializeAsync(roomId, classroomId, deck, timePerRound);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Init error: {ex.Message}");
+                // Nếu lỗi, vẫn giữ Window mở để người dùng thấy thông báo
+            }
         }
 
 

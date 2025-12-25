@@ -1,12 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
-using EasyFlips.Interfaces;
 using System;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Collections.ObjectModel;
 
 namespace EasyFlips.ViewModels
 {
@@ -37,6 +38,7 @@ namespace EasyFlips.ViewModels
 
         [ObservableProperty] private string _roomId;
         [ObservableProperty] private string _classroomId;
+        protected HashSet<string> _knownPlayerIds = new HashSet<string>();
         public ObservableCollection<PlayerInfo> Players { get; } = new ObservableCollection<PlayerInfo>();
         [ObservableProperty] private Deck _currentDeck;
         [ObservableProperty] public Card _currentCard;
@@ -89,8 +91,10 @@ namespace EasyFlips.ViewModels
             {
                 TotalCards = CurrentDeck.Cards.Count;
             }
+            var currentMembers = await _supabaseService.GetClassroomMembersWithProfileAsync(ClassroomId);
 
-            
+            // 4. Update UI Player List
+            UpdatePlayerList(currentMembers);
             await SubscribeToRealtimeChannel();
         }
 
@@ -98,6 +102,27 @@ namespace EasyFlips.ViewModels
         /// Phương thức abstract bắt buộc lớp con phải định nghĩa logic Realtime riêng
         /// </summary>
         protected abstract Task SubscribeToRealtimeChannel();
+        public void UpdatePlayerList(List<MemberWithProfile> serverMembers)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+             
+                foreach (var member in serverMembers)
+                {
+                    if (!Players.Any(p => p.Id == member.UserId))
+                    {
+                        Players.Add(new PlayerInfo
+                        {
+                            Id = member.UserId,
+                            Name = member.DisplayName ?? "Unknown",
+                            AvatarUrl = !string.IsNullOrEmpty(member.AvatarUrl) ? member.AvatarUrl : "/Resources/user.png", // Fallback image
+                            IsHost = (member.Role == "owner" || member.Role == "host")
+                        });
+                    }
+                }
+                
+            });
+        }
 
         [RelayCommand]
         public virtual async Task QuitGame()
