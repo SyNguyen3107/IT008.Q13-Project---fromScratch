@@ -6,105 +6,111 @@ using EasyFlips.Services;
 using EasyFlips.Views;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Navigation;
 
 namespace EasyFlips.ViewModels
 {
-    public partial class MemberGameViewModel : ObservableObject
+    /// <summary>
+    /// ViewModel dành riêng cho Member - Kế thừa BaseGameViewModel của Dev A
+    /// </summary>
+    public partial class MemberGameViewModel : BaseGameViewModel
     {
-        private readonly SupabaseService _supabaseService;
         private readonly ComparisonService _comparisonService;
         private readonly IAuthService _authService;
         private readonly INavigationService _navigationService;
 
-        private string _roomId = string.Empty;
-        private string _classroomId = string.Empty;
-        private Deck? _deck;
-        private int _timePerRound;
-
-        // Binding IsInputEnable
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SubmitAnswerCommand))]
-        private bool isInputEnabled;
+        private bool _isInputEnabled;
 
         [ObservableProperty]
-        private string userAnswer = string.Empty;
+        private string _userAnswer = string.Empty;
 
         [ObservableProperty]
-        private FlashcardSyncState? currentState;
+        private string _resultMessage = string.Empty;
 
-        private bool _submittedThisCard = false;
-        private string _correctAnswer = string.Empty;
-
-        public MemberGameViewModel(SupabaseService supabaseService, ComparisonService comparisonService, IAuthService authService)
+        public MemberGameViewModel(
+            IAuthService authService,
+            SupabaseService supabaseService,
+            INavigationService navigationService,
+            AudioService audioService,
+            ComparisonService comparisonService)
+            : base(authService, supabaseService, navigationService, audioService)
         {
-            _supabaseService = supabaseService;
             _comparisonService = comparisonService;
-            _authService = authService;
             IsInputEnabled = false;
         }
 
         /// <summary>
-        /// Khởi tạo Member Game - Subscribe vào kênh Realtime.
+        /// Ghi đè hàm Initialize từ lớp cha để đăng ký Realtime
         /// </summary>
-        public async Task InitializeAsync(string roomId, string classroomId, Deck? deck, int timePerRound)
+        public override async Task InitializeAsync(string roomId, string classroomId, Deck? deck, int timePerRound)
         {
-            _roomId = roomId;
-            _classroomId = classroomId;
-            _deck = deck;
-            _timePerRound = timePerRound;
+            await base.InitializeAsync(roomId, classroomId, deck, timePerRound);
+            // Các thuộc tính như _roomId, _classroomId đã được gán tự động ở lớp cha (base.InitializeAsync)
+        }
 
-            // Subscribe vào kênh flashcard sync
+        /// <summary>
+        /// Implement phương thức abstract từ BaseGameViewModel
+        /// </summary>
+        protected override async Task SubscribeToRealtimeChannel()
+        {
             var result = await _supabaseService.SubscribeToFlashcardChannelAsync(
-                classroomId,
+                ClassroomId,
                 OnFlashcardStateReceived
             );
 
             if (result.Success)
-            {
-                Debug.WriteLine($"[MemberGame] Subscribed to channel: {result.ChannelName}");
-            }
+                Debug.WriteLine($"[MemberGame] Đã kết nối kênh: {result.ChannelName}");
             else
-            {
-                Debug.WriteLine($"[MemberGame] Subscribe failed: {result.ErrorMessage}");
-            }
+                Debug.WriteLine($"[MemberGame] Kết nối thất bại: {result.ErrorMessage}");
         }
 
         /// <summary>
-        /// Callback khi nhận được trạng thái mới từ Host.
+        /// XỬ LÝ TASK: Cập nhật UI Card và Timer khi nhận gói tin từ Host
         /// </summary>
         private void OnFlashcardStateReceived(FlashcardSyncState state)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                CurrentState = state;
-                Debug.WriteLine($"[MemberGame] Received: {state.Action} - Card {state.CurrentCardIndex + 1}/{state.TotalCards}");
-
-                switch (state.Action)
+                // 1. Đồng bộ Index và Card
+                if (CurrentDeck != null && (CurrentCard == null || CurrentCard.Id != state.CurrentCardId))
                 {
-                    case FlashcardAction.ShowCard:
-                    case FlashcardAction.StartSession:
-                        OnQuestionReceived(state);
-                        break;
+                    var newCard = CurrentDeck.Cards.FirstOrDefault(c => c.Id == state.CurrentCardId);
+                    if (newCard != null)
+                    {
+                        CurrentCard = newCard;
+                        CurrentIndex = state.CurrentCardIndex;
+                    }
+                }
 
-                    case FlashcardAction.FlipCard:
-                        // Nếu chưa submit thì auto-submit đáp án đang gõ dở
-                        if (!_submittedThisCard && IsInputEnabled)
-                        {
-                            SubmitAnswer();
-                        }
-                        IsInputEnabled = false;
-                        break;
+                // 2. Đồng bộ Timer từ Host
+                TimeRemaining = state.TimeRemaining;
 
-                    case FlashcardAction.NextCard:
-                        OnQuestionReceived(state);
-                        break;
+                // 3. Cập nhật Phase (Trạng thái game) dựa trên Action
+                UpdatePhaseFromAction(state.Action);
+            });
+        }
+
+        private void UpdatePhaseFromAction(FlashcardAction action)
+        {
+            switch (action)
+            {
+                case FlashcardAction.ShowCard:
+                case FlashcardAction.StartSession:
+                case FlashcardAction.NextCard:
+                    // TASK: Reset TextBox khi sang câu mới
+                    PrepareForNewQuestion();
+                    break;
+
+                case FlashcardAction.FlipCard:
+                    // TASK: Khóa TextBox khi Host lật mặt sau
+                    HandleFlipCard();
+                    break;
 
                     case FlashcardAction.EndSession:
                         IsInputEnabled = false;
@@ -115,10 +121,14 @@ namespace EasyFlips.ViewModels
             });
         }
 
-        // Gọi hàm này khi nhận tín hiệu "Question" từ Server/Host
-        public void OnQuestionReceived(FlashcardSyncState? state = null)
+        /// <summary>
+        /// XỬ LÝ TASK: Reset TextBox và mở khóa nhập liệu
+        /// </summary>
+        private void PrepareForNewQuestion()
         {
-            UserAnswer = "";
+            CurrentPhase = GamePhase.Question;
+            UserAnswer = string.Empty; // Reset TextBox
+            ResultMessage = string.Empty;
             IsInputEnabled = true;
             _submittedThisCard = false;
             // Lấy đáp án đúng từ _deck.Cards (dùng BackText/Answer)
@@ -129,35 +139,43 @@ namespace EasyFlips.ViewModels
             }
             else
             {
-                _correctAnswer = string.Empty;
+                SubmitAnswerCommand.Execute(null);
             }
+
+            IsInputEnabled = false;
+            OnPropertyChanged(nameof(IsShowingResult)); // Hiện mặt sau
         }
-        // Hàm xử lý nộp bài(Dùng cho cả Nút Submit và Phím Enter)
+
         [RelayCommand(CanExecute = nameof(CanSubmit))]
-        private async void SubmitAnswer()
+        private async Task SubmitAnswer()
         {
-            if (_submittedThisCard || !IsInputEnabled) return;
-            _submittedThisCard = true;
-
-            // So sánh đáp án
-            bool isCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, _correctAnswer);
-            int deltaScore = isCorrect ? 10 : 0; // Ví dụ: đúng +10
-
-            // Gửi điểm lên Host
-            var submission = new ScoreSubmission
+            if (CurrentCard != null)
             {
-                UserId = _authService.CurrentUserId,
-                DisplayName = "", // Có thể lấy từ profile nếu cần
-                CardIndex = CurrentState?.CurrentCardIndex ?? 0,
-                Answer = UserAnswer,
-                IsCorrect = isCorrect,
-                Score = deltaScore,
-                TimeTakenMs = 0, // Có thể tính thời gian nếu muốn
-                SubmittedAt = DateTime.UtcNow
-            };
-            await _supabaseService.BroadcastScoreSubmissionAsync(_classroomId, submission);
+                // 1. Dùng IsAnswerAcceptable để chấm điểm
+                bool isCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard.BackText);
 
-            // Sau khi nộp xong thì KHÓA lại ngay
+                if (isCorrect)
+                {
+                    CurrentScore += 10;
+                    ResultMessage = "Chính xác! +10đ";
+                }
+                else
+                {
+                    ResultMessage = $"Sai rồi! Đáp án là: {CurrentCard.BackText}";
+                }
+
+                // 2. Gọi ĐÚNG hàm mà Dev D đã chuẩn bị trong SupabaseService
+                // Hàm này nhận vào: classroomId, userId, score, số câu đúng, tổng số câu đã trả lời
+                await _supabaseService.SendFlashcardScoreAsync(
+                    ClassroomId,
+                    _authService.CurrentUserId,
+                    CurrentScore,
+                    isCorrect ? 1 : 0,
+                    1
+                );
+            }
+
+            // Khóa UI sau khi nộp
             IsInputEnabled = false;
         }
         // Điều kiện để được phép nộp (Chỉ nộp được khi IsInputEnabled = true)

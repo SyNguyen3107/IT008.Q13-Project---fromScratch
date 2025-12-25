@@ -1386,6 +1386,45 @@ namespace EasyFlips.Services
         }
 
         /// <summary>
+        /// Gửi điểm số của Member lên kênh Realtime để Host cập nhật Leaderboard.
+        /// </summary>
+        public async Task<bool> SendFlashcardScoreAsync(string classroomId, string userId, int score, int correctCount, int totalAnswered)
+        {
+            try
+            {
+                string channelName = $"flashcard-sync:{classroomId}";
+
+                if (!_activeBroadcasts.TryGetValue(channelName, out var broadcast))
+                {
+                    Debug.WriteLine($"[FlashcardSync] Chưa tham gia kênh {channelName}");
+                    return false;
+                }
+
+                // Đóng gói dữ liệu điểm vào Dictionary để broadcast
+                var payload = new Dictionary<string, object>
+        {
+            { "type", "score_submission" }, // Để Host nhận biết đây là gói tin nộp điểm
+            { "user_id", userId },
+            { "total_score", score },
+            { "correct_count", correctCount },
+            { "total_answered", totalAnswered },
+            { "timestamp", DateTime.UtcNow.ToString("O") }
+        };
+
+                // Gửi qua sự kiện FLASHCARD_SYNC (Hoặc bạn có thể dùng một sự kiện riêng như SCORE_SUBMIT)
+                await broadcast.Send("FLASHCARD_SYNC", payload);
+
+                Debug.WriteLine($"[FlashcardSync] Member {userId} đã gửi điểm: {score}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FlashcardSync] Lỗi gửi điểm: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Host tạm dừng phiên học.
         /// </summary>
         public async Task PauseSessionAsync(
