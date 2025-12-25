@@ -24,7 +24,12 @@ namespace EasyFlips.ViewModels
 
 
 
+<<<<<<< HEAD
         public ObservableCollection<PlayerInfo> Players { get; } = new();
+=======
+
+     
+>>>>>>> 390a71690886eb779546bf7f6d48b73085954af9
 
         private DispatcherTimer _roundTimer;
 
