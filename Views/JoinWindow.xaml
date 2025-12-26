@@ -62,7 +62,7 @@
                                     </Ellipse.Effect>
                                 </Ellipse>
 
-                                <Image Source="/Resources/teacher (3).png" 
+                                <Image Source="pack://application:,,,/Resources/teacher.png"
                                    Width="230" Height="230" 
                                    Stretch="Uniform" 
                                    RenderOptions.BitmapScalingMode="HighQuality">
