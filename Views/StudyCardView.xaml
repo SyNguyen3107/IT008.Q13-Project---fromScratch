@@ -147,16 +147,17 @@
         <!-- 3. NÚT BẤM -->
         <Grid Grid.Row="2" Margin="0,20,0,0">
             <Button Content="Show Answer" Style="{StaticResource ModernButtonStyle}"
-                FontSize="16" FontWeight="ExtraBold" Height="45"
-                Background="#0078D7" Foreground="White" 
-                Command="{Binding ShowAnswerCommand}"
-                Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}">
+            FontSize="16" FontWeight="ExtraBold" Height="45"
+            Background="#0078D7" Foreground="White" 
+            Command="{Binding ShowAnswerCommand}"
+            Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}">
                 <Button.Effect>
                     <DropShadowEffect BlurRadius="15" Color="#0078D7" Opacity="0.4" ShadowDepth="0"/>
                 </Button.Effect>
             </Button>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}">
                 <Button Content="Again" Style="{StaticResource ModernButtonStyle}" Command="{Binding AgainCommand}" Width="95" Height="45" Margin="5" Background="#E74C3C" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
                 <Button Content="Hard" Style="{StaticResource ModernButtonStyle}" Command="{Binding HardCommand}" Width="95" Height="45" Margin="5" Background="#F39C12" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
                 <Button Content="Good" Style="{StaticResource ModernButtonStyle}" Command="{Binding GoodCommand}" Width="95" Height="45" Margin="5" Background="#2ECC71" Foreground="White" FontWeight="Bold" Cursor="Hand"/>

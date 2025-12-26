@@ -130,6 +130,8 @@ namespace EasyFlips.ViewModels
                 }
 
                 var uploadSuccess = await _supabaseService.UploadDeckToCloudAsync(fullDeck);
+
+
                 if (!uploadSuccess)
                 {
                     MessageBox.Show("Không thể upload bộ thẻ lên server. Vui lòng thử lại.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
