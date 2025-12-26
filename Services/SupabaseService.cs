@@ -291,30 +291,37 @@ namespace EasyFlips.Services
         {
             try
             {
-                var classroom = await _client.From<Classroom>().Where(c => c.Id == classroomId).Single();
-                if (classroom?.DeckId == null) return null;
+                // 1. Lấy classroom trước để có DeckId
+                var classroom = await _client.From<Classroom>()
+                    .Where(c => c.Id == classroomId)
+                    .Single();
 
-                var deck = await _client.From<Deck>().Where(d => d.Id == classroom.DeckId).Single();
+                if (string.IsNullOrEmpty(classroom?.DeckId)) return null;
+
+                // 2. Lấy thông tin Deck
+                var deck = await _client.From<Deck>()
+                    .Where(d => d.Id == classroom.DeckId)
+                    .Single();
+
                 if (deck == null) return null;
 
-                var response = await _client.From<Card>().Where(c => c.DeckId == deck.Id).Get();
-                var unsorted = response.Models ?? new List<Card>();
+                // 3. Lấy tất cả Cards thuộc Deck này
+                var response = await _client.From<Card>()
+                    .Where(c => c.DeckId == deck.Id)
+                    .Get();
 
-                // [QUAN TRỌNG] Sort ID để đồng bộ
-                deck.Cards = unsorted.OrderBy(c => c.Id).ToList();
+                // [NHẤN NHÁ LOGIC] Sắp xếp để khi "Next thẻ" không bị lộn xộn
+                deck.Cards = response.Models?.OrderBy(c => c.Id).ToList() ?? new List<Card>();
+
                 return deck;
-            }
-            catch { return null; }
-        }
-
-                await channel.Subscribe();
-                Debug.WriteLine($"[SupabaseService] Đã đăng ký lắng nghe tất cả sự kiện members của phòng {classroomId}");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[SupabaseService] Lỗi đăng ký lắng nghe: {ex.Message}");
+                Debug.WriteLine($"[Supabase] Lỗi lấy Deck: {ex.Message}");
+                return null;
             }
         }
+
 
         /// <summary>
         /// Tham gia kênh Presence để theo dõi ai đang Online trong phòng.
@@ -460,7 +467,7 @@ namespace EasyFlips.Services
                                     // Log JSON để debug
                                     var json = JsonConvert.SerializeObject(state, Formatting.Indented);
                                     Debug.WriteLine($"[FlashcardSync] Received JSON:\n{json}");
-                                    
+
                                     onStateReceived?.Invoke(state);
                                 }
                             }
@@ -529,7 +536,7 @@ namespace EasyFlips.Services
         /// <param name="userId">ID người dùng hiện tại.</param>
         /// <param name="onStateReceived">Callback khi nhận được trạng thái mới từ Host.</param>
         public async Task JoinFlashcardSyncChannelAsync(
-            string classroomId, 
+            string classroomId,
             string userId,
             Action<FlashcardSyncState> onStateReceived)
         {
@@ -791,7 +798,7 @@ namespace EasyFlips.Services
 
                     var payload = args.Payload as Dictionary<string, object>;
                     var eventType = payload?.GetValueOrDefault("event_type")?.ToString();
-                    
+
 
                     if (eventType == "FLASHCARD_SYNC")
                     {
@@ -826,7 +833,7 @@ namespace EasyFlips.Services
                 });
 
                 Debug.WriteLine($"[FlashcardSync] Đang subscribe channel: {channelName}");
-                
+
                 await channel.Subscribe();
 
                 result.Success = true;
@@ -838,6 +845,8 @@ namespace EasyFlips.Services
                 result.ErrorMessage = ex.Message;
                 Debug.WriteLine($"[FlashcardSync] Subscribe failed: {ex.Message}");
             }
+        }
+
 
         // Wrapper để tương thích ngược với GameViewModel cũ
         public async Task JoinFlashcardSyncChannelAsync(string classroomId, string userId, Action<FlashcardSyncState> onStateReceived)
@@ -884,50 +893,53 @@ namespace EasyFlips.Services
             catch { return "TEMP1234"; }
         }
         #endregion
-    }
 
-    public class CustomFileSessionHandler : IGotrueSessionPersistence<Session>
-    {
-        private readonly string _cachePath;
-        private readonly string _fileName = ".gotrue.cache";
-        private readonly JsonSerializerSettings _jsonSettings = new()
+
+        public class CustomFileSessionHandler : IGotrueSessionPersistence<Session>
         {
-            NullValueHandling = NullValueHandling.Ignore,
-            DateFormatHandling = DateFormatHandling.IsoDateFormat
-        };
-
-        public CustomFileSessionHandler(string cachePath) { _cachePath = cachePath; }
-
-        public void SaveSession(Session session)
-        {
-            try
+            private readonly string _cachePath;
+            private readonly string _fileName = ".gotrue.cache";
+            private readonly JsonSerializerSettings _jsonSettings = new()
             {
-                var fullPath = Path.Combine(_cachePath, _fileName);
-                if (session == null) { if (File.Exists(fullPath)) File.Delete(fullPath); return; }
-                File.WriteAllText(fullPath, JsonConvert.SerializeObject(session, Formatting.Indented, _jsonSettings));
-            }
-            catch { }
-        }
+                NullValueHandling = NullValueHandling.Ignore,
+                DateFormatHandling = DateFormatHandling.IsoDateFormat
+            };
 
-        public Session? LoadSession()
-        {
-            try
-            {
-                var fullPath = Path.Combine(_cachePath, _fileName);
-                if (!File.Exists(fullPath)) return null;
-                return JsonConvert.DeserializeObject<Session>(File.ReadAllText(fullPath), _jsonSettings);
-            }
-            catch { return null; }
-        }
+            public CustomFileSessionHandler(string cachePath) { _cachePath = cachePath; }
 
-        public void DestroySession()
-        {
-            try
+            public void SaveSession(Session session)
             {
-                var path = Path.Combine(_cachePath, _fileName);
-                if (File.Exists(path)) File.Delete(path);
+                try
+                {
+                    var fullPath = Path.Combine(_cachePath, _fileName);
+                    if (session == null) { if (File.Exists(fullPath)) File.Delete(fullPath); return; }
+                    File.WriteAllText(fullPath, JsonConvert.SerializeObject(session, Formatting.Indented, _jsonSettings));
+                }
+                catch { }
             }
-            catch { }
+
+            public Session? LoadSession()
+            {
+                try
+                {
+                    var fullPath = Path.Combine(_cachePath, _fileName);
+                    if (!File.Exists(fullPath)) return null;
+                    return JsonConvert.DeserializeObject<Session>(File.ReadAllText(fullPath), _jsonSettings);
+                }
+                catch { return null; }
+            }
+
+            public void DestroySession()
+            {
+                try
+                {
+                    var path = Path.Combine(_cachePath, _fileName);
+                    if (File.Exists(path)) File.Delete(path);
+                }
+                catch { }
+            }
         }
     }
 }
+
+

@@ -15,6 +15,22 @@
         <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBoolToVisConverter"/>
         <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
         <converters:ImagePathConverter x:Key="ImagePathConverter"/>
+        <Style x:Key="ModernButtonStyle" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="12">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="20">
@@ -28,7 +44,11 @@
         </Grid.RowDefinitions>
 
         <!-- 1. NỘI DUNG THẺ -->
-        <Border Grid.Row="0" Background="#363636" CornerRadius="10" Padding="20">
+        <Border Grid.Row="0" CornerRadius="15" Padding="20"
+        Background="{StaticResource Brush.Surface}" 
+        BorderThickness="0,3,0,0" 
+        BorderBrush="{StaticResource Brush.Primary}">
+            
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
 
@@ -78,8 +98,12 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
-                            <TextBlock Text="Correct Answer: " Foreground="Gray" FontSize="14" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding CorrectAnswer}" Foreground="#81C784" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <TextBlock Text="Correct Answer: " Foreground="#88FFFFFF" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CorrectAnswer}" Foreground="#4CD137" FontSize="20" FontWeight="Black" VerticalAlignment="Center">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect BlurRadius="10" Color="#4CD137" Opacity="0.6" ShadowDepth="0"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
                         </StackPanel>
 
                         <TextBlock Text="{Binding AnswerText}" Foreground="White" FontSize="20" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,10"/>
@@ -122,18 +146,21 @@
 
         <!-- 3. NÚT BẤM -->
         <Grid Grid.Row="2" Margin="0,20,0,0">
-            <Button Content="Show Answer"
-                    FontSize="16" FontWeight="Bold" Height="45"
-                    Background="#0078D7" Foreground="White" BorderThickness="0" Cursor="Hand"
-                    Command="{Binding ShowAnswerCommand}"
-                    Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}"/>
+            <Button Content="Show Answer" Style="{StaticResource ModernButtonStyle}"
+                FontSize="16" FontWeight="ExtraBold" Height="45"
+                Background="#0078D7" Foreground="White" 
+                Command="{Binding ShowAnswerCommand}"
+                Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}">
+                <Button.Effect>
+                    <DropShadowEffect BlurRadius="15" Color="#0078D7" Opacity="0.4" ShadowDepth="0"/>
+                </Button.Effect>
+            </Button>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
-                        Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}">
-                <Button Content="Again" Command="{Binding AgainCommand}" Width="90" Height="45" Margin="5" Background="#E74C3C" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
-                <Button Content="Hard" Command="{Binding HardCommand}" Width="90" Height="45" Margin="5" Background="#F39C12" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
-                <Button Content="Good" Command="{Binding GoodCommand}" Width="90" Height="45" Margin="5" Background="#2ECC71" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
-                <Button Content="Easy" Command="{Binding EasyCommand}" Width="90" Height="45" Margin="5" Background="#3498DB" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="Again" Style="{StaticResource ModernButtonStyle}" Command="{Binding AgainCommand}" Width="95" Height="45" Margin="5" Background="#E74C3C" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
+                <Button Content="Hard" Style="{StaticResource ModernButtonStyle}" Command="{Binding HardCommand}" Width="95" Height="45" Margin="5" Background="#F39C12" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
+                <Button Content="Good" Style="{StaticResource ModernButtonStyle}" Command="{Binding GoodCommand}" Width="95" Height="45" Margin="5" Background="#2ECC71" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
+                <Button Content="Easy" Style="{StaticResource ModernButtonStyle}" Command="{Binding EasyCommand}" Width="95" Height="45" Margin="5" Background="#3498DB" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
             </StackPanel>
         </Grid>
 
