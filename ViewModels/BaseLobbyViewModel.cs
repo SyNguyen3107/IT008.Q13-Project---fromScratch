@@ -25,6 +25,7 @@ namespace EasyFlips.ViewModels
         protected readonly IClassroomRepository _classroomRepository;
         protected readonly SupabaseService _supabaseService;
         protected readonly AudioService _audioService;
+        
         #endregion
 
         #region Protected Fields
@@ -52,7 +53,12 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(AutoStartStatus))]
         private int _autoStartSeconds;
-
+        private bool _showCopyMessage;
+        public bool ShowCopyMessage
+        {
+            get => _showCopyMessage;
+            set { _showCopyMessage = value; OnPropertyChanged(); }
+        }
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(AutoStartStatus))]
         private bool _isAutoStartActive;
@@ -305,11 +311,16 @@ namespace EasyFlips.ViewModels
         }
 
         [RelayCommand]
-        protected void CopyRoomCode()
+        private async void CopyRoomCode()
         {
             if (!string.IsNullOrEmpty(RoomId))
             {
-                Clipboard.SetText(RoomId);        
+                Clipboard.SetText(RoomId);
+                
+
+                ShowCopyMessage = true;
+                await Task.Delay(2000); // Đợi 2 giây
+                ShowCopyMessage = false;
             }
         }
 

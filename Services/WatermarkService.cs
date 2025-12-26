@@ -96,12 +96,8 @@ namespace EasyFlips.Services
         protected override void OnRender(DrawingContext drawingContext)
         {
             string text = null;
-
-            if (AdornedElement is TextBox tb)
-                text = tb.Text;
-
-            if (AdornedElement is PasswordBox pb)
-                text = pb.Password;
+            if (AdornedElement is TextBox tb) text = tb.Text;
+            if (AdornedElement is PasswordBox pb) text = pb.Password;
 
             if (string.IsNullOrEmpty(text))
             {
@@ -111,14 +107,31 @@ namespace EasyFlips.Services
                 var formattedText = new FormattedText(
                     _watermark,
                     System.Globalization.CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
+                    control.FlowDirection, // Theo hướng của control
                     typeface,
                     _size,
-                    Brushes.Gray,
+                    new SolidColorBrush(Color.FromArgb(100, 255, 255, 255)), // Màu mặc định đẹp cho nền tối
                     VisualTreeHelper.GetDpi(this).PixelsPerDip);
 
+                // 1. Luôn căn giữa theo chiều dọc
                 double y = (AdornedElement.RenderSize.Height - formattedText.Height) / 2;
-                drawingContext.DrawText(formattedText, new Point(5, y));
+
+                // 2. Tự động tính toán X dựa trên HorizontalContentAlignment của Control
+                double x;
+                switch (control.HorizontalContentAlignment)
+                {
+                    case HorizontalAlignment.Center:
+                        x = (AdornedElement.RenderSize.Width - formattedText.Width) / 2;
+                        break;
+                    case HorizontalAlignment.Right:
+                        x = AdornedElement.RenderSize.Width - formattedText.Width - 15; // Cách lề phải 15px
+                        break;
+                    default: // Mặc định là Left
+                        x = 4; // Cách lề trái 15px (để tránh viền bo tròn)
+                        break;
+                }
+
+                drawingContext.DrawText(formattedText, new Point(x, y));
             }
         }
 

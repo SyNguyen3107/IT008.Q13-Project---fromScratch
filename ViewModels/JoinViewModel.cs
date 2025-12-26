@@ -78,7 +78,7 @@ namespace EasyFlips.ViewModels
                 MessageBox.Show($"Lỗi khi kiểm tra phòng: {ex.Message}", "Lỗi kết nối");
             }
         }
-
+        [RelayCommand]
         private void CloseWindow()
         {
             // 1. Kiểm tra nếu App đang shutdown thì không làm gì cả

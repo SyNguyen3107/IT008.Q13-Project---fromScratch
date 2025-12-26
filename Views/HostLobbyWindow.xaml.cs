@@ -23,6 +23,6 @@ namespace EasyFlips.Views
         {
             InitializeComponent();
             this.DataContext = viewmodel;
-        }
+        }      
     }
 }

@@ -16,6 +16,7 @@ namespace EasyFlips.ViewModels
     {
         private readonly IDeckRepository _deckRepository;
         private const int HEARTBEAT_TIMEOUT_SECONDS = 15;
+       
 
         [ObservableProperty] private Deck _selectedDeck;
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
