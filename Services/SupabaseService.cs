@@ -267,8 +267,10 @@ namespace EasyFlips.Services
                              .Set(c => c.SyncState, state)
                              .Update();
                 Debug.WriteLine($"[HOST-DB] Saved State: {state.Action}");
+            } catch (Exception ex)
+            {
+                Debug.WriteLine($"[HOST-DB] Failed to save state: {ex.Message}");
             }
-            catch (Exception ex) { Debug.WriteLine($"[HOST-DB] Error: {ex.Message}"); }
         }
 
         // --- Wrappers cho GameViewModel ---
