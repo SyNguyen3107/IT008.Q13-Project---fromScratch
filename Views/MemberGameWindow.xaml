@@ -13,6 +13,7 @@
     <Window.Resources>
         <cv:BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <cv:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
+        <cv:ImagePathConverter x:Key="ImagePathConverter"/>
 
         <LinearGradientBrush x:Key="MainBackground" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#141E30" Offset="0.0"/>
@@ -27,6 +28,14 @@
                     <DropShadowEffect Color="Black" Opacity="0.3" ShadowDepth="8" BlurRadius="25"/>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <Style x:Key="QuestionVisibilityStyle" TargetType="Grid">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsShowingResult}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
 
         <Style x:Key="MemberInputStyle" TargetType="TextBox">
@@ -92,9 +101,8 @@
                                 <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bdr" Property="Background" Value="#7F8C8D"/>
-                                <Setter TargetName="bdr" Property="Opacity" Value="0.5"/>
-                                <Setter Property="Content" Value="WAITING..."/>
+                                <Setter TargetName="bdr" Property="Background" Value="#95A5A6"/>
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.8"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -116,36 +124,84 @@
                 <TextBlock Text="{Binding Score}" Foreground="#F1C40F" FontSize="24" FontWeight="ExtraBold" Margin="5,-4,0,0"/>
             </StackPanel>
 
-            <TextBlock Text="{Binding ConnectionStatus}" 
-                       HorizontalAlignment="Right" 
-                       Foreground="#7F8FA6" FontStyle="Italic"/>
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <TextBlock Text="{Binding CurrentQuestionInfo}" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,20,0"/>
+                <TextBlock Text="{Binding ConnectionStatus}" Foreground="#7F8FA6" FontStyle="Italic"/>
+            </StackPanel>
         </Grid>
 
         <Viewbox Grid.Row="1" Margin="40,10,40,20" Stretch="Uniform">
             <Border Width="600" Height="400" Style="{StaticResource BigCardStyle}">
                 <Grid Margin="30">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
 
-                    <Image Grid.Row="0" 
-                           Source="{Binding CurrentCard.FrontImagePath}" 
-                           Visibility="{Binding CurrentCard.FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"
-                           Stretch="Uniform" 
-                           Margin="0,0,0,20"/>
+                    <Grid Style="{StaticResource QuestionVisibilityStyle}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="1" 
-                               Text="{Binding CurrentCard.FrontText, TargetNullValue='Waiting for question...'}" 
-                               TextWrapping="Wrap" 
-                               TextAlignment="Center" 
-                               VerticalAlignment="Center"
-                               FontSize="32" 
-                               FontWeight="Bold" 
-                               Foreground="#2C3E50"/>
+                        <Image Grid.Row="0" 
+                               Source="{Binding CurrentCard.FrontImagePath, Converter={StaticResource ImagePathConverter}}" 
+                               Visibility="{Binding CurrentCard.FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"
+                               Stretch="Uniform" 
+                               Margin="0,0,0,20"/>
 
-                    <TextBlock Grid.RowSpan="2" 
-                               d:Text="Get Ready..." 
+                        <TextBlock Grid.Row="1" 
+                                   Text="{Binding CurrentCard.FrontText, TargetNullValue='Waiting for question...'}" 
+                                   TextWrapping="Wrap" 
+                                   TextAlignment="Center" 
+                                   VerticalAlignment="Center"
+                                   FontSize="32" 
+                                   FontWeight="Bold" 
+                                   Foreground="#2C3E50"/>
+                    </Grid>
+
+                    <Grid x:Name="ResultPanel" 
+                          Visibility="{Binding IsShowingResult, Converter={StaticResource BoolToVis}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+
+                                <TextBlock Text="{Binding ResultMessage}" 
+                                           FontSize="24" 
+                                           FontWeight="Bold" 
+                                           TextAlignment="Center"
+                                           Margin="0,0,0,20">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#E74C3C"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ResultMessage}" Value="Chính xác! +10đ">
+                                                    <Setter Property="Foreground" Value="#27AE60"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ResultMessage}" Value="Correct! +10pts">
+                                                    <Setter Property="Foreground" Value="#27AE60"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+
+                                <TextBlock  Text="{Binding CorrectAnswerString}"  Foreground="Gray" FontSize="14" HorizontalAlignment="Center"/>
+
+                                <TextBlock Text="{Binding CurrentCard.BackText}" 
+                                           FontSize="28" 
+                                           FontWeight="Bold" 
+                                           Foreground="#2980B9" 
+                                           TextAlignment="Center" 
+                                           TextWrapping="Wrap" 
+                                           Margin="0,5,0,20"/>
+
+                                <Image Source="{Binding CurrentCard.BackImagePath, Converter={StaticResource ImagePathConverter}}"
+                                       Visibility="{Binding CurrentCard.BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"
+                                       Stretch="Uniform" 
+                                       MaxHeight="200" 
+                                       Margin="0,0,0,20"/>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <TextBlock d:Text="Get Ready..." 
                                Visibility="{Binding CurrentCard, Converter={StaticResource NullToCollapsedConverter}, ConverterParameter=Inverse}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                FontSize="40" Foreground="#BDC3C7"/>
@@ -169,7 +225,7 @@
                 <TextBox.Resources>
                     <VisualBrush x:Key="HelpBrush" TileMode="None" Opacity="0.3" Stretch="None" AlignmentX="Left">
                         <VisualBrush.Visual>
-                            <TextBlock Text="Type your answer here..." FontStyle="Italic" FontSize="18" Foreground="White"/>
+                            <TextBlock Text="Type your answer here..." FontStyle="Italic" FontSize="18" Foreground="Black"/>
                         </VisualBrush.Visual>
                     </VisualBrush>
                 </TextBox.Resources>
@@ -202,6 +258,6 @@
                     Style="{StaticResource MemberSubmitBtnStyle}"
                     Width="140" Height="60" Margin="15,0,0,0"/>
         </Grid>
-        
+
     </Grid>
 </Window>

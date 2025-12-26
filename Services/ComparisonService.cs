@@ -11,9 +11,9 @@ namespace EasyFlips.Services
     {
         public bool IsAnswerAcceptable(string input, string target, int threshold = 80)
         {
-           if (string.IsNullOrEmpty(input)) return false;
-           int score = Fuzz.WeightedRatio(input.ToLower(), target.ToLower());
-           return score >= threshold;
+            if (string.IsNullOrEmpty(input)) return false;
+            int score = SmartScore(input, target);
+            return score >= threshold;
         }
 
         public static int LevenshteinDistance(string s, string t)
