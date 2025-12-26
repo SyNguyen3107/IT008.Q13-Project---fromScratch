@@ -71,6 +71,12 @@ namespace EasyFlips.Models
         [Column("deck_id")]
         public string? DeckId { get; set; }
 
+        /// <summary>
+        /// Game state JSON - Lưu trạng thái game để sync real-time giữa Host và Member
+        /// </summary>
+        [Column("game_state")]
+        public string? GameState { get; set; }
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
 

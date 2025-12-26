@@ -1,4 +1,4 @@
-﻿using EasyFlips.Models;
+using EasyFlips.Models;
 
 namespace EasyFlips.Interfaces
 {
@@ -9,7 +9,7 @@ namespace EasyFlips.Interfaces
         // Lấy danh sách tất cả deck
         Task<IEnumerable<Deck>> GetAllAsync();
         // Lấy 1 deck theo ID
-        Task<Deck> GetByIdAsync(string id);
+        Task<Deck?> GetByIdAsync(string id);
         // Cập nhật thông tin deck
         Task UpdateAsync(Deck deck);
         // Xóa deck theo ID

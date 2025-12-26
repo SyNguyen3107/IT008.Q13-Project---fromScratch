@@ -10,6 +10,8 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 
 namespace EasyFlips.ViewModels
@@ -18,6 +20,14 @@ namespace EasyFlips.ViewModels
     {
         private readonly IAuthService _authService;
         private readonly INavigationService _navigationService;
+        [ObservableProperty] private string otp1; 
+        [ObservableProperty] private string otp2; 
+        [ObservableProperty] private string otp3; 
+        [ObservableProperty] private string otp4; 
+        [ObservableProperty] private string otp5; 
+        [ObservableProperty] private string otp6;
+        [ObservableProperty] private string otp7;
+        [ObservableProperty] private string otp8;
         private readonly string _email;
 
         public string OtpCode { get; set; }
@@ -32,6 +42,8 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private async Task VerifyOtp()
         {
+            
+             OtpCode = $"{Otp1}{Otp2}{Otp3}{Otp4}{Otp5}{Otp6}{Otp7}{Otp8}";
             var success = await _authService.VerifyOtpAsync(_email, OtpCode);
             if (success)
             {
@@ -65,5 +77,7 @@ namespace EasyFlips.ViewModels
             CloseCurrentWindow();
 
         }
+        
+
     }
 }

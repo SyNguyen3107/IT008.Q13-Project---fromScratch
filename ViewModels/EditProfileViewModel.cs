@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Services; 
 using Microsoft.Win32;    // Dùng cho OpenFileDialog của WPF
@@ -15,9 +15,6 @@ namespace EasyFlips.ViewModels
         private readonly SupabaseService _supabaseService;
         // Hành động để báo cho View biết là cần đóng cửa sổ (dùng cho nút Cancel)
         public Action CloseAction { get; set; }
-
-        // Cần Client để gọi lệnh Update lên Server
-        private readonly Supabase.Client _supabaseClient;
 
         [ObservableProperty]
         private bool _canSave;

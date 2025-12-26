@@ -1,4 +1,4 @@
-﻿using EasyFlips.Interfaces;
+using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using Newtonsoft.Json;
 using Supabase.Gotrue;
@@ -446,6 +446,73 @@ namespace EasyFlips.Services
             try { var result = await _client.Rpc("generate_room_code", null); return result.Content ?? "TEMP1234"; }
             catch { return "TEMP1234"; }
         }
+
+        /// <summary>
+        /// Upload deck và cards lên Supabase Cloud.
+        /// Dùng khi Host bắt đầu game để Member có thể tải deck.
+        /// </summary>
+        /// <param name="deck">Deck cần upload (bao gồm cả Cards)</param>
+        /// <returns>True nếu upload thành công</returns>
+        public async Task<bool> UploadDeckToCloudAsync(Deck deck)
+        {
+            try
+            {
+                if (deck == null)
+                {
+                    Debug.WriteLine("[UploadDeck] ❌ Deck is null");
+                    return false;
+                }
+
+                Debug.WriteLine($"[UploadDeck] 🔄 Đang upload deck: {deck.Name} (ID: {deck.Id})");
+
+                // Clone deck để tránh modify object gốc
+                var deckToUpload = new Deck
+                {
+                    Id = deck.Id,
+                    Name = deck.Name,
+                    Description = deck.Description,
+                    UserId = deck.UserId,
+                    CreatedAt = deck.CreatedAt,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                // 1. Upsert Deck
+                await _client.From<Deck>().Upsert(deckToUpload);
+                Debug.WriteLine($"[UploadDeck] ✅ Đã upload deck header");
+
+                // 2. Upsert Cards (nếu có)
+                if (deck.Cards != null && deck.Cards.Any())
+                {
+                    var cardsToUpload = deck.Cards.Select(c => new Card
+                    {
+                        Id = c.Id,
+                        DeckId = deck.Id,
+                        FrontText = c.FrontText,
+                        BackText = c.BackText,
+                        FrontImagePath = c.FrontImagePath,
+                        BackImagePath = c.BackImagePath,
+                        FrontAudioPath = c.FrontAudioPath,
+                        BackAudioPath = c.BackAudioPath,
+                        Answer = c.Answer,
+                        CreatedAt = c.CreatedAt,
+                        UpdatedAt = DateTime.UtcNow
+                    }).ToList();
+
+                    await _client.From<Card>().Upsert(cardsToUpload);
+                    Debug.WriteLine($"[UploadDeck] ✅ Đã upload {cardsToUpload.Count} cards");
+                }
+
+                Debug.WriteLine($"[UploadDeck] ✅ Upload hoàn tất!");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[UploadDeck] ❌ Error: {ex.Message}");
+                Debug.WriteLine($"[UploadDeck] StackTrace: {ex.StackTrace}");
+                return false;
+            }
+        }
+
         #endregion
     }
 

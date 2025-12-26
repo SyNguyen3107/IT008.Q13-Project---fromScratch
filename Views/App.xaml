@@ -17,6 +17,7 @@
             <converters:DiffTypeToTextDecorationConverter x:Key="DiffTypeToTextDecorationConverter"/>
             <converters:BoolToTextConverter x:Key="BoolToTextConverter"/>
             <converters:BoolToBrushConverter x:Key="BoolToBrushConverter"/>
+            <converters:VisibilityToTextConverter x:Key="VisibilityToTextConverter" />
             <Style TargetType="Window">
             <Setter Property="Icon" Value="/Resources/easyflips.ico"/>
             </Style>
@@ -27,6 +28,13 @@
                 <Setter Property="Background" Value="#444"/>
                 <Setter Property="Foreground" Value="White"/>
             </Style>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Views/Colors.xaml"/>
+                <ResourceDictionary Source="/Views/Controls.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+
         </ResourceDictionary>
     </Application.Resources>
 

@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Interfaces; // <-- Cần thêm để dùng IDeckRepository
 using EasyFlips.Models;
@@ -59,7 +59,7 @@ namespace EasyFlips.ViewModels
         private void Add()
         {
             _navigationService.ShowCreateDeckWindow();
-            LoadDecksAsync();
+            _ = LoadDecksAsync(); // Fire-and-forget: tải lại danh sách deck sau khi tạo mới
         }
         // Nạp danh sách Deck
         public void LoadDecks(IEnumerable<Deck> deckList)
