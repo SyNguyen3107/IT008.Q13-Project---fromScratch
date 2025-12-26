@@ -7,70 +7,105 @@
         xmlns:services="clr-namespace:EasyFlips.Services"
         xmlns:helpers="clr-namespace:EasyFlips.Helpers" 
         mc:Ignorable="d"
-        Background="#1E1E1E"
+        Background="{StaticResource Brush.Dark}"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Title="Register" Height="550" Width="350">
+
     <Grid Margin="20">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="280">
-            <Image Source="pack://application:,,,/Resources/cards.png" Width="100" Height="100" HorizontalAlignment="Center" Margin="0,0,0,20"/>
-            <TextBlock Text="Create Account" FontSize="20" Foreground="White" HorizontalAlignment="Center"/>
-            <TextBlock Text="Fill in your details below" FontSize="14" Foreground="Gray" HorizontalAlignment="Center" Margin="0,5,0,20"/>
 
+            <!-- Logo -->
+            <Image Source="pack://application:,,,/Resources/cards.png"
+                   Width="100" Height="100"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,20"/>
+
+            <!-- Title -->
+            <TextBlock Text="Create Account"
+                       FontSize="20"
+                       Foreground="{StaticResource Brush.TextPrimary}"
+                       FontFamily="Poppins"
+                       HorizontalAlignment="Center"/>
+
+            <TextBlock Text="Fill in your details below"
+                       FontSize="14"
+                       Foreground="{StaticResource Brush.TextSecondary}"
+                       FontFamily="Inter V"
+                       HorizontalAlignment="Center"
+                       Margin="0,5,0,20"/>
+
+            <!-- Username -->
             <TextBox Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" 
-                     services:WatermarkService.Watermark="Enter User Name"
-                     services:WatermarkService.WatermarkSize="14"
-                     FontSize="14"
-                     Margin="0,5" Height="35" Background="#40444B" Foreground="White"
-                     VerticalContentAlignment="Center"/>
+         services:WatermarkService.Watermark="Enter User Name"
+         services:WatermarkService.WatermarkSize="14"
+         FontSize="14"
+         Margin="0,5" Height="35"
+         VerticalContentAlignment="Center"
+         Padding="2"
+         Style="{StaticResource {x:Type TextBox}}"/>
+            <!-- Email -->
+            <TextBox x:Name="txtEmail"
+         Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" 
+         services:WatermarkService.Watermark="Enter Email"
+         services:WatermarkService.WatermarkSize="14"
+         FontSize="14"
+         Margin="0,5" Height="35"
+         VerticalContentAlignment="Center"
+         Padding="2"
+         Style="{StaticResource {x:Type TextBox}}"/>
 
-            <TextBox x:Name="txtEmail" Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" 
-                     services:WatermarkService.Watermark="Enter Email"
-                     services:WatermarkService.WatermarkSize="14"
-                     FontSize="14"
-                     Margin="0,5" Height="35" Background="#40444B" Foreground="White"
-                     VerticalContentAlignment="Center"/>
+
             <!-- Password -->
             <Grid Margin="0,5" Height="35">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+
                 <!-- TextBox hiển thị mật khẩu -->
                 <TextBox Grid.Column="0"
                  Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                 Background="#40444B" Foreground="White"
-                 FontSize="14" VerticalContentAlignment="Center"
+                 FontSize="14"
+                 VerticalContentAlignment="Center"
+                 Style="{StaticResource {x:Type TextBox}}"
                  Visibility="{Binding IsPasswordVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
                 <!-- PasswordBox ẩn mật khẩu -->
-                <PasswordBox x:Name="txtPassword" Grid.Column="0"
-                     helpers:PasswordBoxHelper.BindPassword="True"
-                     helpers:PasswordBoxHelper.BoundPassword="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                     Background="#40444B" Foreground="White"
-                     FontSize="14" VerticalContentAlignment="Center"
-                     services:WatermarkService.Watermark="Enter Password"
-                     services:WatermarkService.WatermarkSize="14"
-                     Visibility="{Binding IsPasswordVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
+                <PasswordBox x:Name="txtPassword"
+                 Grid.Column="0"
+                 helpers:PasswordBoxHelper.BindPassword="True"
+                 helpers:PasswordBoxHelper.BoundPassword="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 services:WatermarkService.Watermark="Enter Password"
+                 services:WatermarkService.WatermarkSize="14"
+                 PasswordChar="★"
+                 FontSize="14"
+                 VerticalContentAlignment="Center"
+                 Style="{StaticResource {x:Type PasswordBox}}"
+                 Visibility="{Binding IsPasswordVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
+
+
+                <!-- Toggle Button -->
                 <Button Grid.Column="1"
-                Command="{Binding TogglePasswordVisibilityCommand}"
-                IsEnabled="{Binding Password, Converter={StaticResource StringNotEmptyConverter}}"
-                Width="35" Background="Transparent" Foreground="White">
+                        Command="{Binding TogglePasswordVisibilityCommand}"
+                        IsEnabled="{Binding Password, Converter={StaticResource StringNotEmptyConverter}}"
+                        Width="35"
+                        Background="Transparent"
+                        Foreground="{StaticResource Brush.TextPrimary}">
                     <Button.Style>
                         <Style TargetType="Button">
-                            <!-- mặc định mắt nhắm -->
-                            <Setter Property="Content" >
+                            <Setter Property="Content">
                                 <Setter.Value>
-                                    <!-- mắt nhắm -->
-                                    <Image Source="pack://application:,,,/EasyFlips;component/Resources/hide.png" Width="20" Height="20"/>
+                                    <Image Source="pack://application:,,,/EasyFlips;component/Resources/hide.png"
+                                           Width="20" Height="20"/>
                                 </Setter.Value>
                             </Setter>
                             <Style.Triggers>
-                                <!-- khi IsPasswordVisible = true thì đổi sang mắt mở -->
                                 <DataTrigger Binding="{Binding IsPasswordVisible}" Value="True">
-                                    <Setter Property="Content" >
+                                    <Setter Property="Content">
                                         <Setter.Value>
-                                            <!-- mắt mở -->
-                                            <Image Source="pack://application:,,,/EasyFlips;component/Resources/view.png" Width="20" Height="20"/>
+                                            <Image Source="pack://application:,,,/EasyFlips;component/Resources/view.png"
+                                                   Width="20" Height="20"/>
                                         </Setter.Value>
                                     </Setter>
                                 </DataTrigger>
@@ -79,45 +114,52 @@
                     </Button.Style>
                 </Button>
             </Grid>
+
             <!-- Confirm Password -->
             <Grid Margin="0,5" Height="35">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+
                 <TextBox Grid.Column="0"
-                 Text="{Binding ConfirmPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                 Background="#40444B" Foreground="White"
-                 FontSize="14" VerticalContentAlignment="Center"
-                 Visibility="{Binding IsConfirmPasswordVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                         Text="{Binding ConfirmPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         FontSize="14"
+                         VerticalContentAlignment="Center"
+                         Style="{StaticResource {x:Type TextBox}}"
+                         Visibility="{Binding IsConfirmPasswordVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
                 <PasswordBox x:Name="txtConfirmPassword" Grid.Column="0"
-                     helpers:PasswordBoxHelper.BindPassword="True"
-                     helpers:PasswordBoxHelper.BoundPassword="{Binding ConfirmPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                     Background="#40444B" Foreground="White"
-                     FontSize="14" VerticalContentAlignment="Center"
-                     services:WatermarkService.Watermark="Confirm Password"
-                     services:WatermarkService.WatermarkSize="14"
-                     Visibility="{Binding IsConfirmPasswordVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}" RenderTransformOrigin="0.495,1.834"/>
+                             helpers:PasswordBoxHelper.BindPassword="True"
+                             helpers:PasswordBoxHelper.BoundPassword="{Binding ConfirmPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             services:WatermarkService.Watermark="Confirm Password"
+                             services:WatermarkService.WatermarkSize="14"
+                             FontSize="14"
+                             PasswordChar="★"
+                             VerticalContentAlignment="Center"
+                             Style="{StaticResource {x:Type PasswordBox}}"
+                             Visibility="{Binding IsConfirmPasswordVisible, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
+
                 <Button Grid.Column="1"
-                Command="{Binding ToggleConfirmPasswordVisibilityCommand}"
-                IsEnabled="{Binding ConfirmPassword, Converter={StaticResource StringNotEmptyConverter}}"
-                Width="35" Background="Transparent" Foreground="White">
+                        Command="{Binding ToggleConfirmPasswordVisibilityCommand}"
+                        IsEnabled="{Binding ConfirmPassword, Converter={StaticResource StringNotEmptyConverter}}"
+                        Width="35"
+                        Background="Transparent"
+                        Foreground="{StaticResource Brush.TextPrimary}">
                     <Button.Style>
                         <Style TargetType="Button">
-                            <!-- mặc định mắt nhắm -->
-                            <Setter Property="Content" >
+                            <Setter Property="Content">
                                 <Setter.Value>
-                                    <!-- mắt nhắm -->
-                                    <Image Source="pack://application:,,,/EasyFlips;component/Resources/hide.png" Width="20" Height="20"/>
+                                    <Image Source="pack://application:,,,/EasyFlips;component/Resources/hide.png"
+                                           Width="20" Height="20"/>
                                 </Setter.Value>
                             </Setter>
                             <Style.Triggers>
-                                <!-- khi IsConfirmPasswordVisible = true thì đổi sang mắt mở -->
                                 <DataTrigger Binding="{Binding IsConfirmPasswordVisible}" Value="True">
-                                    <Setter Property="Content" >
+                                    <Setter Property="Content">
                                         <Setter.Value>
-                                            <!-- mắt nhắm -->
-                                            <Image Source="pack://application:,,,/EasyFlips;component/Resources/view.png" Width="20" Height="20"/>
+                                            <Image Source="pack://application:,,,/EasyFlips;component/Resources/view.png"
+                                                   Width="20" Height="20"/>
                                         </Setter.Value>
                                     </Setter>
                                 </DataTrigger>
@@ -126,19 +168,29 @@
                     </Button.Style>
                 </Button>
             </Grid>
-            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,5" HorizontalAlignment="Center"/>
-            <Button x:Name="btnRegister" Content="Register" FontSize="16" FontWeight="Bold"
+
+            <!-- Error -->
+            <TextBlock Text="{Binding ErrorMessage}"
+                       Foreground="{StaticResource Brush.Accent1}"
+                       TextWrapping="Wrap"
+                       Margin="0,5"
+                       HorizontalAlignment="Center"/>
+
+            <!-- Register Button -->
+            <Button x:Name="btnRegister"
+                    Content="Register"
+                    FontSize="16"
+                    FontWeight="Bold"
                     Command="{Binding RegisterCommand}"
-                    Margin="60,0, 60, 5" Height="35"
-                    Background="#3498DB" Foreground="White"/>
+                    Margin="60,0,60,5"
+                    Height="35"
+                    Style="{StaticResource AccentButtonStyle}"/>
 
+            <!-- Hyperlink -->
             <TextBlock HorizontalAlignment="Center" Margin="0,10,0,0">
-                <Hyperlink FontSize="14" Foreground="#00AFF0" 
+                <Hyperlink FontSize="14"
                            Command="{Binding BackToLoginCommand}">Already had an Account? Log in</Hyperlink>
-
             </TextBlock>
         </StackPanel>
-
     </Grid>
-
 </Window>

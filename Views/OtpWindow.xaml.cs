@@ -22,6 +22,16 @@ namespace EasyFlips.Views
         public OtpWindow()
         {
             InitializeComponent();
+
         }
+        private void OtpBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var textBox = sender as TextBox;
+            if (textBox.Text.Length == textBox.MaxLength)
+            {
+                textBox.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+            }
+        }
+
     }
 }
