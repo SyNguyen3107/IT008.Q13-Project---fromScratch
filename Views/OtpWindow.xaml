@@ -10,13 +10,12 @@
 
     <Grid>
         <!-- Nút X ở góc trên bên phải -->
-        <Button Content="x"
+        <Button Content="✕"
                 ToolTip="Close and go back"
                 FontSize="20"
                 Width="24" 
                 Height="24" 
-                FontWeight="Bold" 
-                Foreground="White" 
+                Foreground="#666" 
                 Background="Transparent" 
                 BorderThickness="0" 
                 HorizontalAlignment="Right" 
