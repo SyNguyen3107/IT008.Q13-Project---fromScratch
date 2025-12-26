@@ -82,6 +82,9 @@ namespace EasyFlips.Models
 
         [Column("updated_at")]
         public DateTime UpdatedAt { get; set; }
+
+        [Column("sync_state")]
+        public FlashcardSyncState SyncState { get; set; }
     }
 
     /// <summary>
