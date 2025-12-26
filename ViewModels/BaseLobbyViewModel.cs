@@ -309,8 +309,7 @@ namespace EasyFlips.ViewModels
         {
             if (!string.IsNullOrEmpty(RoomId))
             {
-                Clipboard.SetText(RoomId);
-                MessageBox.Show("Đã sao chép mã phòng!");
+                Clipboard.SetText(RoomId);        
             }
         }
 

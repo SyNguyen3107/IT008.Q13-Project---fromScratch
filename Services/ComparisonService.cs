@@ -12,7 +12,7 @@ namespace EasyFlips.Services
         public bool IsAnswerAcceptable(string input, string target, int threshold = 80)
         {
            if (string.IsNullOrEmpty(input)) return false;
-           int score = Fuzz.WeightedRatio(input.ToLower(), target.ToLower());
+           int score = SmartScore(input, target);
            return score >= threshold;
         }
 
