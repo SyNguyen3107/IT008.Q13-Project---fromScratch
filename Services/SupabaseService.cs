@@ -1,4 +1,4 @@
-﻿using EasyFlips.Interfaces;
+using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using Newtonsoft.Json;
 using Supabase.Gotrue;
@@ -77,6 +77,34 @@ namespace EasyFlips.Services
             return await _client.From<Profile>().Where(x => x.Id == userId).Single();
         }
 
+        /// <summary>
+        /// Lấy thông tin UserProfile chi tiết (Bảng mở rộng nếu có).
+        /// </summary>
+        /// <param name="userId">ID người dùng.</param>
+        public async Task<UserProfile?> GetUserProfileAsync(string userId)
+        {
+            try
+            {
+                var profile = await _client
+                    .From<UserProfile>()
+                    .Where(x => x.UserId == userId)
+                    .Single();
+
+                return profile;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] GetUserProfileAsync error: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Cập nhật thông tin hiển thị và avatar cho người dùng.
+        /// </summary>
+        /// <param name="userId">ID người dùng.</param>
+        /// <param name="displayName">Tên hiển thị mới.</param>
+        /// <param name="avatarUrl">Đường dẫn ảnh đại diện mới.</param>
         public async Task<Profile?> UpdateProfileAsync(string userId, string? displayName, string? avatarUrl)
         {
             var result = await _client.From<Profile>()
@@ -112,6 +140,17 @@ namespace EasyFlips.Services
                 WaitTime = waitTime,
                 IsActive = true
             };
+            var json = JsonConvert.SerializeObject(classroom);
+            Console.WriteLine(json);
+
+            Console.WriteLine(json);
+
+            Console.WriteLine(json);
+
+            Console.WriteLine(json);
+
+            Console.WriteLine(json);
+
             var result = await _client.From<Classroom>().Insert(classroom);
             return result.Models.FirstOrDefault();
         }
@@ -235,6 +274,17 @@ namespace EasyFlips.Services
 
         #endregion
 
+        #region Helper Methods
+        /// <summary>
+        /// Gọi RPC Database để sinh mã phòng ngẫu nhiên duy nhất.
+        /// </summary>
+        private async Task<string> GenerateRoomCodeAsync()
+        {
+            try { var result = await _client.Rpc("generate_room_code", null); return result.Content ?? "TEMP1234"; }
+            catch { return "TEMP1234"; }
+        }
+        #endregion
+
         #region Game Logic & Hybrid Sync
 
         public async Task<Deck?> GetDeckByClassroomIdAsync(string classroomId)
@@ -257,18 +307,387 @@ namespace EasyFlips.Services
             catch { return null; }
         }
 
+                await channel.Subscribe();
+                Debug.WriteLine($"[SupabaseService] Đã đăng ký lắng nghe tất cả sự kiện members của phòng {classroomId}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] Lỗi đăng ký lắng nghe: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Tham gia kênh Presence để theo dõi ai đang Online trong phòng.
+        /// </summary>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="userId">ID người dùng hiện tại.</param>
+        /// <param name="displayName">Tên hiển thị.</param>
+        /// <param name="onPresenceSync">Callback trả về danh sách UserID đang online.</param>
+        public async Task JoinRoomPresenceAsync(string classroomId, string userId, string? displayName, Action<List<string>> onPresenceSync)
+        {
+            try
+            {
+                await _client.Realtime.ConnectAsync();
+
+                string channelName = $"presence:{classroomId}";
+
+                if (_activeChannels.TryGetValue(channelName, out var oldChannel))
+                {
+                    oldChannel.Unsubscribe();
+                    _activeChannels.Remove(channelName);
+                }
+
+                var channel = _client.Realtime.Channel(channelName);
+                _activeChannels[channelName] = channel;
+
+                string presenceKey = userId;
+                var presence = channel.Register<UserPresence>(presenceKey);
+
+                presence.AddPresenceEventHandler(IRealtimePresence.EventType.Sync, (sender, args) =>
+                {
+                    try
+                    {
+                        var onlineUserIds = new List<string>();
+                        foreach (var presences in presence.CurrentState.Values)
+                        {
+                            foreach (var p in presences)
+                            {
+                                if (!string.IsNullOrEmpty(p.UserId)) onlineUserIds.Add(p.UserId);
+                            }
+                        }
+                        onPresenceSync?.Invoke(onlineUserIds.Distinct().ToList());
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[Presence Error] Lỗi xử lý Sync: {ex.Message}");
+                    }
+                });
+
+                await channel.Subscribe();
+                if (channel.State != ChannelState.Joined)
+                {
+                    Debug.WriteLine("[Presence] Subscribe thất bại");
+                    return;
+                }
+
+                var payload = new UserPresence
+                {
+                    UserId = userId,
+                    DisplayName = displayName ?? "Unknown"
+                };
+                await presence.Track(payload);
+
+                Debug.WriteLine($"[Presence] Đã tham gia phòng {classroomId} với userId {userId}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Presence] Lỗi tham gia: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Rời khỏi kênh Presence (ngừng báo Online).
+        /// </summary>
+        public async Task LeaveRoomPresenceAsync(string classroomId, string userId)
+        {
+            string channelName = $"presence:{classroomId}";
+            if (_activeChannels.TryGetValue(channelName, out var channel))
+            {
+                try
+                {
+                    var presence = channel.Register<UserPresence>(userId);
+                    await presence.Untrack();
+                    channel.Unsubscribe();
+                    _activeChannels.Remove(channelName);
+                    Debug.WriteLine($"[Presence] Đã rời phòng {classroomId}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[Presence] Lỗi rời phòng: {ex.Message}");
+                }
+            }
+        }
+        #endregion
+
+        #region Flashcard Sync Operations
+
+        /// <summary>
+        /// [WRAPPER] Subscribe vào kênh flashcard sync của phòng học.
+        /// Đây là hàm wrapper đơn giản hóa việc tham gia kênh Realtime.
+        /// </summary>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="onStateReceived">Callback khi nhận được trạng thái mới.</param>
+        /// <returns>Kết quả subscribe (Success/Fail).</returns>
+        public async Task<ChannelSubscriptionResult> SubscribeToFlashcardChannelAsync(
+            string classroomId,
+            Action<FlashcardSyncState> onStateReceived)
+        {
+            var result = new ChannelSubscriptionResult
+            {
+                ChannelName = $"flashcard-sync:{classroomId}"
+            };
+
+            try
+            {
+                await _client.Realtime.ConnectAsync();
+
+                // Hủy kênh cũ nếu có
+                if (_activeChannels.TryGetValue(result.ChannelName, out var oldChannel))
+                {
+                    oldChannel.Unsubscribe();
+                    _activeChannels.Remove(result.ChannelName);
+                    _activeBroadcasts.Remove(result.ChannelName);
+                }
+
+                var channel = _client.Realtime.Channel(result.ChannelName);
+                _activeChannels[result.ChannelName] = channel;
+
+                var broadcast = channel.Register<FlashcardBroadcast>(true, false);
+                _activeBroadcasts[result.ChannelName] = broadcast;
+
+                broadcast.AddBroadcastEventHandler((sender, args) =>
+                {
+                    if (args.Event == "FLASHCARD_SYNC")
+                    {
+                        try
+                        {
+                            var payload = args.Payload;
+                            if (payload != null)
+                            {
+                                var state = ParseFlashcardState(payload);
+                                if (state != null)
+                                {
+                                    // Log JSON để debug
+                                    var json = JsonConvert.SerializeObject(state, Formatting.Indented);
+                                    Debug.WriteLine($"[FlashcardSync] Received JSON:\n{json}");
+                                    
+                                    onStateReceived?.Invoke(state);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[FlashcardSync] Parse error: {ex.Message}");
+                        }
+                    }
+                });
+
+                await channel.Subscribe();
+
+                result.Success = true;
+                Debug.WriteLine($"[FlashcardSync] Subscribed to channel: {result.ChannelName}");
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.ErrorMessage = ex.Message;
+                Debug.WriteLine($"[FlashcardSync] Subscribe failed: {ex.Message}");
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// [TEST] Gửi gói tin mẫu để test broadcast.
+        /// </summary>
+        public async Task<bool> SendTestBroadcastAsync(string classroomId, string hostId)
+        {
+            try
+            {
+                var testState = new FlashcardSyncState
+                {
+                    ClassroomId = classroomId,
+                    DeckId = "test-deck-001",
+                    CurrentCardId = "test-card-001",
+                    CurrentCardIndex = 0,
+                    TotalCards = 10,
+                    IsFlipped = false,
+                    Action = FlashcardAction.ShowCard,
+                    TriggeredBy = hostId,
+                    TimeRemaining = 15,
+                    IsSessionActive = true,
+                    IsPaused = false,
+                    Phase = GamePhase.Question
+                };
+
+                await BroadcastFlashcardStateAsync(classroomId, testState);
+                Debug.WriteLine($"[TEST] Sent test broadcast to room {classroomId}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[TEST] Send test broadcast failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Tham gia kênh đồng bộ flashcard trong phòng học.
+        /// Sử dụng Broadcast để gửi/nhận trạng thái card realtime.
+        /// </summary>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="userId">ID người dùng hiện tại.</param>
+        /// <param name="onStateReceived">Callback khi nhận được trạng thái mới từ Host.</param>
+        public async Task JoinFlashcardSyncChannelAsync(
+            string classroomId, 
+            string userId,
+            Action<FlashcardSyncState> onStateReceived)
+        {
+            try
+            {
+                await _client.Realtime.ConnectAsync();
+
+                string channelName = $"flashcard-sync:{classroomId}";
+
+                // Hủy kênh cũ nếu có
+                if (_activeChannels.TryGetValue(channelName, out var oldChannel))
+                {
+                    oldChannel.Unsubscribe();
+                    _activeChannels.Remove(channelName);
+                    _activeBroadcasts.Remove(channelName);
+                }
+
+                var channel = _client.Realtime.Channel(channelName);
+                _activeChannels[channelName] = channel;
+
+                // Đăng ký Broadcast (true = lắng nghe broadcast, false = không ack)
+                var broadcast = channel.Register<FlashcardBroadcast>(true, false);
+                _activeBroadcasts[channelName] = broadcast;
+
+                // Lắng nghe sự kiện broadcast
+                broadcast.AddBroadcastEventHandler((sender, args) =>
+                {
+                    // Chỉ xử lý event FLASHCARD_SYNC
+                    if (args.Event == "FLASHCARD_SYNC")
+                    {
+                        try
+                        {
+                            var payload = args.Payload;
+                            if (payload != null)
+                            {
+                                var state = ParseFlashcardState(payload);
+                                if (state != null)
+                                {
+                                    Debug.WriteLine($"[FlashcardSync] Nhận trạng thái: {state.Action} - Card {state.CurrentCardIndex + 1}/{state.TotalCards}, Lật: {state.IsFlipped}");
+                                    onStateReceived?.Invoke(state);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[FlashcardSync] Lỗi parse state: {ex.Message}");
+                        }
+                    }
+                });
+
+                await channel.Subscribe();
+                Debug.WriteLine($"[FlashcardSync] Đã tham gia kênh đồng bộ phòng {classroomId}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FlashcardSync] Lỗi tham gia kênh: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Parse Dictionary payload thành FlashcardSyncState.
+        /// </summary>
+        private FlashcardSyncState? ParseFlashcardState(Dictionary<string, object> payload)
+        {
+            try
+            {
+                var state = new FlashcardSyncState
+                {
+                    ClassroomId = payload.GetValueOrDefault("classroom_id")?.ToString() ?? string.Empty,
+                    DeckId = payload.GetValueOrDefault("deck_id")?.ToString() ?? string.Empty,
+                    CurrentCardId = payload.GetValueOrDefault("current_card_id")?.ToString() ?? string.Empty,
+                    CurrentCardIndex = Convert.ToInt32(payload.GetValueOrDefault("current_card_index", 0)),
+                    TotalCards = Convert.ToInt32(payload.GetValueOrDefault("total_cards", 0)),
+                    IsFlipped = Convert.ToBoolean(payload.GetValueOrDefault("is_flipped", false)),
+                    TriggeredBy = payload.GetValueOrDefault("triggered_by")?.ToString() ?? string.Empty,
+                    TimeRemaining = Convert.ToInt32(payload.GetValueOrDefault("time_remaining", 0)),
+                    IsSessionActive = Convert.ToBoolean(payload.GetValueOrDefault("is_session_active", false)),
+                    IsPaused = Convert.ToBoolean(payload.GetValueOrDefault("is_paused", false))
+                };
+
+                // Parse action enum
+                var actionStr = payload.GetValueOrDefault("action")?.ToString();
+                if (Enum.TryParse<FlashcardAction>(actionStr, out var action))
+                {
+                    state.Action = action;
+                }
+
+                // Parse phase enum
+                var phaseStr = payload.GetValueOrDefault("phase")?.ToString();
+                if (Enum.TryParse<GamePhase>(phaseStr, out var phase))
+                {
+                    state.Phase = phase;
+                }
+
+                // Parse timestamp
+                var timestampStr = payload.GetValueOrDefault("timestamp")?.ToString();
+                if (DateTime.TryParse(timestampStr, out var timestamp))
+                {
+                    state.Timestamp = timestamp;
+                }
+
+                return state;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Broadcast trạng thái flashcard mới tới tất cả client trong phòng.
+        /// Chỉ Host mới nên gọi phương thức này.
+        /// </summary>
+        /// <param name="classroomId">ID phòng học.</param>
+        /// <param name="state">Trạng thái cần broadcast.</param>
         public async Task BroadcastFlashcardStateAsync(string classroomId, FlashcardSyncState state)
         {
             try
             {
+                string channelName = $"flashcard-sync:{classroomId}";
+
+                if (!_activeBroadcasts.TryGetValue(channelName, out var broadcast))
+                {
+                    Debug.WriteLine($"[FlashcardSync] Chưa tham gia kênh {channelName}");
+                    return;
+                }
+
                 state.Timestamp = DateTime.UtcNow;
-                await _client.From<Classroom>()
-                             .Where(c => c.Id == classroomId)
-                             .Set(c => c.SyncState, state)
-                             .Update();
-                Debug.WriteLine($"[HOST-DB] Saved State: {state.Action}");
+                var payload = new Dictionary<string, object>
+{
+                    { "event_type", "FLASHCARD_SYNC" },
+                    { "classroom_id", state.ClassroomId },
+                    { "deck_id", state.DeckId },
+                    { "current_card_id", state.CurrentCardId },
+                    { "current_card_index", state.CurrentCardIndex },
+                    { "total_cards", state.TotalCards },
+                    { "is_flipped", state.IsFlipped },
+                    { "action", state.Action.ToString() },
+                    { "triggered_by", state.TriggeredBy },
+                    { "time_remaining", state.TimeRemaining },
+                    { "timestamp", state.Timestamp.ToString("O") },
+                    { "is_session_active", state.IsSessionActive },
+                    { "is_paused", state.IsPaused },
+                    { "phase", state.Phase.ToString() }
+};
+
+
+
+                Debug.WriteLine("[Broadcast] Sending payload...");
+                await broadcast.Send("FLASHCARD_SYNC", payload);
+                Debug.WriteLine("[Broadcast] Sent payload.");
+
+
             }
-            catch (Exception ex) { Debug.WriteLine($"[HOST-DB] Error: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FlashcardSync] Lỗi broadcast: {ex.Message}");
+            }
         }
 
         // --- Wrappers cho GameViewModel ---
@@ -360,26 +779,41 @@ namespace EasyFlips.Services
                 var channel = _client.Realtime.Channel(channelName);
                 _activeChannels[channelName] = channel;
 
-                // 1. Nghe DB (Game State)
-                var dbOptions = new PostgresChangesOptions("public", "classrooms") { Filter = $"id=eq.{classroomId}" };
-                channel.Register(dbOptions);
-                channel.AddPostgresChangeHandler(ListenType.Updates, (sender, change) =>
-                {
-                    try
-                    {
-                        var updatedClassroom = change.Model<Classroom>();
-                        if (updatedClassroom?.SyncState != null) onStateReceived?.Invoke(updatedClassroom.SyncState);
-                    }
-                    catch { }
-                });
-
-                // 2. Nghe Broadcast (Score)
+                // Đăng ký Broadcast (true = lắng nghe broadcast, false = không ack)
                 var broadcast = channel.Register<FlashcardBroadcast>(true, false);
                 _activeBroadcasts[channelName] = broadcast;
 
                 broadcast.AddBroadcastEventHandler((sender, args) =>
                 {
-                    if (args.Event == "FLASHCARD_SCORE" && args.Payload != null)
+                    Debug.WriteLine("[FlashcardSync] Nhận broadcast event");
+                    if (args.Payload == null) { Debug.WriteLine("[FlashcardSync] Payload NULL"); return; }
+                    foreach (var kv in args.Payload) { Debug.WriteLine($" {kv.Key} = {kv.Value}"); }
+
+                    var payload = args.Payload as Dictionary<string, object>;
+                    var eventType = payload?.GetValueOrDefault("event_type")?.ToString();
+                    
+
+                    if (eventType == "FLASHCARD_SYNC")
+                    {
+                        try
+                        {
+                            payload = args.Payload;
+                            if (payload != null)
+                            {
+                                var state = ParseFlashcardState(payload);
+                                if (state != null)
+                                {
+                                    Debug.WriteLine($"[FlashcardSync] Nhận trạng thái: {state.Action} - Card {state.CurrentCardIndex + 1}/{state.TotalCards}, Lật: {state.IsFlipped}");
+                                    onStateReceived?.Invoke(state);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[FlashcardSync] Parse error: {ex.Message}");
+                        }
+                    }
+                    else if (eventType == "FLASHCARD_SCORE" && onScoreReceived != null)
                     {
                         try
                         {
@@ -391,16 +825,19 @@ namespace EasyFlips.Services
                     }
                 });
 
+                Debug.WriteLine($"[FlashcardSync] Đang subscribe channel: {channelName}");
+                
                 await channel.Subscribe();
+
                 result.Success = true;
+                Debug.WriteLine($"[FlashcardSync] Subscribed to channel: {result.ChannelName}");
             }
             catch (Exception ex)
             {
                 result.Success = false;
                 result.ErrorMessage = ex.Message;
+                Debug.WriteLine($"[FlashcardSync] Subscribe failed: {ex.Message}");
             }
-            return result;
-        }
 
         // Wrapper để tương thích ngược với GameViewModel cũ
         public async Task JoinFlashcardSyncChannelAsync(string classroomId, string userId, Action<FlashcardSyncState> onStateReceived)

@@ -105,23 +105,56 @@ namespace EasyFlips.ViewModels
         {
             try
             {
+                if (SelectedDeck == null)
+                {
+                    MessageBox.Show("Vui lòng chọn một bộ thẻ trước khi bắt đầu!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 StopAutoStart();
                 StopPolling();
 
-                // Cập nhật trạng thái phòng sang PLAYING
-                await _classroomRepository.UpdateStatusAsync(_realClassroomIdUUID, "PLAYING");
-
-                // Cập nhật Deck đã chọn lần cuối lên DB (để Member tải về đúng Deck)
-                if (SelectedDeck != null)
+                // ⚠️ BƯỚC 1: Upload Deck lên Supabase Cloud
+                // Vì Deck lưu ở Local SQLite, Member không thể truy cập trực tiếp
+                // Cần upload lên Cloud để Member có thể fetch
+                System.Diagnostics.Debug.WriteLine($"[Host] 🔄 Đang upload deck lên cloud: {SelectedDeck.Name}");
+                
+                // Load full deck với cards từ local DB
+                var fullDeck = await _deckRepository.GetByIdAsync(SelectedDeck.Id);
+                if (fullDeck == null || fullDeck.Cards == null || !fullDeck.Cards.Any())
                 {
-                    await _classroomRepository.UpdateClassroomSettingsAsync(
-                       _realClassroomIdUUID,
-                       SelectedDeck.Id,
-                       MaxPlayers,
-                       TimePerRound,
-                       TotalWaitTime
-                   );
+                    MessageBox.Show("Bộ thẻ không có card nào! Vui lòng thêm card trước.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    StartPolling();
+                    return;
                 }
+
+                var uploadSuccess = await _supabaseService.UploadDeckToCloudAsync(fullDeck);
+                if (!uploadSuccess)
+                {
+                    MessageBox.Show("Không thể upload bộ thẻ lên server. Vui lòng thử lại.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                    StartPolling();
+                    return;
+                }
+                System.Diagnostics.Debug.WriteLine($"[Host] ✅ Upload deck thành công!");
+
+                // ⚠️ BƯỚC 2: Lưu DeckId vào Classroom
+                System.Diagnostics.Debug.WriteLine($"[Host] 🔄 Đang lưu DeckId: {SelectedDeck.Id}");
+                await _classroomRepository.UpdateClassroomSettingsAsync(
+                   _realClassroomIdUUID,
+                   SelectedDeck.Id,
+                   MaxPlayers,
+                   TimePerRound,
+                   TotalWaitTime
+               );
+                System.Diagnostics.Debug.WriteLine($"[Host] ✅ Đã lưu DeckId thành công");
+
+                // ⚠️ BƯỚC 3: Cập nhật status PLAYING (SAU CÙNG)
+                System.Diagnostics.Debug.WriteLine($"[Host] 🔄 Đang cập nhật status sang PLAYING...");
+                await _classroomRepository.UpdateStatusAsync(_realClassroomIdUUID, "PLAYING");
+                System.Diagnostics.Debug.WriteLine($"[Host] ✅ Đã cập nhật status thành công");
+
+                // Cập nhật SelectedDeck với full cards
+                SelectedDeck = fullDeck;
 
                 NavigateToGame();
             }

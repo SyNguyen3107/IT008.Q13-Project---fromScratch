@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Supabase.Realtime.Models;
 
@@ -8,9 +8,9 @@ namespace EasyFlips.Models
     public class SignalMessage : BaseBroadcast
     {
         [JsonProperty("action")]
-        public string Action { get; set; } // Ví dụ: "JOIN", "LEFT", "UPDATE_LOBBY"
+        public string Action { get; set; } = string.Empty; // Ví dụ: "JOIN", "LEFT", "UPDATE_LOBBY"
 
         [JsonProperty("payload")]
-        public JObject Payload { get; set; } // Dữ liệu đi kèm (JSON)
+        public new JObject? Payload { get; set; } // Dữ liệu đi kèm (JSON)
     }
 }

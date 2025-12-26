@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using EasyFlips.Converters;
 using EasyFlips.Interfaces;
@@ -92,7 +92,7 @@ namespace EasyFlips
                     db.Database.Migrate();
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Xử lý lỗi hỏng file DB (như code cũ của bạn)
                 string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);

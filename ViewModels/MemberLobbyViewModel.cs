@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Models;
 using EasyFlips.Services;
 using EasyFlips.Interfaces;
@@ -94,7 +94,7 @@ namespace EasyFlips.ViewModels
                     CanCloseWindow = true;
                     ForceCloseWindow();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     // Dù lỗi API (ví dụ mất mạng) vẫn cho về trang chủ
                     _navigationService.ShowMainWindow();

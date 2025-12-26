@@ -1,4 +1,4 @@
-﻿using EasyFlips.Interfaces;
+using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
 using System.Diagnostics;

@@ -5,116 +5,255 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:EasyFlips.ViewModels"
         mc:Ignorable="d"
-        Title="Đồng bộ hóa dữ liệu" Height="500" Width="800"
+        Title="Data Synchronization" Height="600" Width="900"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F5F5">
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ResizeMode="CanResize">
 
     <Window.Resources>
-        <!-- Style cho tiêu đề nhóm -->
-        <Style x:Key="HeaderStyle" TargetType="TextBlock">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Margin" Value="0,0,0,5"/>
-            <Setter Property="Foreground" Value="#333"/>
+        <SolidColorBrush x:Key="BgDark" Color="#181A20"/>
+        <SolidColorBrush x:Key="SurfaceDark" Color="#1F222A"/>
+        <SolidColorBrush x:Key="CardBg" Color="#2B2E38"/>
+        <SolidColorBrush x:Key="TextGrey" Color="#9E9EA7"/>
+
+        <SolidColorBrush x:Key="UploadGreen" Color="#2ECC71"/>
+        <SolidColorBrush x:Key="DownloadBlue" Color="#3498DB"/>
+        <SolidColorBrush x:Key="UpdateOrange" Color="#E67E22"/>
+        <SolidColorBrush x:Key="UpdatePurple" Color="#9B59B6"/>
+        <SolidColorBrush x:Key="PrimaryPurple" Color="#6949ff"/>
+
+        <Style x:Key="DarkScrollBarStyle" TargetType="{x:Type ScrollBar}">
+            <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
+            <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#444"/>
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollBar}">
+                        <Grid x:Name="Bg" SnapsToDevicePixels="true">
+                            <Track x:Name="PART_Track" IsDirectionReversed="true">
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="{x:Type Thumb}">
+                                                <Border Background="#444" CornerRadius="4"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <!-- Template hiển thị từng Deck trong list -->
+        <Style x:Key="PrimaryBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource PrimaryPurple}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.9"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bdr" Property="Background" Value="#444"/>
+                                <Setter Property="Foreground" Value="#888"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="#2B2E38"/>
+            <Setter Property="Foreground" Value="#CCC"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="10" BorderBrush="#444" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Background" Value="#353945"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="Transparent" SnapsToDevicePixels="true">
+                            <ContentPresenter/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <DataTemplate x:Key="DeckTemplate">
-            <Border Background="White" Margin="0,2" Padding="8" CornerRadius="4" BorderBrush="#DDD" BorderThickness="1">
+            <Border Background="{StaticResource CardBg}" Margin="0,0,0,8" Padding="12" CornerRadius="8">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock Text="{Binding Description}" FontSize="11" Foreground="Gray" 
-                                   TextTrimming="CharacterEllipsis" MaxHeight="30"/>
+                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="White"/>
+                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource TextGrey}" 
+                                   TextTrimming="CharacterEllipsis" MaxHeight="30" Margin="0,2,0,0"/>
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="{Binding Cards.Count, StringFormat='{}{0} thẻ'}" 
-                               VerticalAlignment="Center" FontSize="11" Foreground="#888" Margin="10,0,0,0"/>
+                    <Border Grid.Column="1" Background="#1F222A" CornerRadius="5" Padding="8,2" VerticalAlignment="Center" Margin="10,0,0,0">
+                        <TextBlock Text="{Binding Cards.Count, StringFormat='{}{0} cards'}" 
+                                   VerticalAlignment="Center" FontSize="11" Foreground="#888"/>
+                    </Border>
                 </Grid>
             </Border>
         </DataTemplate>
     </Window.Resources>
 
-    <Grid Margin="15">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <!-- Header -->
-            <RowDefinition Height="*"/>
-            <!-- Content Lists -->
-            <RowDefinition Height="Auto"/>
-            <!-- Footer Status -->
-            <RowDefinition Height="Auto"/>
-            <!-- Buttons -->
-        </Grid.RowDefinitions>
+    <Border Background="{StaticResource BgDark}" CornerRadius="20" BorderBrush="#333" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="20" Opacity="0.5"/>
+        </Border.Effect>
 
-        <!-- Title -->
-        <TextBlock Text="Đồng bộ với Supabase Cloud" FontSize="20" FontWeight="Bold" Foreground="#2C3E50"/>
-
-        <!-- Main Content: Chia làm 4 vùng -->
-        <Grid Grid.Row="1" Margin="0,15">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <Grid Margin="20">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="10"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- 1. Upload New -->
-            <DockPanel Grid.Row="0" Grid.Column="0">
-                <TextBlock Text="⬆️ Tải lên Cloud (Mới)" Style="{StaticResource HeaderStyle}" Foreground="#27AE60"/>
-                <ListBox ItemsSource="{Binding Plan.ToUpload}" ItemTemplate="{StaticResource DeckTemplate}" 
-                         BorderThickness="0" Background="Transparent"/>
-            </DockPanel>
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="🔄" Foreground="#ffc107" FontSize="22" Margin="0,0,10,0"/>
+                    <TextBlock Text="DATA SYNCHRONIZATION" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                </StackPanel>
 
-            <!-- 2. Download New -->
-            <DockPanel Grid.Row="0" Grid.Column="2">
-                <TextBlock Text="⬇️ Tải về Máy (Mới)" Style="{StaticResource HeaderStyle}" Foreground="#2980B9"/>
-                <ListBox ItemsSource="{Binding Plan.ToDownload}" ItemTemplate="{StaticResource DeckTemplate}" 
-                         BorderThickness="0" Background="Transparent"/>
-            </DockPanel>
+                <Button Command="{Binding CloseCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                        HorizontalAlignment="Right" Content="✕" Background="Transparent" BorderThickness="0" 
+                        Foreground="#666" FontSize="16" Cursor="Hand"/>
+            </Grid>
 
-            <!-- 3. Update Cloud -->
-            <DockPanel Grid.Row="2" Grid.Column="0">
-                <TextBlock Text="🔄 Cập nhật lên Cloud (Local mới hơn)" Style="{StaticResource HeaderStyle}" Foreground="#D35400"/>
-                <ListBox ItemsSource="{Binding Plan.ToUpdateCloud}" ItemTemplate="{StaticResource DeckTemplate}" 
-                         BorderThickness="0" Background="Transparent"/>
-            </DockPanel>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <!-- 4. Update Local -->
-            <DockPanel Grid.Row="2" Grid.Column="2">
-                <TextBlock Text="🔄 Cập nhật về Máy (Cloud mới hơn)" Style="{StaticResource HeaderStyle}" Foreground="#8E44AD"/>
-                <ListBox ItemsSource="{Binding Plan.ToUpdateLocal}" ItemTemplate="{StaticResource DeckTemplate}" 
-                         BorderThickness="0" Background="Transparent"/>
-            </DockPanel>
+                <Border Grid.Row="0" Grid.Column="0" Background="{StaticResource SurfaceDark}" CornerRadius="12" Padding="10">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="⬆" Foreground="{StaticResource UploadGreen}" FontWeight="Bold" Margin="0,0,5,0"/>
+                            <TextBlock Text="Upload to Cloud" Foreground="{StaticResource UploadGreen}" FontWeight="Bold"/>
+                        </StackPanel>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer.Resources>
+                                <Style TargetType="ScrollBar" BasedOn="{StaticResource DarkScrollBarStyle}"/>
+                            </ScrollViewer.Resources>
+                            <ListBox ItemsSource="{Binding Plan.ToUpload}" ItemTemplate="{StaticResource DeckTemplate}" 
+                                     BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <Border Grid.Row="0" Grid.Column="2" Background="{StaticResource SurfaceDark}" CornerRadius="12" Padding="10">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="⬇" Foreground="{StaticResource DownloadBlue}" FontWeight="Bold" Margin="0,0,5,0"/>
+                            <TextBlock Text="Download to Device" Foreground="{StaticResource DownloadBlue}" FontWeight="Bold"/>
+                        </StackPanel>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer.Resources>
+                                <Style TargetType="ScrollBar" BasedOn="{StaticResource DarkScrollBarStyle}"/>
+                            </ScrollViewer.Resources>
+                            <ListBox ItemsSource="{Binding Plan.ToDownload}" ItemTemplate="{StaticResource DeckTemplate}" 
+                                     BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <Border Grid.Row="2" Grid.Column="0" Background="{StaticResource SurfaceDark}" CornerRadius="12" Padding="10">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="☁" Foreground="{StaticResource UpdateOrange}" FontWeight="Bold" Margin="0,0,5,0"/>
+                            <TextBlock Text="Update Cloud (Local is newer)" Foreground="{StaticResource UpdateOrange}" FontWeight="Bold"/>
+                        </StackPanel>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer.Resources>
+                                <Style TargetType="ScrollBar" BasedOn="{StaticResource DarkScrollBarStyle}"/>
+                            </ScrollViewer.Resources>
+                            <ListBox ItemsSource="{Binding Plan.ToUpdateCloud}" ItemTemplate="{StaticResource DeckTemplate}" 
+                                     BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <Border Grid.Row="2" Grid.Column="2" Background="{StaticResource SurfaceDark}" CornerRadius="12" Padding="10">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="💻" Foreground="{StaticResource UpdatePurple}" FontWeight="Bold" Margin="0,0,5,0"/>
+                            <TextBlock Text="Update Local (Cloud is newer)" Foreground="{StaticResource UpdatePurple}" FontWeight="Bold"/>
+                        </StackPanel>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer.Resources>
+                                <Style TargetType="ScrollBar" BasedOn="{StaticResource DarkScrollBarStyle}"/>
+                            </ScrollViewer.Resources>
+                            <ListBox ItemsSource="{Binding Plan.ToUpdateLocal}" ItemTemplate="{StaticResource DeckTemplate}" 
+                                     BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+
+            <StackPanel Grid.Row="2" Margin="0,15,0,5">
+                <TextBlock Text="{Binding StatusMessage}" HorizontalAlignment="Center" 
+                           FontSize="14" Foreground="#CCC" TextWrapping="Wrap" Margin="0,0,0,5"/>
+
+                <ProgressBar Height="4" BorderThickness="0" Background="#333" Foreground="{StaticResource PrimaryPurple}"
+                             IsIndeterminate="True" 
+                             Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+
+                <Button Command="{Binding CheckSyncCommand}" Content="CHECK AGAIN" 
+                        Width="140" Height="45" Margin="0,0,15,0"
+                        Style="{StaticResource SecondaryBtnStyle}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
+
+                <Button Command="{Binding ExecuteSyncCommand}" Content="SYNC NOW" 
+                        Width="160" Height="45"
+                        IsEnabled="{Binding CanSync}"
+                        Style="{StaticResource PrimaryBtnStyle}"/>
+            </StackPanel>
         </Grid>
-
-        <!-- Status Bar -->
-        <TextBlock Grid.Row="2" Text="{Binding StatusMessage}" HorizontalAlignment="Center" Margin="0,10" 
-                   FontSize="14" Foreground="#555" TextWrapping="Wrap"/>
-
-        <!-- Progress Bar (Hiện khi IsBusy) -->
-        <ProgressBar Grid.Row="2" Height="4" IsIndeterminate="True" VerticalAlignment="Bottom" 
-                     Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-
-        <!-- Actions -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-            <Button Command="{Binding ExecuteSyncCommand}" Content="Đồng Bộ Ngay" 
-                    IsEnabled="{Binding CanSync}"
-                    Padding="20,10" Margin="5" Background="#2980B9" Foreground="White" FontWeight="Bold"/>
-
-            <Button Command="{Binding CheckSyncCommand}" Content="Kiểm Tra Lại" 
-                    IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"
-                    Padding="15,10" Margin="5"/>
-
-            <Button Command="{Binding CloseCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" 
-                    Content="Đóng" Padding="15,10" Margin="5"/>
-        </StackPanel>
-    </Grid>
+    </Border>
 </Window>
