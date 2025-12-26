@@ -1,4 +1,4 @@
-﻿using EasyFlips.Interfaces;
+using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
 using System;
@@ -52,44 +52,94 @@ namespace EasyFlips.ViewModels
         /// </summary>
         public override async Task InitializeAsync(string roomId, string classroomId, Deck? deck, int timePerRound)
         {
+            Debug.WriteLine($"[MemberGame] 🚀 InitializeAsync started");
             await base.InitializeAsync(roomId, classroomId, deck, timePerRound);
 
             if (deck == null)
             {
+                Debug.WriteLine($"[MemberGame] 📦 Deck is null, fetching from cloud...");
                 deck = await _supabaseService.GetDeckByClassroomIdAsync(classroomId);
-                if (deck == null || deck.Cards.Count == 0)
+                if (deck == null || deck.Cards == null || deck.Cards.Count == 0)
                 {
                     MessageBox.Show("Deck trống, không thể tham gia game.");
                     return;
                 }
             }
 
-            CurrentDeck = deck; // gán deck cho Member
+            CurrentDeck = deck;
+            Debug.WriteLine($"[MemberGame] ✅ Deck loaded: {deck.Name} with {deck.Cards.Count} cards");
 
+            // ✅ QUAN TRỌNG: Hiển thị card đầu tiên ngay lập tức
+            if (deck.Cards.Any())
+            {
+                CurrentCard = deck.Cards.First();
+                CurrentIndex = 0;
+                TotalCards = deck.Cards.Count;
+                IsInputEnabled = true; // Cho phép Member nhập đáp án
+                CurrentPhase = GamePhase.Question;
+                TimeRemaining = timePerRound;
+                
+                Debug.WriteLine($"[MemberGame] 🎴 First card set: {CurrentCard.FrontText}");
+                Debug.WriteLine($"[MemberGame] ✅ Member ready to play!");
+            }
 
-            // Các thuộc tính như _roomId, _classroomId đã được gán tự động ở lớp cha (base.InitializeAsync)
+            // Các thuộc tính như _roomId, _classroomId đã được gán tự động ở lớp cha
             await SubscribeToRealtimeChannel();
-           
         }
 
         /// <summary>
         /// Implement phương thức abstract từ BaseGameViewModel
+        /// ✅ Sử dụng Postgres Changes thay vì Broadcast (vì broadcast bị lỗi payload null)
         /// </summary>
         protected override async Task SubscribeToRealtimeChannel()
         {
-            var result = await _supabaseService.SubscribeToFlashcardChannelAsync(
-                ClassroomId,
-                OnFlashcardStateReceived,
-                null
-            );
-
-            if (result.Success)
+            try
             {
-                Debug.WriteLine($"[MemberGame] Đã kết nối kênh: {result.ChannelName}");
-                ConnectionStatus = "Đã kết nối";
+                // Kiểm tra ClassroomId
+                if (string.IsNullOrEmpty(ClassroomId))
+                {
+                    Debug.WriteLine($"[MemberGame] ❌ ClassroomId is null or empty!");
+                    ConnectionStatus = "Lỗi: ClassroomId trống";
+                    return;
+                }
+
+                Debug.WriteLine($"[MemberGame] 🔄 Đang subscribe Postgres Changes: {ClassroomId}");
+                
+                // Update UI ngay để user biết đang kết nối
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ConnectionStatus = "Đang kết nối...";
+                });
+                
+                // ✅ Sử dụng Postgres Changes thay vì Broadcast
+                var success = await _supabaseService.SubscribeToGameStateChangesAsync(
+                    ClassroomId,
+                    OnFlashcardStateReceived
+                );
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (success)
+                    {
+                        Debug.WriteLine($"[MemberGame] ✅ Đã kết nối Postgres Changes!");
+                        ConnectionStatus = "🟢 Đã kết nối (Real-time)";
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"[MemberGame] ❌ Kết nối thất bại");
+                        ConnectionStatus = "❌ Kết nối thất bại";
+                    }
+                });
             }
-            else
-                Debug.WriteLine($"[MemberGame] Kết nối thất bại: {result.ErrorMessage}");
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[MemberGame] ❌ Lỗi khi subscribe: {ex.Message}");
+                
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ConnectionStatus = $"Lỗi: {ex.Message}";
+                });
+            }
         }
 
         /// <summary>
@@ -99,7 +149,14 @@ namespace EasyFlips.ViewModels
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                Debug.WriteLine($"[Member] Nhận gói tin: Phase={state.Phase}, Action={state.Action}, CardIndex={state.CurrentCardIndex}, CardId={state.CurrentCardId}, TimeRemaining={state.TimeRemaining}");
+                // Log rõ ràng khi Member nhận được message
+                System.Diagnostics.Debug.WriteLine("==========================================");
+                System.Diagnostics.Debug.WriteLine($"[Member] 📩 ĐÃ NHẬN ĐƯỢC MESSAGE TỪ HOST!");
+                System.Diagnostics.Debug.WriteLine($"[Member] Phase={state.Phase}, Action={state.Action}");
+                System.Diagnostics.Debug.WriteLine($"[Member] CardIndex={state.CurrentCardIndex}, CardId={state.CurrentCardId}");
+                System.Diagnostics.Debug.WriteLine($"[Member] TimeRemaining={state.TimeRemaining}");
+                System.Diagnostics.Debug.WriteLine("==========================================");
+                
                 // 1. Đồng bộ Index và Card
                 if (CurrentDeck != null && (CurrentCard == null || CurrentCard.Id != state.CurrentCardId))
                 {

@@ -1,4 +1,4 @@
-﻿<Window x:Class="EasyFlips.Views.HostGameWindow"
+<Window x:Class="EasyFlips.Views.HostGameWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -349,8 +349,11 @@
                 </StackPanel>
 
 
-                <Button Grid.Column="2" Command="{Binding QuitGameCommand}" Content="QUIT GAME" HorizontalAlignment="Right"
-                        Style="{StaticResource QuitButtonStyle}" FontSize="12" Foreground="White" FontWeight="SemiBold"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <Button Command="{Binding QuitGameCommand}" Content="QUIT GAME" 
+                            Style="{StaticResource QuitButtonStyle}" 
+                            FontSize="12" Foreground="White" FontWeight="SemiBold"/>
+                </StackPanel>
             </Grid>
 
             <Grid Grid.Row="1" Margin="30,10,30,30">

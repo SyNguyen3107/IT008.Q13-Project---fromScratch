@@ -1,4 +1,4 @@
-﻿using EasyFlips.Interfaces;
+using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Properties;
 using System.Collections.Generic;
@@ -226,7 +226,7 @@ namespace EasyFlips.Services
 
                 return user != null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }
