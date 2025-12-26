@@ -10,9 +10,9 @@
         WindowStartupLocation="CenterScreen"
         Background="#181A20"
         Loaded="MainWindowLoaded">
-
+    <!-- Resources -->
     <Window.Resources>
-        <SolidColorBrush x:Key="BgDark" Color="#181A20"/>
+        <SolidColorBrush x:Key="BgDark" Color="#181a20"/>
         <SolidColorBrush x:Key="SurfaceDark" Color="#1F222A"/>
         <SolidColorBrush x:Key="CardBg" Color="#2B2E38"/>
         <SolidColorBrush x:Key="PrimaryPurple" Color="#6C5DD3"/>
