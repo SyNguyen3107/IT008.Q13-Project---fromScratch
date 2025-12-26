@@ -17,6 +17,7 @@
             <converters:DiffTypeToTextDecorationConverter x:Key="DiffTypeToTextDecorationConverter"/>
             <converters:BoolToTextConverter x:Key="BoolToTextConverter"/>
             <converters:BoolToBrushConverter x:Key="BoolToBrushConverter"/>
+            <converters:VisibilityToTextConverter x:Key="VisibilityToTextConverter" />
             <Style TargetType="Window">
             <Setter Property="Icon" Value="/Resources/easyflips.ico"/>
             </Style>

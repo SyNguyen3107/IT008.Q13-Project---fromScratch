@@ -37,6 +37,8 @@
 
             <!-- Username -->
             <TextBox Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" 
+           ToolTip="Pick a unique name for yourself!"
+         ToolTipService.InitialShowDelay="200"
          services:WatermarkService.Watermark="Enter User Name"
          services:WatermarkService.WatermarkSize="14"
          FontSize="14"
@@ -65,6 +67,7 @@
 
                 <!-- TextBox hiển thị mật khẩu -->
                 <TextBox Grid.Column="0"
+                 ToolTip="Make it strong! Use at least 6 characters."
                  Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  FontSize="14"
                  VerticalContentAlignment="Center"
@@ -123,6 +126,7 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBox Grid.Column="0"
+                         ToolTip="Double check to make sure they match!"
                          Text="{Binding ConfirmPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          FontSize="14"
                          VerticalContentAlignment="Center"
@@ -178,6 +182,7 @@
 
             <!-- Register Button -->
             <Button x:Name="btnRegister"
+                    ToolTip="Ready to join the fun? Click here!"
                     Content="Register"
                     FontSize="16"
                     FontWeight="Bold"
@@ -188,8 +193,12 @@
 
             <!-- Hyperlink -->
             <TextBlock HorizontalAlignment="Center" Margin="0,10,0,0">
-                <Hyperlink FontSize="14"
-                           Command="{Binding BackToLoginCommand}">Already had an Account? Log in</Hyperlink>
+                
+               <Hyperlink Command="{Binding BackToLoginCommand}"
+               ToolTip="Already a member? Welcome back!">
+        Already had an Account? Log in
+    </Hyperlink>
+                
             </TextBlock>
         </StackPanel>
     </Grid>

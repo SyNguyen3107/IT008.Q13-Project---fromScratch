@@ -11,6 +11,7 @@
     <Grid>
         <!-- Nút X ở góc trên bên phải -->
         <Button Content="x"
+                ToolTip="Close and go back"
                 FontSize="20"
                 Width="24" 
                 Height="24" 
@@ -25,6 +26,7 @@
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
 
             <Image Source="pack://application:,,,/Resources/password.png"
+                   ToolTip="Check your email inbox!"
                    Width="100" Height="100"
                    Margin="0,0,0,10"
                    HorizontalAlignment="Center"/>
@@ -36,7 +38,9 @@
                        HorizontalAlignment="Center"
                        Margin="0,0,0,10"/>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"  Margin="0,0,0,10"
+                ToolTipService.InitialShowDelay="200"
+                    ToolTip="Enter the 8-digit code we sent you">
                 <TextBox Width="30" Height="30" MaxLength="1" Margin="2"
              FontSize="16" TextAlignment="Center"
              Background="White" Foreground="{StaticResource Brush.Dark}"

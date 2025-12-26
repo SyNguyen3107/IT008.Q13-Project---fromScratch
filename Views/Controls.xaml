@@ -50,8 +50,77 @@
         </Setter>
     </Style>
 
-    
-    
+    <Style TargetType="ToolTip">
+        <Setter Property="Background" Value="{StaticResource Brush.Secondary}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent1}"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontFamily" Value="Segoe UI Semibold"/>
+        <Setter Property="Placement" Value="Right"/>
+        <Setter Property="HorizontalOffset" Value="10"/>
+        <Setter Property="VerticalOffset" Value="0"/>
+        <Setter Property="HasDropShadow" Value="True"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Grid x:Name="PopupRoot" RenderTransformOrigin="0,0.5" Opacity="0">
+                        <Grid.RenderTransform>
+                            <ScaleTransform ScaleX="0.5" ScaleY="0.5"/>
+                        </Grid.RenderTransform>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="M 10,0 L 10,14 L 0,7 Z" 
+                              Fill="{TemplateBinding Background}"
+                              Stroke="{TemplateBinding BorderBrush}"
+                              StrokeThickness="1.5"
+                              VerticalAlignment="Center"
+                              Margin="0,0,-1.5,0"
+                              Panel.ZIndex="1"/>
+
+                            <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1.5"
+                                CornerRadius="12"
+                                Padding="{TemplateBinding Padding}">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+                                </Border.Effect>
+                                <ContentPresenter Content="{TemplateBinding Content}" />
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <EventTrigger RoutedEvent="Loaded">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="PopupRoot"
+                                                 Storyboard.TargetProperty="(Grid.RenderTransform).(ScaleTransform.ScaleX)"
+                                                 To="1" Duration="0:0:0.2">
+                                        <DoubleAnimation.EasingFunction>
+                                            <BackEase Amplitude="0.8" EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="PopupRoot"
+                                                 Storyboard.TargetProperty="(Grid.RenderTransform).(ScaleTransform.ScaleY)"
+                                                 To="1" Duration="0:0:0.2">
+                                        <DoubleAnimation.EasingFunction>
+                                            <BackEase Amplitude="0.8" EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="PopupRoot"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 To="1" Duration="0:0:0.1"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
     <!-- TextBox -->
     <Style TargetType="TextBox">
         <Setter Property="Background" Value="{StaticResource Brush.Surface}" />

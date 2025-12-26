@@ -35,6 +35,7 @@
 
             <!-- Email -->
             <TextBox x:Name="txtEmail"
+                     ToolTip="Please enter your registered email address (e.g., user@example.com)"
                      Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}"
                      services:WatermarkService.Watermark="Enter email"
                      services:WatermarkService.WatermarkSize="14"
@@ -53,6 +54,7 @@
 
                 <!-- TextBox hiển thị mật khẩu -->
                 <TextBox x:Name="txtPasswordVisible"
+                         ToolTip="Enter your password. Click the eye icon to hide it."
                          Grid.Column="0"
                          FontSize="14"
                          Text="{Binding Password, Mode=TwoWay}"
@@ -63,6 +65,7 @@
 
                 <!-- PasswordBox ẩn mật khẩu -->
                 <PasswordBox x:Name="txtPasswordHidden"
+                             ToolTip="Enter your password. Click the eye icon to see what you've typed."
                              Grid.Column="0"
                              PasswordChanged="PasswordBox_PasswordChanged"
                              services:WatermarkService.Watermark="Enter password"
@@ -77,6 +80,9 @@
                 <!-- Toggle Button -->
                 <Button Grid.Column="1"
                         Command="{Binding TogglePasswordVisibilityCommand}"
+                        ToolTip="{Binding IsPasswordVisible, 
+                          Converter={StaticResource VisibilityToTextConverter}, 
+                          ConverterParameter='Hide Password|Show Password'}"
                         IsEnabled="{Binding Password, Converter={StaticResource StringNotEmptyConverter}}"
                         Width="35"
                         Background="Transparent"
@@ -114,6 +120,7 @@
                 <!-- Remember Me -->
                 <CheckBox Content="Remember me"
               IsChecked="{Binding IsRememberMe}"
+              ToolTip="Keep me in your heart so I’ll remember you next time!"
               Style="{StaticResource HeartCheckBoxStyle}"
               FontSize="12"
               Foreground="White"
@@ -123,7 +130,8 @@
                 <!-- Forgot Password -->
                 <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0">
         <Hyperlink Foreground="{StaticResource Brush.Accent1}" FontSize="12"
-                   Command="{Binding ForgotPasswordCommand}">
+                   Command="{Binding ForgotPasswordCommand}"
+            ToolTip="Click here to reset your password via email">
             Forgot password
         </Hyperlink>
                 </TextBlock>
@@ -139,6 +147,7 @@
 
            <!-- Login Button -->
             <Button x:Name="btnLogin"
+                    ToolTip="Securely log in to your account"
         Command="{Binding LoginCommand}"
         Content="Login"
         FontSize="16"
@@ -150,6 +159,7 @@
 
             <!-- Register Button -->
             <Button x:Name="btnRegister"
+                    ToolTip="Don't have an account? Create one now!"
         Command="{Binding OpenRegisterCommand}"
         Content="Register"
         FontSize="15"
