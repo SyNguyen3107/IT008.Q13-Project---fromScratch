@@ -1,16 +1,13 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using EasyFlips.Interfaces;
+﻿using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
-using EasyFlips.Views;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using System.Windows;
-using System.Windows.Navigation;
 
 namespace EasyFlips.ViewModels
 {
@@ -20,12 +17,17 @@ namespace EasyFlips.ViewModels
     public partial class MemberGameViewModel : BaseGameViewModel
     {
         private readonly ComparisonService _comparisonService;
-        private readonly IAuthService _authService;
-        private readonly INavigationService _navigationService;
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SubmitAnswerCommand))]
         private bool _isInputEnabled;
+        [ObservableProperty]
+        private bool _isShowingResult;
+        [ObservableProperty]
+        private int _score;
+
+        [ObservableProperty]
+        private string _connectionStatus = "Chưa kết nối";
 
         [ObservableProperty]
         private string _userAnswer = string.Empty;
@@ -51,7 +53,23 @@ namespace EasyFlips.ViewModels
         public override async Task InitializeAsync(string roomId, string classroomId, Deck? deck, int timePerRound)
         {
             await base.InitializeAsync(roomId, classroomId, deck, timePerRound);
+
+            if (deck == null)
+            {
+                deck = await _supabaseService.GetDeckByClassroomIdAsync(classroomId);
+                if (deck == null || deck.Cards.Count == 0)
+                {
+                    MessageBox.Show("Deck trống, không thể tham gia game.");
+                    return;
+                }
+            }
+
+            CurrentDeck = deck; // gán deck cho Member
+
+
             // Các thuộc tính như _roomId, _classroomId đã được gán tự động ở lớp cha (base.InitializeAsync)
+            await SubscribeToRealtimeChannel();
+           
         }
 
         /// <summary>
@@ -61,11 +79,15 @@ namespace EasyFlips.ViewModels
         {
             var result = await _supabaseService.SubscribeToFlashcardChannelAsync(
                 ClassroomId,
-                OnFlashcardStateReceived
+                OnFlashcardStateReceived,
+                null
             );
 
             if (result.Success)
+            {
                 Debug.WriteLine($"[MemberGame] Đã kết nối kênh: {result.ChannelName}");
+                ConnectionStatus = "Đã kết nối";
+            }
             else
                 Debug.WriteLine($"[MemberGame] Kết nối thất bại: {result.ErrorMessage}");
         }
@@ -77,6 +99,7 @@ namespace EasyFlips.ViewModels
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                Debug.WriteLine($"[Member] Nhận gói tin: Phase={state.Phase}, Action={state.Action}, CardIndex={state.CurrentCardIndex}, CardId={state.CurrentCardId}, TimeRemaining={state.TimeRemaining}");
                 // 1. Đồng bộ Index và Card
                 if (CurrentDeck != null && (CurrentCard == null || CurrentCard.Id != state.CurrentCardId))
                 {
@@ -112,13 +135,12 @@ namespace EasyFlips.ViewModels
                     HandleFlipCard();
                     break;
 
-                    case FlashcardAction.EndSession:
-                        IsInputEnabled = false;
-                        Debug.WriteLine("[MemberGame] Session ended");
-                        _navigationService.ShowLeaderBoardWindow();
-                        break;
-                }
-            });
+                case FlashcardAction.EndSession:
+                    CurrentPhase = GamePhase.Finished;
+                    IsInputEnabled = false;
+                    MessageBox.Show("Phiên học đã kết thúc!");
+                    break;
+            }
         }
 
         /// <summary>
@@ -130,14 +152,17 @@ namespace EasyFlips.ViewModels
             UserAnswer = string.Empty; // Reset TextBox
             ResultMessage = string.Empty;
             IsInputEnabled = true;
-            _submittedThisCard = false;
-            // Lấy đáp án đúng từ _deck.Cards (dùng BackText/Answer)
-            if (state != null && _deck != null && state.CurrentCardIndex < _deck.Cards.Count)
-            {
-                _correctAnswer = ((List<Card>)_deck.Cards)[state.CurrentCardIndex].Answer;
 
-            }
-            else
+            // Thông báo UI cập nhật IsShowingResult (để ẩn mặt sau)
+            OnPropertyChanged(nameof(IsShowingResult));
+        }
+
+        private void HandleFlipCard()
+        {
+            CurrentPhase = GamePhase.Result;
+
+            // Nếu Member chưa nộp bài mà Host đã lật thẻ (hết giờ), tự động nộp ngay
+            if (IsInputEnabled)
             {
                 SubmitAnswerCommand.Execute(null);
             }
@@ -156,7 +181,7 @@ namespace EasyFlips.ViewModels
 
                 if (isCorrect)
                 {
-                    CurrentScore += 10;
+                    Score += 10;
                     ResultMessage = "Chính xác! +10đ";
                 }
                 else
@@ -169,7 +194,7 @@ namespace EasyFlips.ViewModels
                 await _supabaseService.SendFlashcardScoreAsync(
                     ClassroomId,
                     _authService.CurrentUserId,
-                    CurrentScore,
+                    Score,
                     isCorrect ? 1 : 0,
                     1
                 );
@@ -178,14 +203,7 @@ namespace EasyFlips.ViewModels
             // Khóa UI sau khi nộp
             IsInputEnabled = false;
         }
-        // Điều kiện để được phép nộp (Chỉ nộp được khi IsInputEnabled = true)
-        private bool CanSubmit()
-        {
-            return IsInputEnabled;
-        }
 
- 
-
-
+        private bool CanSubmit() => IsInputEnabled;
     }
 }

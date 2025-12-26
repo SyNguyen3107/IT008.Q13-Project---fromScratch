@@ -82,8 +82,10 @@ namespace EasyFlips.ViewModels
             if (deck != null)
                 TotalCards = deck.Cards.Count;
 
-            var members = await _supabaseService.GetClassroomMembersWithProfileAsync(classroomId);
-            UpdatePlayerList(members);
+
+         
+
+            
         }
 
         #endregion

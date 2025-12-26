@@ -28,7 +28,10 @@ namespace EasyFlips.Services
     /// <summary>
     /// Broadcast model cho flashcard sync.
     /// </summary>
-    public class FlashcardBroadcast : BaseBroadcast<Dictionary<string, object>> { }
+    public class FlashcardBroadcast : BaseBroadcast<Dictionary<string, object>> 
+    {
+
+    }
 
     /// <summary>
     /// Service trung gian xử lý mọi giao tiếp với Supabase (Auth, Database, Realtime, Storage).
@@ -232,6 +235,54 @@ namespace EasyFlips.Services
             var result = await _client.From<Classroom>().Where(x => x.Id == classroomId).Single();
             return result;
         }
+        /// <summary>
+        /// Lấy Deck và danh sách Card theo ClassroomId
+        /// </summary>
+        public async Task<Deck?> GetDeckByClassroomIdAsync(string classroomId)
+        {
+            try
+            {
+                // 1️⃣ Lấy classroom
+                var classroom = await _client
+                    .From<Classroom>()
+                    .Where(c => c.Id == classroomId)
+                    .Single();
+
+                if (classroom?.DeckId == null)
+                    return null;
+
+                // 2️⃣ Lấy Deck theo DeckId
+                var deck = await _client
+                    .From<Deck>()
+                    .Where(d => d.Id == classroom.DeckId)
+                    .Single();
+
+                if (deck == null)
+                    return null;
+
+                // 3️⃣ Lấy danh sách Cards của Deck
+               
+
+                var response = await _client
+                .From<Card>()
+                .Where(c => c.DeckId == deck.Id)
+                .Get();
+
+                deck.Cards = response.Models ?? new List<Card>();
+
+
+                return deck;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SupabaseService] GetDeckByClassroomIdAsync error: {ex.Message}");
+                return null;
+            }
+        }
+
+
+
+
 
         /// <summary>
         /// Cập nhật thông tin tên và mô tả của phòng học.
@@ -1194,7 +1245,8 @@ namespace EasyFlips.Services
 
                 state.Timestamp = DateTime.UtcNow;
                 var payload = new Dictionary<string, object>
-                {
+{
+                    { "event_type", "FLASHCARD_SYNC" },
                     { "classroom_id", state.ClassroomId },
                     { "deck_id", state.DeckId },
                     { "current_card_id", state.CurrentCardId },
@@ -1208,13 +1260,15 @@ namespace EasyFlips.Services
                     { "is_session_active", state.IsSessionActive },
                     { "is_paused", state.IsPaused },
                     { "phase", state.Phase.ToString() }
-                };
+};
 
+
+
+                Debug.WriteLine("[Broadcast] Sending payload...");
                 await broadcast.Send("FLASHCARD_SYNC", payload);
-                
-                // Log JSON đã gửi
-                var json = JsonConvert.SerializeObject(payload, Formatting.Indented);
-                Debug.WriteLine($"[FlashcardSync] Broadcast sent:\n{json}");
+                Debug.WriteLine("[Broadcast] Sent payload.");
+
+
             }
             catch (Exception ex)
             {
@@ -1530,15 +1584,25 @@ namespace EasyFlips.Services
                 // Đăng ký Broadcast (true = lắng nghe broadcast, false = không ack)
                 var broadcast = channel.Register<FlashcardBroadcast>(true, false);
                 _activeBroadcasts[channelName] = broadcast;
+                
 
+                
                 // Lắng nghe sự kiện broadcast
                 broadcast.AddBroadcastEventHandler((sender, args) =>
                 {
-                    if (args.Event == "FLASHCARD_SYNC")
+                    Debug.WriteLine("[FlashcardSync] Nhận broadcast event");
+                    if (args.Payload == null) { Debug.WriteLine("[FlashcardSync] Payload NULL"); return; }
+                    foreach (var kv in args.Payload) { Debug.WriteLine($" {kv.Key} = {kv.Value}"); }
+
+                    var payload = args.Payload as Dictionary<string, object>;
+                    var eventType = payload?.GetValueOrDefault("event_type")?.ToString();
+                    
+
+                    if (eventType == "FLASHCARD_SYNC")
                     {
                         try
                         {
-                            var payload = args.Payload;
+                            payload = args.Payload;
                             if (payload != null)
                             {
                                 var state = ParseFlashcardState(payload);
@@ -1554,11 +1618,11 @@ namespace EasyFlips.Services
                             Debug.WriteLine($"[FlashcardSync] Parse error: {ex.Message}");
                         }
                     }
-                    else if (args.Event == "FLASHCARD_SCORE" && onScoreReceived != null)
+                    else if (eventType == "FLASHCARD_SCORE" && onScoreReceived != null)
                     {
                         try
                         {
-                            var payload = args.Payload;
+                             payload = args.Payload;
                             if (payload != null)
                             {
                                 var submission = new ScoreSubmission

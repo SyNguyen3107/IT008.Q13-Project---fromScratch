@@ -278,25 +278,20 @@ namespace EasyFlips.ViewModels
             ForceCloseWindow();
         }
 
-        protected void NavigateToGame()
+        protected virtual async void NavigateToGame()
         {
-            // Logic chuyển trang (Abstract deck selection for Member?)
-            // Lưu ý: Member chưa biết Deck nào được chọn cho đến khi vào Game hoặc Host update Setting
-            // Ở đây ta truyền SelectedDeck (Host có, Member có thể null - API Load Game sẽ xử lý)
-
             CanCloseWindow = true;
-            // Lưu ý: Cần lấy Deck info. Host có sẵn, Member có thể cần lấy lại từ DB hoặc truyền null để GameWindow tự load.
-            // Để đơn giản, Member truyền null cho Deck, GameViewModel sẽ tự load dựa trên Room Settings.
-            Deck deckToPass = GetSelectedDeck();
 
-            _navigationService.ShowHostGameWindowAsync(
-                  RoomId,
-                  _realClassroomIdUUID,
-                  deckToPass,
-                  TimePerRound
-                );
+            Deck? deckToPass = GetSelectedDeck(); // Member có thể null
+
+            await _navigationService.ShowMemberGameWindowAsync(
+                RoomId,
+                _realClassroomIdUUID,
+                deckToPass,
+                TimePerRound
+            );
+
             ForceCloseWindow();
-            
         }
 
         protected virtual Deck GetSelectedDeck() => null; // Member trả về null

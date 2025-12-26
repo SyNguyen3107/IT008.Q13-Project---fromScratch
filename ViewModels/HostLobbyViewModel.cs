@@ -131,6 +131,24 @@ namespace EasyFlips.ViewModels
                 StartPolling(); // Resume polling nếu lỗi
             }
         }
+    
+
+
+        protected override async void NavigateToGame()
+        {
+            CanCloseWindow = true;
+
+            Deck deckToPass = GetSelectedDeck(); // luôn có Deck
+
+            await _navigationService.ShowHostGameWindowAsync(
+                RoomId,
+                _realClassroomIdUUID,
+                deckToPass,
+                TimePerRound
+            );
+
+            ForceCloseWindow();
+        }
 
         [RelayCommand]
         private async Task CloseRoom()
