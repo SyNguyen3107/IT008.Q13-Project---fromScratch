@@ -4,51 +4,91 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EasyFlips"
+        xmlns:vm="clr-namespace:EasyFlips.ViewModels"
         mc:Ignorable="d"
-        Title="EasyFlips" Height="800" Width="1200"
-        
+        Title="EasyFlips" Height="800" Width="1280"
         WindowStartupLocation="CenterScreen"
-        Background="#2c2c2c"
+        Background="#181A20"
         Loaded="MainWindowLoaded">
 
     <Window.Resources>
-        <!-- (Giữ nguyên Resources cũ) -->
-        <Style x:Key="NavButtonStyle" TargetType="Button">
+        <SolidColorBrush x:Key="BgDark" Color="#181A20"/>
+        <SolidColorBrush x:Key="SurfaceDark" Color="#1F222A"/>
+        <SolidColorBrush x:Key="CardBg" Color="#2B2E38"/>
+        <SolidColorBrush x:Key="PrimaryPurple" Color="#6C5DD3"/>
+        <SolidColorBrush x:Key="TextGrey" Color="#9E9EA7"/>
+        <SolidColorBrush x:Key="ActionPurple" Color="#6949ff"/>
+        <LinearGradientBrush x:Key="NeonPurpleGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#8E2DE2" Offset="0"/>
+            <GradientStop Color="#4A00E0" Offset="1"/>
+        </LinearGradientBrush>
+
+        <Style x:Key="SidebarBtnStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-        </Style>
-        <!-- Style cho Tiêu đề cột (Header) -->
-        <Style x:Key="DarkGridViewColumnHeader" TargetType="GridViewColumnHeader">
-            <Setter Property="Background" Value="#444"/>
-            <!-- Nền tối -->
-            <Setter Property="Foreground" Value="White"/>
-            <!-- Chữ trắng -->
-            <Setter Property="BorderBrush" Value="#555"/>
-            <!-- Viền xám -->
-            <Setter Property="BorderThickness" Value="0,0,1,1"/>
-            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextGrey}"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Height" Value="55"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <!-- Xử lý khi di chuột (Hover) -->
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#555"/>
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="Padding" Value="25,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="{TemplateBinding Background}" BorderBrush="Transparent" BorderThickness="0,0,3,0">
+                            <ContentPresenter VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Background" Value="#2B2E38"/>
+                                <Setter TargetName="bdr" Property="BorderBrush" Value="{StaticResource PrimaryPurple}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
-        <!-- Style tối giản cho ScrollBar -->
+
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource ActionPurple}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="60"/>
+            <Setter Property="Margin" Value="10,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="15">
+                            <Border.Effect>
+                                <DropShadowEffect Color="Black" BlurRadius="10" Opacity="0.3" ShadowDepth="3"/>
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Background" Value="#3CAACF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.98" ScaleY="0.98"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="DarkScrollBarStyle" TargetType="{x:Type ScrollBar}">
             <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
             <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
-            <Setter Property="Background" Value="#2c2c2c"/>
-            <!-- Nền của thanh trượt -->
+            <Setter Property="Background" Value="#181A20"/>
             <Setter Property="Foreground" Value="#555"/>
-            <!-- Màu của cục trượt (Thumb) -->
             <Setter Property="Width" Value="10"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -56,7 +96,13 @@
                         <Grid x:Name="Bg" SnapsToDevicePixels="true">
                             <Track x:Name="PART_Track" IsDirectionReversed="true">
                                 <Track.Thumb>
-                                    <Thumb Style="{DynamicResource ScrollThumbStyle}"/>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="{x:Type Thumb}">
+                                                <Border Background="#444" CornerRadius="4"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
                                 </Track.Thumb>
                             </Track>
                         </Grid>
@@ -64,292 +110,271 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
-        <!-- Style cho cục trượt (Thumb) -->
-        <Style x:Key="ScrollThumbStyle" TargetType="{x:Type Thumb}">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type Thumb}">
-                        <Border Background="#666" CornerRadius="4"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
 
-    <!-- GÁN SỰ KIỆN CHO GRID CHÍNH ĐỂ PHẠM VI RỘNG NHẤT -->
-    <Grid MouseDown="ClearSelection_MouseDown" Background="Transparent">
-        <!-- Background="Transparent" là cần thiết để Grid nhận được sự kiện click chuột -->
+    <Grid MouseDown="ClearSelection_MouseDown">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <!-- Chia layout 4 hàng -->
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <Border Grid.Column="0" Background="{StaticResource SurfaceDark}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-        <!-- Menu trên cùng (Giữ nguyên) -->
-        <Menu Grid.Row="0" Background="#2c2c2c" Foreground="White" FontSize="14" BorderThickness="0">
-            <!-- .. (Nội dung Menu cũ) .. -->
-            <MenuItem Header="_File">
-                <MenuItem Header="_Import" Cursor="Hand" InputGestureText="Ctrl+Shift+I" Foreground="Black" Command="{Binding ImportFileCommand}" />
-                <!--<MenuItem Header="_Export" Cursor="Hand" InputGestureText="Ctrl+E" Foreground="Black"/>
-                <Separator/>-->
-                <MenuItem Header="_Logout" Cursor="Hand" Foreground="Black" Command="{Binding LogoutCommand}"/>
-                <MenuItem Header="E_xit" Cursor="Hand" InputGestureText="Ctrl+Q" Foreground="Black" Command="{Binding CloseCurrentWindowCommand}"/>
-            </MenuItem>
-            <!--<MenuItem Header="_Edit" Foreground="White">
-                <MenuItem Header="Undo" Cursor="Hand" InputGestureText="Ctrl+Z" Foreground="Gray"/>
-            </MenuItem>-->
-            <!--<MenuItem Header="_Tools" Foreground="White">
-                <MenuItem Header="_Preferences" Cursor="Hand" InputGestureText="Ctrl+P" Foreground="Black"/>
-            </MenuItem>-->
-            <!--<MenuItem Header="_Help" Foreground="White">
-                <MenuItem Header="About" Cursor="Hand" Foreground="Black"/>
-            </MenuItem>-->
-        </Menu>
-        <!-- Bên trái: trạng thái mạng -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal"
-                HorizontalAlignment="Left" Margin="10">
-            <!-- Nút tròn -->
-            <Ellipse Width="14" Height="14"
-                 Fill="{Binding IsConnected, Converter={StaticResource BoolToBrushConverter}}"
-                 Stroke="White" StrokeThickness="1"
-                 VerticalAlignment="Center"/>
+                <StackPanel Grid.Row="0" Margin="0,50,0,40" HorizontalAlignment="Center">
+                    <Grid HorizontalAlignment="Center">
+                        <Ellipse Width="90" Height="90" Stroke="{StaticResource PrimaryPurple}" StrokeThickness="2">
+                            <Ellipse.Effect>
+                                <DropShadowEffect Color="#6C5DD3" BlurRadius="15" Opacity="0.4"/>
+                            </Ellipse.Effect>
+                            <Ellipse.Fill>
+                                <ImageBrush ImageSource="{Binding UserSession.AvatarURL, TargetNullValue='pack://application:,,,/Images/default_user.png'}" Stretch="UniformToFill"/>
+                            </Ellipse.Fill>
+                        </Ellipse>
 
-            <!-- Text trạng thái -->
-            <TextBlock Text="{Binding IsConnected, Converter={StaticResource BoolToTextConverter}}"
-                   Foreground="White"
-                   FontSize="14"
-                   Margin="5,0,0,0"
-                   VerticalAlignment="Center"/>
-        </StackPanel>
-        <StackPanel Grid.Row="1" 
-            Orientation="Horizontal" 
-            HorizontalAlignment="Right" 
-            VerticalAlignment="Center"
-            Margin="0,0,20,0">
+                        <Button Width="30" Height="30" Click="OpenEditProfile_Click"
+                                HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-5,0"
+                                Background="{StaticResource PrimaryPurple}" BorderThickness="0" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="15" BorderBrush="{StaticResource SurfaceDark}" BorderThickness="3">
+                                        <TextBlock Text="✎" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
 
-            <Border Width="46" Height="46" CornerRadius="23" 
-            BorderBrush="#777" BorderThickness="1" 
-            Margin="0,0,12,0">
+                    <TextBlock Text="{Binding UserSession.UserName, TargetNullValue='Guest User'}" 
+                               Foreground="White" FontWeight="Bold" FontSize="20" 
+                               HorizontalAlignment="Center" Margin="0,15,0,5"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Ellipse Width="8" Height="8" Fill="{Binding IsConnected, Converter={StaticResource BoolToBrushConverter}}"/>
+                        <TextBlock Text="{Binding IsConnected, Converter={StaticResource BoolToTextConverter}}" 
+                                   Foreground="{StaticResource TextGrey}" FontSize="12" Margin="5,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1">
+                    <Button Command="{Binding SyncCommand}" Style="{StaticResource SidebarBtnStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔄" Margin="0,0,15,0"/>
+                            <TextBlock Text="Sync Data"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Margin="0,0,0,30">
+                    <Separator Background="#2B2E38" Margin="20,10"/>
+
+                    <Button Command="{Binding LogoutCommand}" Style="{StaticResource SidebarBtnStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⬅" Margin="0,0,15,0"/>
+                            <TextBlock Text="Log out"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding CloseCurrentWindowCommand}" Style="{StaticResource SidebarBtnStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="❌" Margin="0,0,15,0"/>
+                            <TextBlock Text="Exit"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="40,30,40,30">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Height="160" CornerRadius="20" Margin="0,0,0,30" Background="{StaticResource NeonPurpleGradient}">
                 <Border.Effect>
-                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+                    <DropShadowEffect Color="#6C5DD3" BlurRadius="25" Opacity="0.3" ShadowDepth="8"/>
                 </Border.Effect>
-                <Border.Background>
-                    <ImageBrush ImageSource="{Binding UserSession.AvatarURL, TargetNullValue='pack://application:,,,/Images/default_user.png'}" 
-                        Stretch="UniformToFill"/>
-                </Border.Background>
+                <Grid ClipToBounds="True">
+                    <Ellipse Width="150" Height="150" Fill="White" Opacity="0.1" Margin="0,-50,-30,0" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                    <Ellipse Width="80" Height="80" Fill="White" Opacity="0.1" Margin="0,0,100,-20" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+
+                    <Grid Margin="40,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Join a Lobby" FontSize="32" FontWeight="Bold" Foreground="White"/>
+                            <TextBlock Text="Enter code to connect with your friends instantly." FontSize="14" Foreground="#E0E7FF" Opacity="0.8" Margin="0,5,0,0"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" Content="JOIN NOW" Command="{Binding JoinLobbyCommand}"
+                                Width="130" Height="45" FontSize="13" FontWeight="Bold" Foreground="#6C5DD3" Background="White" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="btn" Background="White" CornerRadius="22">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="btn" Property="Background" Value="#F0F0F0"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+                </Grid>
             </Border>
 
-            <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+            <Grid Grid.Row="1" Margin="0,0,0,20">
+                <TextBlock Text="Your Decks" FontSize="24" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                    <Button Content="↻ Refresh" Command="{Binding ReloadDecksCommand}" 
+                            Background="Transparent" Foreground="{StaticResource PrimaryPurple}" BorderThickness="0" Cursor="Hand" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Decks.Count, StringFormat='Total: {0}'}" Foreground="{StaticResource TextGrey}" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
 
-                <TextBlock Text="{Binding UserSession.UserName, TargetNullValue='Guest User'}" 
-                       Foreground="White" 
-                       FontWeight="Bold" 
-                       FontSize="15" 
-                       Margin="0,0,0,2"/>
+            <Border Grid.Row="2" Background="Transparent">
+                <ListView x:Name="DeckListView" 
+                          ItemsSource="{Binding Decks}" 
+                          SelectionChanged="ListView_SelectionChanged" 
+                          Background="Transparent" 
+                          BorderThickness="0"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 
-                <Button Content="Edit Profile" 
-                        Click="OpenEditProfile_Click"
-                        Background="Transparent" 
-                        Foreground="White"
-                        FontSize="11"
-                        Cursor="Hand"
-                        Margin="0,2,0,0"
-                        HorizontalAlignment="Left">
+                    <ListView.Resources>
+                        <Style TargetType="ScrollBar" BasedOn="{StaticResource DarkScrollBarStyle}"/>
+                    </ListView.Resources>
 
-                    <Button.Style>
-                        <Style TargetType="Button">
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ListView}}"/>
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Margin" Value="0,0,15,15"/>
                             <Setter Property="Template">
                                 <Setter.Value>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="border" 
-                                                Background="#3498DB" 
-                                                BorderThickness="0" 
-                                                CornerRadius="10" 
-                                                Padding="10,2">
-                                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                        </Border>
-
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="border" Property="BorderBrush" Value="#3498DB"/>
-                                                <Setter TargetName="border" Property="Background" Value="#1A3498DB"/>
-                                                <Setter Property="Foreground" Value="White"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
+                                    <ControlTemplate TargetType="ListViewItem">
+                                        <ContentPresenter/>
                                     </ControlTemplate>
                                 </Setter.Value>
                             </Setter>
                         </Style>
-                    </Button.Style>
-                </Button>
-            </StackPanel>
+                    </ListView.ItemContainerStyle>
 
-        </StackPanel>
-        <!-- Thanh Deck/Add/Browse/Stats/Sync (Giữ nguyên) -->
-        <Border Grid.Row="1" Background="#434343" CornerRadius="15" HorizontalAlignment="Center" VerticalAlignment="Top" BorderBrush="#444" BorderThickness="1" Padding="5,0" Margin="0,0,0,0" Height="34">
-            <!-- .. (Nội dung thanh nút cũ) .. -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Button Content="Decks" Command="{Binding ReloadDecksCommand}" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>
-                <Button Content="Add" Style="{StaticResource NavButtonStyle}" Margin="10,0" Command="{Binding AddCardCommand}" />
-                <!--<Button Content="Browse" Style="{StaticResource NavButtonStyle}" Margin="10,0"/>-->
-                <Button Content="Join" Style="{StaticResource NavButtonStyle}" Command="{Binding JoinLobbyCommand}" Margin="10,0"/>
-                <Button Content="Sync" Style="{StaticResource NavButtonStyle}" Margin="10,0" Command="{Binding SyncCommand}" />
-            </StackPanel>
-        </Border>
-        <!-- Thêm hiển thị trạng thái mạng -->
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Width="220" Height="140" Background="{StaticResource CardBg}" CornerRadius="18" Cursor="Hand">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="Black" BlurRadius="10" Opacity="0.2" ShadowDepth="3"/>
+                                </Border.Effect>
 
-        <!-- Bảng hiển thị Deck -->
-        <!-- BỎ MouseDown Ở ĐÂY VÌ ĐÃ GÁN CHO GRID -->
-        <Border Grid.Row="2" Height="Auto" Width="800" Background="#363636" CornerRadius="15" Margin="30">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-            <ListView x:Name="DeckListView" 
-                      ItemsSource="{Binding Decks}" 
-                      SelectionChanged="ListView_SelectionChanged" 
-                      Background="Transparent" 
-                      BorderThickness="0" 
-                      Margin="0, 0, 0, 0" 
-                      Grid.RowSpan="2">
-                <ListView.Resources>
-                    <!-- Tự động áp dụng cho mọi ScrollBar trong ListView này -->
-                    <Style TargetType="ScrollBar" BasedOn="{StaticResource DarkScrollBarStyle}"/>
-                </ListView.Resources>
-                <!-- .. (Phần ItemContainerStyle và View giữ nguyên như cũ) .. -->
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="ListViewItem">
-                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" CornerRadius="5" Margin="2">
-                                        <GridViewRowPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    <Grid Grid.Row="0" Margin="15">
+                                        <TextBlock Text="🎴" FontSize="40" Opacity="0.05" Foreground="White" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                                        <TextBlock Text="{Binding Name}" Foreground="White" FontSize="18" FontWeight="SemiBold" 
+                                                   TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/>
+
+                                        <Button Content="⚙" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                Foreground="{StaticResource TextGrey}" Background="Transparent" BorderThickness="0"
+                                                Click="GearButton_Click" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
+                                            <Button.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Rename" Command="{Binding PlacementTarget.Tag.RenameDeckCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                    <MenuItem Header="Options" Command="{Binding PlacementTarget.Tag.DeckOptionsCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                    <MenuItem Header="Export" Command="{Binding PlacementTarget.Tag.ExportDeckCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                    <Separator/>
+                                                    <MenuItem Header="Delete" Command="{Binding PlacementTarget.Tag.DeleteDeckCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Foreground="Red"/>
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
+                                        </Button>
+                                    </Grid>
+
+                                    <Border Grid.Row="1" Background="#23262F" CornerRadius="0,0,18,18" Height="40" Padding="15,0">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding NewCount}" Foreground="#3498DB" FontWeight="Bold" FontSize="12"/>
+                                            <TextBlock Text=" New" Foreground="#3498DB" FontSize="10" Margin="0,2,8,0"/>
+                                            <TextBlock Text="{Binding LearnCount}" Foreground="#E74C3C" FontWeight="Bold" FontSize="12"/>
+                                            <TextBlock Text=" Lrn" Foreground="#E74C3C" FontSize="10" Margin="0,2,8,0"/>
+                                            <TextBlock Text="{Binding DueCount}" Foreground="#2ECC71" FontWeight="Bold" FontSize="12"/>
+                                            <TextBlock Text=" Due" Foreground="#2ECC71" FontSize="10" Margin="0,2,0,0"/>
+                                        </StackPanel>
                                     </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="#4a4a4a"/>
-                                        </Trigger>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="#0078D7"/>
-                                            <Setter Property="Foreground" Value="White"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </ListView.ItemContainerStyle>
-
-                <ListView.View>
-                    <GridView ColumnHeaderContainerStyle="{StaticResource DarkGridViewColumnHeader}">
-                        <GridViewColumn Header="Deck" Width="580">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" Padding="5" Foreground="White"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-
-                        <GridViewColumn Header="New" Width="50">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding NewCount}" TextAlignment="Right" Foreground="RoyalBlue" FontWeight="Bold" VerticalAlignment="Center" Padding="5"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-
-                        <GridViewColumn Header="Learn" Width="50">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding LearnCount}" TextAlignment="Right" Foreground="Red" VerticalAlignment="Center" Padding="5"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-
-                        <GridViewColumn Header="Due" Width="50">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding DueCount}" TextAlignment="Right" Foreground="ForestGreen" FontWeight="Bold" VerticalAlignment="Center" Padding="5"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-
-                        <GridViewColumn Width="50">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Button Content="⚙"
-                                            FontSize="16"
-                                            Foreground="White"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Cursor="Hand"
-                                            Click="GearButton_Click"
-                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
-
-                                        <Button.ContextMenu>
-                                            <ContextMenu>
-                                                <MenuItem Header="Rename" 
-                                                          Command="{Binding PlacementTarget.Tag.RenameDeckCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
-                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                                                <MenuItem Header="Options" 
-                                                          Command="{Binding PlacementTarget.Tag.DeckOptionsCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
-                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                                                <MenuItem Header="Export" 
-                                                          Command="{Binding PlacementTarget.Tag.ExportDeckCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
-                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                                                <Separator/>
-                                                <MenuItem Header="Delete" 
-                                                          Command="{Binding PlacementTarget.Tag.DeleteDeckCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
-                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
-                                                          Foreground="Red"/>
-                                            </ContextMenu>
-                                        </Button.ContextMenu>
-
-                                        <Button.Style>
-                                            <Style TargetType="Button">
-                                                <Setter Property="Visibility" Value="Hidden"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=IsMouseOver}" Value="True">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                        <Setter Property="Foreground" Value="White"/>
-                                                    </Trigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-        </Border>
-
-
-        <!-- Thanh nút dưới (Giữ nguyên) -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20">
-            <!-- .. (Nội dung thanh nút cũ) .. -->
-            <!--<Border Background="#434343" CornerRadius="15" Padding="5,2" Margin="8,0">
-                <Button Content="Get Shared" Command="{Binding GetSharedCommand}" Style="{StaticResource NavButtonStyle}"/>
-            </Border>-->
-            <Border Background="#434343" CornerRadius="15" Padding="5,2" Margin="8,0">
-                <Button Content="Create Deck" Command="{Binding CreateDeckCommand}" Style="{StaticResource NavButtonStyle}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
             </Border>
-            <Border Background="#434343" CornerRadius="15" Padding="5,2" Margin="8,0">
-                <Button Content="Import File" Command="{Binding ImportFileCommand}" Style="{StaticResource NavButtonStyle}"/>
-            </Border>
-        </StackPanel>
+
+            <Grid Grid.Row="3" Margin="0,20,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Command="{Binding CreateDeckCommand}" Style="{StaticResource ActionButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Background="#ffc107" CornerRadius="20" Width="30" Height="30" Margin="0,0,10,0">
+                            <TextBlock Text="+" Foreground="{StaticResource ActionPurple}" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Create Deck" FontWeight="Bold" FontSize="20"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="1" Command="{Binding AddCardCommand}" Style="{StaticResource ActionButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Background="#ffc107" CornerRadius="20" Width="30" Height="30" Margin="0,0,10,0">
+                            <TextBlock Text="✎" Foreground="{StaticResource ActionPurple}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Add Card" FontWeight="Bold" FontSize="20"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="2" Command="{Binding ImportFileCommand}" Style="{StaticResource ActionButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Background="#ffc107" CornerRadius="20" Width="30" Height="30" Margin="0,0,10,0">
+                            <TextBlock Text="📂" Foreground="{StaticResource ActionPurple}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Import File" FontWeight="Bold" FontSize="20"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Grid>
+
         <Frame x:Name="MainFrame" 
-               Grid.Row="0" 
-               Grid.RowSpan="4" 
+               Grid.Column="0" Grid.ColumnSpan="2" 
                NavigationUIVisibility="Hidden"
                Visibility="Hidden"
-               Background="#2c2c2c" 
+               Background="#181A20" 
                Navigated="MainFrame_Navigated"/>
     </Grid>
 </Window>
