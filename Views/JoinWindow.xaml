@@ -8,17 +8,20 @@
 
     <Border CornerRadius="40" BorderThickness="1.5" BorderBrush="#33FFFFFF" ClipToBounds="True">
         <Border.Background>
-            <SolidColorBrush Color="#0F1115"/>
+            <SolidColorBrush Color="#1B1D21"/>
         </Border.Background>
 
         <Grid>
+            <!-- Background Gradient Effects -->
             <Grid IsHitTestVisible="False">
-                <Ellipse Width="600" Height="600" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-200,-200,0,0" Fill="{StaticResource Brush.Primary}" Opacity="0.12">
+                <Ellipse Width="600" Height="600" HorizontalAlignment="Left" VerticalAlignment="Top" 
+                         Margin="-200,-200,0,0" Fill="{StaticResource Brush.Primary}" Opacity="0.12">
                     <Ellipse.Effect>
                         <BlurEffect Radius="100"/>
                     </Ellipse.Effect>
                 </Ellipse>
-                <Ellipse Width="600" Height="600" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-200,-200" Fill="{StaticResource Brush.Accent1}" Opacity="0.12">
+                <Ellipse Width="600" Height="600" HorizontalAlignment="Right" VerticalAlignment="Bottom" 
+                         Margin="0,0,-200,-200" Fill="{StaticResource Brush.Accent1}" Opacity="0.12">
                     <Ellipse.Effect>
                         <BlurEffect Radius="100"/>
                     </Ellipse.Effect>
@@ -31,22 +34,24 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
+                <!-- Header -->
                 <StackPanel Margin="10,0,0,40">
-                    <TextBlock Text="SELECTION" FontSize="11" FontWeight="Bold" Foreground="#66FFFFFF">
-                        <TextBlock.RenderTransform>
-                            <ScaleTransform ScaleX="1.5"/>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                    <TextBlock Text="CHOOSE ROLE" FontSize="42" FontWeight="Black" Foreground="White" Margin="0,5,0,0"/>
+                    <TextBlock Text="SELECTION" FontSize="13" FontWeight="Bold" Foreground="#66FFFFFF" 
+                               FontFamily="Inter V"/>
+                    <TextBlock Text="CHOOSE ROLE" FontSize="42" FontWeight="Black" Foreground="White" 
+                               Margin="0,8,0,0" FontFamily="Poppins"/>
                 </StackPanel>
 
+                <!-- Main Content -->
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1.2*"/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Border Grid.Column="0" Margin="0,0,20,20" CornerRadius="35" BorderThickness="1.5" Background="#1FFFFFFF" ClipToBounds="True">
+                    <!-- Teacher Card -->
+                    <Border Grid.Column="0" Margin="0,0,15,0" CornerRadius="35" BorderThickness="1.5" 
+                            Background="#1FFFFFFF" ClipToBounds="True" VerticalAlignment="Stretch">
                         <Border.BorderBrush>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                                 <GradientStop Color="#88FFFFFF" Offset="0"/>
@@ -55,93 +60,143 @@
                         </Border.BorderBrush>
 
                         <Grid>
-                            <Grid HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-15,40">
-                                <Ellipse Width="220" Height="220" Fill="{StaticResource Brush.Primary}" Opacity="0.3">
+                            <!-- Teacher Image with Glow -->
+                            <Grid HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-15,30">
+                                <Ellipse Width="200" Height="200" Fill="{StaticResource Brush.Primary}" Opacity="0.3">
                                     <Ellipse.Effect>
-                                        <BlurEffect Radius="120"/>
+                                        <BlurEffect Radius="100"/>
                                     </Ellipse.Effect>
                                 </Ellipse>
 
                                 <Image Source="pack://application:,,,/Resources/teacher.png"
-                                   Width="230" Height="230" 
-                                   Stretch="Uniform" 
-                                   RenderOptions.BitmapScalingMode="HighQuality">
+                                       Width="210" Height="210" 
+                                       Stretch="Uniform" 
+                                       RenderOptions.BitmapScalingMode="HighQuality">
                                     <Image.Effect>
-                                        <DropShadowEffect BlurRadius="80" 
-                              ShadowDepth="0" 
-                              Opacity="0.6" 
-                              Color="{Binding Color, Source={StaticResource Brush.Primary}}"/>
+                                        <DropShadowEffect BlurRadius="70" 
+                                                          ShadowDepth="0" 
+                                                          Opacity="0.6" 
+                                                          Color="{Binding Color, Source={StaticResource Brush.Primary}}"/>
                                     </Image.Effect>
                                 </Image>
                             </Grid>
 
-                            <Grid Margin="40">
+                            <!-- Teacher Content -->
+                            <Grid Margin="35">
                                 <StackPanel VerticalAlignment="Center">
-                                    <Border Background="{StaticResource Brush.Primary}" HorizontalAlignment="Left" Padding="12,4" CornerRadius="8" Margin="0,0,0,15">
-                                        <TextBlock Text="HOST MODE" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                    <Border Background="{StaticResource Brush.Primary}" HorizontalAlignment="Left" 
+                                            Padding="12,4" CornerRadius="8" Margin="0,0,0,15">
+                                        <TextBlock Text="HOST MODE" FontSize="10" FontWeight="Bold" 
+                                                   Foreground="White" FontFamily="Inter V"/>
                                     </Border>
-                                    <TextBlock Text="TEACHER" FontSize="36" FontWeight="Black" Foreground="White"/>
+                                    <TextBlock Text="TEACHER" FontSize="34" FontWeight="Black" Foreground="White" FontFamily="Poppins"/>
                                     <TextBlock Text="Host sessions and manage&#x0a;students in real-time." 
-                                               Foreground="#AAFFFFFF" TextWrapping="Wrap" Margin="0,10,0,40" FontSize="16" LineHeight="24"/>
+                                               Foreground="#AAFFFFFF" TextWrapping="Wrap" Margin="0,10,0,35" 
+                                               FontSize="15" LineHeight="22" FontFamily="Inter V"/>
 
                                     <Button Content="CREATE ROOM" Command="{Binding OpenCreateRoomWindowCommand}" 
-                                            Height="55" Width="170" HorizontalAlignment="Left"
-                                            Background="{StaticResource Brush.Primary}" Foreground="White" FontWeight="Bold" Cursor="Hand">
+                                            Height="55" Width="180" HorizontalAlignment="Left"
+                                            Background="{StaticResource Brush.Primary}" Foreground="White" 
+                                            FontWeight="Bold" Cursor="Hand" FontSize="14" FontFamily="Poppins">
                                         <Button.Template>
                                             <ControlTemplate TargetType="Button">
                                                 <Border x:Name="btnBorder" Background="{TemplateBinding Background}" CornerRadius="15">
+                                                    <Border.Effect>
+                                                        <DropShadowEffect Color="{StaticResource Color.Primary}" 
+                                                                          BlurRadius="20" Opacity="0.5" ShadowDepth="0"/>
+                                                    </Border.Effect>
                                                     <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="btnBorder" Property="Opacity" Value="0.8"/>
+                                                        <Setter TargetName="btnBorder" Property="Opacity" Value="0.85"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter TargetName="btnBorder" Property="RenderTransform">
+                                                            <Setter.Value>
+                                                                <ScaleTransform ScaleX="0.97" ScaleY="0.97"/>
+                                                            </Setter.Value>
+                                                        </Setter>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Button.Template>
+                                        <Button.RenderTransformOrigin>
+                                            <Point X="0.5" Y="0.5"/>
+                                        </Button.RenderTransformOrigin>
                                     </Button>
                                 </StackPanel>
                             </Grid>
                         </Grid>
                     </Border>
 
-                    <Border Grid.Column="1" Margin="10,40,-20,-10" CornerRadius="35" Background="#F21B1D23" BorderThickness="1.2" BorderBrush="{StaticResource Brush.Accent1}">
+                    <!-- Student Card -->
+                    <Border Grid.Column="1" Margin="15,0,0,0" CornerRadius="35" 
+                            Background="#F21B1D23" BorderThickness="1.2" BorderBrush="{StaticResource Brush.Accent1}"
+                            VerticalAlignment="Stretch">
                         <Border.Effect>
-                            <DropShadowEffect BlurRadius="40" ShadowDepth="10" Opacity="0.4"/>
+                            <DropShadowEffect BlurRadius="40" ShadowDepth="5" Opacity="0.4"/>
                         </Border.Effect>
                         <Grid Margin="35">
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="STUDENT" FontSize="22" FontWeight="Bold" Foreground="{StaticResource Brush.Accent1}"/>
-                                <TextBlock Text="Enter access code" Foreground="#66FFFFFF" Margin="0,5,0,25"/>
+                                <Border Background="{StaticResource Brush.Accent1}" HorizontalAlignment="Left" 
+                                        Padding="12,4" CornerRadius="8" Margin="0,0,0,15">
+                                    <TextBlock Text="JOIN MODE" FontSize="10" FontWeight="Bold" 
+                                               Foreground="White" FontFamily="Inter V"/>
+                                </Border>
+                                <TextBlock Text="STUDENT" FontSize="34" FontWeight="Bold" 
+                                           Foreground="White" FontFamily="Poppins" Margin="0,0,0,8"/>
+                                <TextBlock Text="Enter access code" Foreground="#66FFFFFF" Margin="0,0,0,30" 
+                                           FontSize="14" FontFamily="Inter V"/>
 
+                                <!-- Code Input -->
                                 <TextBox Text="{Binding RoomIdInput, UpdateSourceTrigger=PropertyChanged}" 
-                                         Height="50" Background="#121418" Foreground="White" BorderBrush="#33FFFFFF"
-                                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="18"
+                                         Height="56" Background="#121418" Foreground="White" BorderBrush="#33FFFFFF"
+                                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center" 
+                                         FontSize="18" FontWeight="SemiBold" FontFamily="Poppins"
                                          services:WatermarkService.Watermark="Enter code here"
-                                         services:WatermarkService.WatermarkSize="16">
+                                         services:WatermarkService.WatermarkSize="14">
                                     <TextBox.Template>
                                         <ControlTemplate TargetType="TextBox">
-                                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="12">
-                                                <ScrollViewer x:Name="PART_ContentHost" Margin="10,0"/>
+                                            <Border Background="{TemplateBinding Background}" 
+                                                    BorderBrush="{TemplateBinding BorderBrush}" 
+                                                    BorderThickness="1" CornerRadius="14">
+                                                <ScrollViewer x:Name="PART_ContentHost" Margin="15,0"/>
                                             </Border>
                                         </ControlTemplate>
                                     </TextBox.Template>
                                 </TextBox>
 
+                                <!-- Join Button -->
                                 <Button Content="JOIN NOW" Command="{Binding JoinRoomCommand}" 
-                                        Margin="0,20,0,0" Height="50" Background="{StaticResource Brush.Accent1}" Foreground="White" FontWeight="Bold" Cursor="Hand">
+                                        Margin="0,20,0,0" Height="56" Background="{StaticResource Brush.Accent1}" 
+                                        Foreground="White" FontWeight="Bold" Cursor="Hand" FontSize="14" FontFamily="Poppins">
                                     <Button.Template>
                                         <ControlTemplate TargetType="Button">
-                                            <Border x:Name="btnBorder" Background="{TemplateBinding Background}" CornerRadius="12">
+                                            <Border x:Name="btnBorder" Background="{TemplateBinding Background}" CornerRadius="14">
+                                                <Border.Effect>
+                                                    <DropShadowEffect Color="{StaticResource Color.Accent1}" 
+                                                                      BlurRadius="20" Opacity="0.5" ShadowDepth="0"/>
+                                                </Border.Effect>
                                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="btnBorder" Property="Opacity" Value="0.8"/>
+                                                    <Setter TargetName="btnBorder" Property="Opacity" Value="0.85"/>
+                                                </Trigger>
+                                                <Trigger Property="IsPressed" Value="True">
+                                                    <Setter TargetName="btnBorder" Property="RenderTransform">
+                                                        <Setter.Value>
+                                                            <ScaleTransform ScaleX="0.97" ScaleY="0.97"/>
+                                                        </Setter.Value>
+                                                    </Setter>
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
                                     </Button.Template>
+                                    <Button.RenderTransformOrigin>
+                                        <Point X="0.5" Y="0.5"/>
+                                    </Button.RenderTransformOrigin>
                                 </Button>
                             </StackPanel>
                         </Grid>
@@ -149,9 +204,25 @@
                 </Grid>
             </Grid>
 
+            <!-- Close Button -->
             <Button Content="✕" Command="{Binding CloseWindowCommand}" 
                     HorizontalAlignment="Right" VerticalAlignment="Top" Margin="30" 
-                    Foreground="#44FFFFFF" Background="Transparent" BorderThickness="0" Cursor="Hand" FontSize="20"/>
+                    Foreground="#44FFFFFF" Background="Transparent" BorderThickness="0" 
+                    Cursor="Hand" FontSize="20" Width="35" Height="35">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Background" Value="#20FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
         </Grid>
     </Border>
 </Window>

@@ -15,27 +15,31 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
         <LinearGradientBrush x:Key="MainBackground" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#141E30" Offset="0.0"/>
-            <GradientStop Color="#243B55" Offset="1.0"/>
+            <GradientStop Color="#1B1D21" Offset="0.0"/>
+            <GradientStop Color="#2C2F33" Offset="1.0"/>
         </LinearGradientBrush>
 
         <Style x:Key="GlassCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="#1AFFFFFF"/>
-            <Setter Property="BorderBrush" Value="#30FFFFFF"/>
+            <Setter Property="Background" Value="#1A1C1F"/>
+            <Setter Property="BorderBrush" Value="#33FFFFFF"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="15"/>
+            <Setter Property="CornerRadius" Value="20"/>
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect BlurRadius="10" Color="Black" Opacity="0.3" ShadowDepth="4"/>
+                    <DropShadowEffect BlurRadius="15" Color="Black" Opacity="0.3" ShadowDepth="3"/>
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#25FFFFFF"/>
-                    <Setter Property="BorderBrush" Value="#4CD137"/>
+                    <Setter Property="Background" Value="#22262A"/>
+                    <Setter Property="BorderBrush">
+                        <Setter.Value>
+                            <SolidColorBrush Color="{StaticResource Color.Accent1}"/>
+                        </Setter.Value>
+                    </Setter>
                     <Setter Property="Effect">
                         <Setter.Value>
-                            <DropShadowEffect BlurRadius="20" Color="#4CD137" Opacity="0.6" ShadowDepth="0"/>
+                            <DropShadowEffect BlurRadius="25" Color="{StaticResource Color.Accent1}" Opacity="0.4" ShadowDepth="0"/>
                         </Setter.Value>
                     </Setter>
                     <Setter Property="Cursor" Value="Hand"/>
@@ -47,23 +51,18 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" CornerRadius="25" Background="{TemplateBinding Background}" 
+                        <Border x:Name="border" CornerRadius="15" Background="{TemplateBinding Background}" 
                                 BorderThickness="0">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Opacity" Value="0.9"/>
-                                <Setter Property="RenderTransform">
-                                    <Setter.Value>
-                                        <ScaleTransform ScaleX="1.05" ScaleY="1.05"/>
-                                    </Setter.Value>
-                                </Setter>
+                                <Setter TargetName="border" Property="Opacity" Value="0.85"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="RenderTransform">
+                                <Setter TargetName="border" Property="RenderTransform">
                                     <Setter.Value>
-                                        <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                        <ScaleTransform ScaleX="0.97" ScaleY="0.97"/>
                                     </Setter.Value>
                                 </Setter>
                             </Trigger>
@@ -72,22 +71,24 @@
                 </Setter.Value>
             </Setter>
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="FontFamily" Value="Poppins"/>
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect BlurRadius="10" ShadowDepth="3" Opacity="0.3"/>
+                    <DropShadowEffect BlurRadius="15" ShadowDepth="2" Opacity="0.3"/>
                 </Setter.Value>
             </Setter>
         </Style>
+
         <Style x:Key="IconButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="#BDC3C7"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="5" Padding="5">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="10" Padding="8">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -109,63 +110,96 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="{StaticResource MainBackground}" Padding="20,15">
+        <!-- Header Section -->
+        <Border Grid.Row="0" Background="#15181C" Padding="35,25" BorderBrush="#33FFFFFF" BorderThickness="0,0,0,1">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="MÃ PHÒNG:" FontWeight="Bold" Foreground="#666" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBlock Text="{Binding RoomId}" FontSize="24" FontWeight="Bold" Foreground="#4A90E2" VerticalAlignment="Center"/>
-                    <Button Command="{Binding CopyRoomCodeCommand}" Margin="15,0,0,0" Background="Transparent" BorderThickness="0" Cursor="Hand">
-                        <Image Source="/Resources/copy.png" Width="20" Height="20"/>
-                    </Button>
+                <!-- Room Code Display -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Border Background="{StaticResource Brush.Accent1}" Padding="10,5" CornerRadius="8" Margin="0,0,15,0"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="ROOM CODE" Foreground="White" FontSize="12" FontWeight="Bold" FontFamily="Inter V"/>
+                    </Border>
+
+                    <Border Background="#0F1115" CornerRadius="15" BorderBrush="#33FFFFFF" BorderThickness="1" 
+                            Padding="30,17" VerticalAlignment="Center">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="{Binding RoomId}" FontSize="38" FontWeight="Bold" 
+                                       Foreground="White" FontFamily="Poppins" VerticalAlignment="Center" 
+                                       HorizontalAlignment="Center">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect Color="{StaticResource Color.Accent1}" BlurRadius="15" Opacity="0.5" ShadowDepth="0"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
+
+                            <Button Grid.Column="1" Command="{Binding CopyRoomCodeCommand}" 
+                                    Width="32" Height="32" Margin="15,0,0,0" VerticalAlignment="Center"
+                                    Style="{StaticResource IconButtonStyle}" ToolTip="Copy room code">
+                                <Image Source="/Resources/copy.png" Width="18" Height="18" Stretch="Uniform"/>
+                            </Button>
+                        </Grid>
+                    </Border>
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Command="{Binding ToggleMuteCommand}"
-Width="40" Height="40"
-HorizontalAlignment="Left" VerticalAlignment="Top"
-Margin="15"
-Style="{StaticResource IconButtonStyle}">
-                        <Image Width="24" Height="24" Stretch="Uniform">
-                            <Image.Style>
-                                <Style TargetType="Image">
-                                    <Setter Property="Source" Value="/Resources/volume.png"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsMuted}" Value="True">
-                                            <Setter Property="Source" Value="/Resources/mute.png"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Image.Style>
-                        </Image>
-                    </Button>
-                </StackPanel>
+                <!-- Sound Toggle Button -->
+                <Button Grid.Column="1" VerticalAlignment="Center" Command="{Binding ToggleMuteCommand}"
+                        Width="44" Height="44" Style="{StaticResource IconButtonStyle}">
+                    <Image Width="24" Height="24" Stretch="Uniform">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Source" Value="/Resources/volume.png"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMuted}" Value="True">
+                                        <Setter Property="Source" Value="/Resources/mute.png"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
+                </Button>
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1" Margin="30">
-            <Border Background="{StaticResource MainBackground}" CornerRadius="10" Padding="20">
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="40,30,40,30">
+            <Border Background="#15181C" CornerRadius="25" Padding="35" BorderBrush="#33FFFFFF" BorderThickness="1">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Grid Margin="0,0,0,20">
-                        <StackPanel Orientation="Horizontal">
-                            <Ellipse Width="10" Height="10" Fill="#4CD137" Margin="0,0,8,0"/>
-                            <TextBlock Text="ONLINE: " Foreground="#BDC3C7" FontWeight="Bold" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding Players.Count}" Foreground="White" FontWeight="Bold" Margin="5,0,0,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding MaxPlayersString}" Foreground="#7F8FA6" VerticalAlignment="Center"/>
-                            <ProgressBar Grid.Row="1"
-                                          Value="{Binding AutoStartSeconds}" Maximum="{Binding TotalWaitTime}"
-                                          Width="300" Height="6"
-                                          BorderThickness="0" Background="#334155" Foreground="#F59E0B"
-                                          Margin="15, 0, 0, 0">
+                    <!-- Status Bar -->
+                    <Border Background="#1A1C1F" CornerRadius="15" Padding="20,15" Margin="0,0,0,30">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,12">
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="12" Height="12" Fill="{StaticResource Brush.Accent1}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="ONLINE: " Foreground="#94A3B8" FontWeight="SemiBold" 
+                                               VerticalAlignment="Center" FontSize="14" FontFamily="Inter V"/>
+                                    <TextBlock Text="{Binding Players.Count}" Foreground="White" FontWeight="Bold" 
+                                               Margin="5,0,0,0" VerticalAlignment="Center" FontSize="14" FontFamily="Poppins"/>
+                                    <TextBlock Text="{Binding MaxPlayersString}" Foreground="#66FFFFFF" 
+                                               VerticalAlignment="Center" FontSize="14" FontFamily="Inter V"/>
+                                </StackPanel>
+
+                                <TextBlock Text="{Binding AutoStartStatus}" Foreground="{StaticResource Brush.Accent2}" 
+                                           FontWeight="Bold" FontSize="13" HorizontalAlignment="Right" 
+                                           VerticalAlignment="Center" FontFamily="Inter V"/>
+                            </Grid>
+
+                            <ProgressBar Value="{Binding AutoStartSeconds}" Maximum="{Binding TotalWaitTime}"
+                                         Height="6" BorderThickness="0" Background="#0F1115" 
+                                         Foreground="{StaticResource Brush.Accent2}">
                                 <ProgressBar.Resources>
                                     <Style TargetType="ProgressBar">
                                         <Setter Property="Template">
@@ -174,7 +208,13 @@ Style="{StaticResource IconButtonStyle}">
                                                     <Grid x:Name="TemplateRoot">
                                                         <Border Background="{TemplateBinding Background}" CornerRadius="3"/>
                                                         <Border x:Name="PART_Track"/>
-                                                        <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="3" HorizontalAlignment="Left"/>
+                                                        <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" 
+                                                                CornerRadius="3" HorizontalAlignment="Left">
+                                                            <Border.Effect>
+                                                                <DropShadowEffect Color="{StaticResource Color.Accent2}" 
+                                                                                  BlurRadius="10" Opacity="0.6" ShadowDepth="0"/>
+                                                            </Border.Effect>
+                                                        </Border>
                                                     </Grid>
                                                 </ControlTemplate>
                                             </Setter.Value>
@@ -182,17 +222,11 @@ Style="{StaticResource IconButtonStyle}">
                                     </Style>
                                 </ProgressBar.Resources>
                             </ProgressBar>
-                            <TextBlock
-                Width="Auto"
-                Text="{Binding AutoStartStatus}" 
-                Foreground="#F59E0B" FontWeight="Bold" FontSize="12"
-                HorizontalAlignment="Center" Margin="0,0,0,5"/>
                         </StackPanel>
+                    </Border>
 
-
-                    </Grid>
-
-                    <ScrollViewer Grid.Row="1" Margin="20,10" VerticalScrollBarVisibility="Hidden">
+                    <!-- Players Grid -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <ItemsControl ItemsSource="{Binding Players}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -202,9 +236,8 @@ Style="{StaticResource IconButtonStyle}">
 
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Width="140" Height="180" Margin="15" Style="{StaticResource GlassCardStyle}"
-            RenderTransformOrigin="0.5,0.5">
-
+                                    <Border Width="150" Height="190" Margin="12" Style="{StaticResource GlassCardStyle}"
+                                            RenderTransformOrigin="0.5,0.5" Padding="15">
                                         <Border.RenderTransform>
                                             <ScaleTransform ScaleX="1" ScaleY="1"/>
                                         </Border.RenderTransform>
@@ -214,13 +247,13 @@ Style="{StaticResource IconButtonStyle}">
                                                     <Storyboard>
                                                         <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.4"/>
                                                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         From="0.3" To="1" Duration="0:0:0.6">
+                                                                         From="0.3" To="1" Duration="0:0:0.6">
                                                             <DoubleAnimation.EasingFunction>
                                                                 <ElasticEase EasingMode="EaseOut" Oscillations="1" Springiness="5"/>
                                                             </DoubleAnimation.EasingFunction>
                                                         </DoubleAnimation>
                                                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         From="0.3" To="1" Duration="0:0:0.6">
+                                                                         From="0.3" To="1" Duration="0:0:0.6">
                                                             <DoubleAnimation.EasingFunction>
                                                                 <ElasticEase EasingMode="EaseOut" Oscillations="1" Springiness="5"/>
                                                             </DoubleAnimation.EasingFunction>
@@ -230,24 +263,23 @@ Style="{StaticResource IconButtonStyle}">
                                             </EventTrigger>
                                         </Border.Triggers>
 
-                                        <Grid>
-                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                <Grid Margin="0,0,0,15">
-                                                    <Ellipse Width="84" Height="84" Stroke="#40FFFFFF" StrokeThickness="4"/>
-                                                    <Ellipse Width="80" Height="80">
-                                                        <Ellipse.Fill>
-                                                            <ImageBrush ImageSource="{Binding AvatarUrl, TargetNullValue='https://i.imgur.com/KkrzQ83.png'}" 
-                                        Stretch="UniformToFill"/>
-                                                        </Ellipse.Fill>
-                                                    </Ellipse>
-                                                </Grid>
+                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                            <Grid Margin="0,0,0,18">
+                                                <Ellipse Width="92" Height="92" Stroke="{StaticResource Brush.Accent1}" 
+                                                         StrokeThickness="3" Opacity="0.5"/>
+                                                <Ellipse Width="86" Height="86">
+                                                    <Ellipse.Fill>
+                                                        <ImageBrush ImageSource="{Binding AvatarUrl, TargetNullValue='https://i.imgur.com/KkrzQ83.png'}" 
+                                                                    Stretch="UniformToFill"/>
+                                                    </Ellipse.Fill>
+                                                </Ellipse>
+                                            </Grid>
 
-                                                <TextBlock Text="{Binding Name}" Foreground="White" 
-                           HorizontalAlignment="Center" TextAlignment="Center"
-                           TextTrimming="CharacterEllipsis" MaxWidth="120"
-                           FontSize="16" FontWeight="Bold"/>
-                                            </StackPanel>
-                                        </Grid>
+                                            <TextBlock Text="{Binding Name}" Foreground="White" 
+                                                       HorizontalAlignment="Center" TextAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" MaxWidth="130"
+                                                       FontSize="15" FontWeight="SemiBold" FontFamily="Poppins"/>
+                                        </StackPanel>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -257,18 +289,42 @@ Style="{StaticResource IconButtonStyle}">
             </Border>
         </Grid>
 
-        <Border Grid.Row="2" Background="{StaticResource MainBackground}" Padding="20" BorderBrush="#EEE" BorderThickness="0,1,0,0">
+        <!-- Footer Section -->
+        <Border Grid.Row="2" Background="#15181C" Padding="35,20" BorderBrush="#33FFFFFF" BorderThickness="0,1,0,0">
             <Grid>
+                <!-- Leave Room Button -->
                 <Button Command="{Binding LeaveRoomCommand}" 
-                        Content="Rời phòng"
+                        Content="Leave Room"
                         HorizontalAlignment="Left"
                         Style="{StaticResource ModernButtonStyle}"
-                        Background="#ECEFF1" Foreground="#D32F2F" BorderThickness="0"
-                        Width="150" Height="45" FontSize="14" FontWeight="SemiBold"/>
+                        Background="#2C2F33" Foreground="#FFA2C0" BorderThickness="0"
+                        Width="170" Height="50" FontSize="14" FontWeight="SemiBold"/>
 
-                <TextBlock Text="Đang chờ chủ phòng bắt đầu..." 
-                           HorizontalAlignment="Right" VerticalAlignment="Center"
-                           FontStyle="Italic" Foreground="#999" FontSize="14"/>
+                <!-- Waiting Message -->
+                <Border Background="#1A1C1F" CornerRadius="12" Padding="20,12" HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="10" Height="10" Fill="{StaticResource Brush.Accent2}" Margin="0,0,12,0">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Ellipse.RenderTransform>
+                            <Ellipse.Triggers>
+                                <EventTrigger RoutedEvent="Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard RepeatBehavior="Forever">
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                             From="1" To="1.4" Duration="0:0:0.8" AutoReverse="True"/>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                             From="1" To="1.4" Duration="0:0:0.8" AutoReverse="True"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Ellipse.Triggers>
+                        </Ellipse>
+                        <TextBlock Text="Waiting for host to start..." 
+                                   Foreground="#94A3B8" FontSize="14" FontStyle="Italic" 
+                                   VerticalAlignment="Center" FontFamily="Inter V"/>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
     </Grid>

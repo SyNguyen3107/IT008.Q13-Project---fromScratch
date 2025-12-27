@@ -9,6 +9,7 @@
         mc:Ignorable="d"
         Title="EasyFlips Game" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Brush.Dark}"
         Foreground="White">
 
     <Window.Resources>
@@ -129,8 +130,8 @@
         </Style>
 
         <LinearGradientBrush x:Key="MainBackground" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#141E30" Offset="0.0"/>
-            <GradientStop Color="#243B55" Offset="1.0"/>
+            <GradientStop Color="#1B1D21" Offset="0.0"/>
+            <GradientStop Color="#2C2F33" Offset="1.0"/>
         </LinearGradientBrush>
 
         <Style x:Key="GlassProgressBarStyle" TargetType="ProgressBar">
@@ -156,8 +157,8 @@
         </Style>
 
         <Style x:Key="SidePlayerCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="#10FFFFFF"/>
-            <Setter Property="BorderBrush" Value="#20FFFFFF"/>
+            <Setter Property="Background" Value="#1A1C1F"/>
+            <Setter Property="BorderBrush" Value="#33FFFFFF"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Margin" Value="0,0,0,10"/>
@@ -220,7 +221,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0" Background="#20000000" BorderBrush="#20FFFFFF" BorderThickness="0,0,1,0">
+        <Border Grid.Column="0" Background="#15181C" BorderBrush="#33FFFFFF" BorderThickness="0,0,1,0">
             <Grid Margin="15,20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -322,7 +323,7 @@
                     </StackPanel.Style>
                     
 
-                    <Border Background="#20FFFFFF" CornerRadius="25" Padding="30,5" BorderBrush="#30FFFFFF" BorderThickness="1" HorizontalAlignment="Center">
+                    <Border Background="#15181C" CornerRadius="25" Padding="30,5" BorderBrush="#33FFFFFF" BorderThickness="1" HorizontalAlignment="Center">
                         <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                             <TextBlock Text="{Binding StatusMessage}" 
                        FontSize="16" 
@@ -357,9 +358,9 @@
             </Grid>
 
             <Grid Grid.Row="1" Margin="30,10,30,30">
-                <Border x:Name="CardBorder" Background="White" CornerRadius="20" Margin="10">
+                <Border x:Name="CardBorder" Background="{StaticResource Brush.Surface}" CornerRadius="20" Margin="10">
                     <Border.Effect>
-                        <DropShadowEffect Color="Black" Opacity="0.3" ShadowDepth="8" BlurRadius="25"/>
+                        <DropShadowEffect Color="Black" Opacity="0.4" ShadowDepth="0" BlurRadius="25"/>
                     </Border.Effect>
 
                     <Grid>
@@ -415,11 +416,13 @@
                        Stretch="Uniform" MaxHeight="250" Margin="0,0,0,20"/>
                                 <TextBlock Text="{Binding CurrentCard.FrontText}"
                            TextWrapping="Wrap" TextAlignment="Center"
-                           FontSize="26" FontWeight="SemiBold" Foreground="#2C3E50"/>
+                           FontSize="26" FontWeight="SemiBold" Foreground="White"/>
                             </StackPanel>
 
                             <Grid Grid.Row="1" Margin="0,20,0,0">
-                                <Button Content="SHOW ANSWER" Command="{Binding ShowCardCommand}" Style="{StaticResource HostActionButtonStyle}" Width="200" Height="50" HorizontalAlignment="Center"/>
+                                <Button Content="SHOW ANSWER" Command="{Binding ShowCardCommand}" 
+                                        Style="{StaticResource HostActionButtonStyle}" Width="200" Height="50" 
+                                        HorizontalAlignment="Center"/>
                             </Grid>
                         </Grid>
 
@@ -442,9 +445,13 @@
 
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    <TextBlock Text="Correct Answer:" Foreground="Gray" FontSize="14"/>
-                                    <TextBlock Text="{Binding CorrectAnswer}" Foreground="#27AE60" FontSize="20" FontWeight="Bold" Margin="0,5,0,20"/>
-                                    <TextBlock Text="{Binding CurrentCard.BackText}" FontSize="28" FontWeight="Bold" Foreground="#2980B9"
+                                    <Border Background="#15181C" CornerRadius="10" Padding="15,8" HorizontalAlignment="Center" Margin="0,0,0,20">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Correct Answer: " Foreground="Gray" FontSize="14" FontWeight="Bold"/>
+                                            <TextBlock Text="{Binding CorrectAnswer}" Foreground="#27AE60" FontSize="20" FontWeight="Bold"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock Text="{Binding CurrentCard.BackText}" FontSize="28" FontWeight="Bold" Foreground="White"
                                TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,20"/>
                                     <Image Source="{Binding CurrentCard.BackImagePath, Converter={StaticResource ImagePathConverter}}"
                                              Stretch="Uniform" MaxHeight="300" Margin="0,0,0,20"/>
