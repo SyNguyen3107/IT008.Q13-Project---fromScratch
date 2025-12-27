@@ -3,65 +3,41 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="clr-namespace:EasyFlips.ViewModels"
         xmlns:cv="clr-namespace:EasyFlips.Converters"
         mc:Ignorable="d"
-        Title="EasyFlips - Member Game" Height="720" Width="1080"
+        Title="EasyFlips - Member Game" Height="750" Width="1100"
         WindowStartupLocation="CenterScreen"
-        Foreground="White">
+        Background="{StaticResource Brush.Dark}">
 
     <Window.Resources>
         <cv:BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <cv:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
         <cv:ImagePathConverter x:Key="ImagePathConverter"/>
 
-        <LinearGradientBrush x:Key="MainBackground" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#141E30" Offset="0.0"/>
-            <GradientStop Color="#243B55" Offset="1.0"/>
-        </LinearGradientBrush>
+        <DropShadowEffect x:Key="CardShadow" Color="Black" Opacity="0.4" BlurRadius="25" ShadowDepth="0"/>
 
-        <Style x:Key="BigCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="CornerRadius" Value="20"/>
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect Color="Black" Opacity="0.3" ShadowDepth="8" BlurRadius="25"/>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="QuestionVisibilityStyle" TargetType="Grid">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsShowingResult}" Value="True">
-                    <Setter Property="Visibility" Value="Collapsed"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="MemberInputStyle" TargetType="TextBox">
-            <Setter Property="FontSize" Value="20"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="15,10"/>
+        <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource Brush.Surface}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="CaretBrush" Value="{StaticResource Brush.Accent1}"/>
+            <Setter Property="Padding" Value="18,0"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Background" Value="#F8F9FA"/>
-            <Setter Property="BorderBrush" Value="#E0E0E0"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#33FFFFFF"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
                         <Border x:Name="border" Background="{TemplateBinding Background}" 
                                 BorderBrush="{TemplateBinding BorderBrush}" 
                                 BorderThickness="{TemplateBinding BorderThickness}" 
-                                CornerRadius="10">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="5"/>
+                                CornerRadius="12">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="5,0"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="border" Property="BorderBrush" Value="#3498DB"/>
-                                <Setter TargetName="border" Property="Background" Value="White"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Opacity" Value="0.6"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource Brush.Primary}"/>
+                                <Setter TargetName="border" Property="Background" Value="#35393E"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -69,23 +45,21 @@
             </Setter>
         </Style>
 
-        <Style x:Key="MemberSubmitBtnStyle" TargetType="Button">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                        <GradientStop Color="#11998e" Offset="0"/>
-                        <GradientStop Color="#38ef7d" Offset="1"/>
-                    </LinearGradientBrush>
-                </Setter.Value>
-            </Setter>
+        <Style x:Key="ModernButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontSize" Value="15"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="10">
+                        <Border x:Name="bdr" CornerRadius="12">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="{StaticResource Color.Primary}" Offset="0"/>
+                                    <GradientStop Color="{StaticResource Color.Secondary}" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -95,27 +69,11 @@
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter Property="RenderTransform">
                                     <Setter.Value>
-                                        <ScaleTransform ScaleX="0.98" ScaleY="0.98"/>
+                                        <ScaleTransform ScaleX="0.96" ScaleY="0.96"/>
                                     </Setter.Value>
                                 </Setter>
                                 <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
                             </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-        <Setter TargetName="bdr" Property="Background" Value="#95A5A6"/>
-        <Setter TargetName="bdr" Property="Opacity" Value="0.6"/>
-    </Trigger>
-
-    <Trigger Property="IsEnabled" Value="True">
-        <Setter TargetName="bdr" Property="Background">
-            <Setter.Value>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                    <GradientStop Color="#11998e" Offset="0"/>
-                    <GradientStop Color="#38ef7d" Offset="1"/>
-                </LinearGradientBrush>
-            </Setter.Value>
-        </Setter>
-        <Setter TargetName="bdr" Property="Opacity" Value="1.0"/>
-    </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -123,152 +81,254 @@
         </Style>
     </Window.Resources>
 
-    <Grid Background="{StaticResource MainBackground}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Grid>
+        <Canvas IsHitTestVisible="False">
+            <Ellipse Width="600" Height="600" Canvas.Left="-200" Canvas.Top="-200" Opacity="0.12">
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop Color="{StaticResource Color.Primary}" Offset="0"/>
+                        <GradientStop Color="Transparent" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+        </Canvas>
 
-        <Grid Grid.Row="0" Margin="20">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                <TextBlock Text="SCORE: " Foreground="#BDC3C7" FontSize="18" FontWeight="Bold"/>
-                <TextBlock Text="{Binding Score}" Foreground="#F1C40F" FontSize="24" FontWeight="ExtraBold" Margin="5,-4,0,0"/>
+        <Grid Margin="40,30">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,10">
+                <StackPanel HorizontalAlignment="Left">
+                    <TextBlock Text="TOTAL SCORE" Foreground="{StaticResource Brush.TextSecondary}" FontSize="11" FontWeight="Bold" Margin="2,0,0,2"/>
+                    <TextBlock Text="{Binding Score}" Foreground="{StaticResource Brush.Accent2}" FontSize="38" FontWeight="ExtraBold"/>
+                </StackPanel>
+
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
+
+                    <Border CornerRadius="12" Padding="15,8" Margin="0,0,12,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#1560A5FA"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsShowingResult}" Value="True">
+                                        <Setter Property="Background" Value="#15FACC15"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Margin="0,0,10,0" VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="#60A5FA"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsShowingResult}" Value="True">
+                                                <Setter Property="Fill" Value="#FACC15"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+
+                            <TextBlock FontSize="13" FontWeight="ExtraBold" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="IN GAME"/>
+                                        <Setter Property="Foreground" Value="#60A5FA"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsShowingResult}" Value="True">
+                                                <Setter Property="Text" Value="REVIEWING"/>
+                                                <Setter Property="Foreground" Value="#FACC15"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#1AFFFFFF" CornerRadius="12" Padding="15,8">
+                        <TextBlock Text="{Binding CurrentQuestionInfo}" Foreground="White" FontSize="14" FontWeight="Bold"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,0,0,30">
+                <TextBlock Text="{Binding GameStatusText}" HorizontalAlignment="Center" FontSize="12" FontWeight="Bold" Margin="0,0,0,5">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsShowingResult}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource Brush.Accent1}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <Border Background="#15FFFFFF" CornerRadius="20" Padding="50,5" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding TimeRemaining}" FontSize="28" FontWeight="Bold">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="White"/>
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding TimeRemaining}" Value="5">
+                                        <Setter Property="Foreground" Value="#FF6B6B"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding TimeRemaining}" Value="4">
+                                        <Setter Property="Foreground" Value="#FF6B6B"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding TimeRemaining}" Value="3">
+                                        <Setter Property="Foreground" Value="#FF6B6B"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding TimeRemaining}" Value="2">
+                                        <Setter Property="Foreground" Value="#FF6B6B"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding TimeRemaining}" Value="1">
+                                        <Setter Property="Foreground" Value="#FF6B6B"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding TimeRemaining}" Value="0">
+                                        <Setter Property="Foreground" Value="#FF6B6B"/>
+                                    </DataTrigger>
+
+                                    <DataTrigger Binding="{Binding IsShowingResult}" Value="True">
+                                        <Setter Property="Foreground" Value="#4ADE80"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
             </StackPanel>
 
-            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                <TextBlock Text="{Binding CurrentQuestionInfo}" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,20,0"/>
-                <TextBlock Text="{Binding ConnectionStatus}" Foreground="#7F8FA6" FontStyle="Italic"/>
-            </StackPanel>
-        </Grid>
+            <Viewbox Grid.Row="2" VerticalAlignment="Center" MaxHeight="460" Margin="0,0,0,40">
+                <Border Width="800" Height="460" Background="{StaticResource Brush.Surface}" CornerRadius="28" Effect="{StaticResource CardShadow}">
+                    <Grid Margin="45">
+                        <Grid x:Name="FrontFace">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsShowingResult}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Image Grid.Row="0" Source="{Binding CurrentCard.FrontImagePath, Converter={StaticResource ImagePathConverter}}" 
+                                   Visibility="{Binding CurrentCard.FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"
+                                   Stretch="Uniform" Margin="0,0,0,25" MaxHeight="280"/>
+                            <TextBlock Grid.Row="1" Text="{Binding CurrentCard.FrontText, TargetNullValue='Loading...'}" 
+                                       Foreground="White" FontSize="40" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
+                        </Grid>
 
-        <Viewbox Grid.Row="1" Margin="40,10,40,20" Stretch="Uniform">
-            <Border Width="600" Height="400" Style="{StaticResource BigCardStyle}">
-                <Grid Margin="30">
-
-                    <Grid Style="{StaticResource QuestionVisibilityStyle}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <Image Grid.Row="0" 
-                               Source="{Binding CurrentCard.FrontImagePath, Converter={StaticResource ImagePathConverter}}" 
-                               Visibility="{Binding CurrentCard.FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"
-                               Stretch="Uniform" 
-                               Margin="0,0,0,20"/>
-
-                        <TextBlock Grid.Row="1" 
-                                   Text="{Binding CurrentCard.FrontText, TargetNullValue='Waiting for question...'}" 
-                                   TextWrapping="Wrap" 
-                                   TextAlignment="Center" 
-                                   VerticalAlignment="Center"
-                                   FontSize="32" 
-                                   FontWeight="Bold" 
-                                   Foreground="#2C3E50"/>
-                    </Grid>
-
-                    <Grid x:Name="ResultPanel" 
-                          Visibility="{Binding IsShowingResult, Converter={StaticResource BoolToVis}}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-
-                                <TextBlock Text="{Binding ResultMessage}" 
-                                           FontSize="24" 
-                                           FontWeight="Bold" 
-                                           TextAlignment="Center"
-                                           Margin="0,0,0,20">
+                        <Grid x:Name="BackFace">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsShowingResult}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ResultMessage}" FontSize="28" FontWeight="Bold" TextAlignment="Center" Margin="0,0,0,20">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="#E74C3C"/>
+                                            <Setter Property="Foreground" Value="#FF6B6B"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding ResultMessage}" Value="Chính xác! +10đ">
-                                                    <Setter Property="Foreground" Value="#27AE60"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding ResultMessage}" Value="Correct! +10pts">
-                                                    <Setter Property="Foreground" Value="#27AE60"/>
+                                                    <Setter Property="Foreground" Value="#4ADE80"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
 
-                                <TextBlock  Text="{Binding CorrectAnswerString}"  Foreground="Gray" FontSize="14" HorizontalAlignment="Center"/>
+                                <Border Background="#10FFFFFF" CornerRadius="10" Padding="15,8" HorizontalAlignment="Center" Margin="0,0,0,25">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="CORRECT: " Foreground="Gray" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding CorrectAnswer}" Foreground="#2ECC71" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                    </StackPanel>
+                                </Border>
 
-                                <TextBlock Text="{Binding CurrentCard.BackText}" 
-                                           FontSize="28" 
-                                           FontWeight="Bold" 
-                                           Foreground="#2980B9" 
-                                           TextAlignment="Center" 
-                                           TextWrapping="Wrap" 
-                                           Margin="0,5,0,20"/>
-
-                                <Image Source="{Binding CurrentCard.BackImagePath, Converter={StaticResource ImagePathConverter}}"
-                                       Visibility="{Binding CurrentCard.BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"
-                                       Stretch="Uniform" 
-                                       MaxHeight="200" 
-                                       Margin="0,0,0,20"/>
-
+                                <TextBlock Text="{Binding CurrentCard.BackText}" Foreground="White" FontSize="48" FontWeight="ExtraBold" TextAlignment="Center" TextWrapping="Wrap"/>
                             </StackPanel>
-                        </ScrollViewer>
+                        </Grid>
                     </Grid>
+                </Border>
+            </Viewbox>
 
-                    <TextBlock d:Text="Get Ready..." 
-                               Visibility="{Binding CurrentCard, Converter={StaticResource NullToCollapsedConverter}, ConverterParameter=Inverse}"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                               FontSize="40" Foreground="#BDC3C7"/>
-                </Grid>
-            </Border>
-        </Viewbox>
+            <Grid Grid.Row="3" Width="850" HorizontalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="200"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Style="{StaticResource ModernTextBoxStyle}" Height="60" Margin="0,0,15,0"
+                         Text="{Binding UserAnswer, UpdateSourceTrigger=PropertyChanged}" 
+                         IsEnabled="{Binding IsInputEnabled}">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Enter" Command="{Binding SubmitAnswerCommand}"/>
+                    </TextBox.InputBindings>
+                </TextBox>
+                <Button Grid.Column="1" Height="60" 
+                    Style="{StaticResource ModernButtonStyle}" 
+                    Command="{Binding SubmitAnswerCommand}">
+                    
+                    <Grid>
+                        <TextBlock Text="SUBMIT" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsInputEnabled}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
 
-        <Grid Grid.Row="2" Margin="0,0,0,50" Width="700" HorizontalAlignment="Center">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBox Grid.Column="0"
-                     Text="{Binding UserAnswer, UpdateSourceTrigger=PropertyChanged ,Mode=TwoWay}"
-                     IsEnabled="{Binding IsInputEnabled}"
-                     Height="60">
-                <TextBox.InputBindings>
-                    <KeyBinding Key="Enter" Command="{Binding SubmitAnswerCommand}"/>
-                </TextBox.InputBindings>
-                <TextBox.Resources>
-                    <VisualBrush x:Key="HelpBrush" TileMode="None" Opacity="0.3" Stretch="None" AlignmentX="Left">
-                        <VisualBrush.Visual>
-                            <TextBlock Text="Type your answer here..." FontStyle="Italic" FontSize="18" Foreground="Black"/>
-                        </VisualBrush.Visual>
-                    </VisualBrush>
-                </TextBox.Resources>
-                <TextBox.Style>
-                    <Style TargetType="TextBox" BasedOn="{StaticResource MemberInputStyle}">
-                        <Style.Triggers>
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="Text" Value="{x:Null}"/>
-                                    <Condition Property="IsKeyboardFocusWithin" Value="False"/>
-                                </MultiTrigger.Conditions>
-                                <Setter Property="Background" Value="{StaticResource HelpBrush}"/>
-                            </MultiTrigger>
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="Text" Value=""/>
-                                    <Condition Property="IsKeyboardFocusWithin" Value="False"/>
-                                </MultiTrigger.Conditions>
-                                <Setter Property="Background" Value="{StaticResource HelpBrush}"/>
-                            </MultiTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBox.Style>
-            </TextBox>
-
-            <Button Grid.Column="1"
-                Content="SUBMIT"
-                Command="{Binding SubmitAnswerCommand}"
-                Style="{StaticResource MemberSubmitBtnStyle}"
-                Width="140" Height="60" Margin="15,0,0,0"/>
-                </Grid>
-
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsInputEnabled}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="Đang đợi" />
+                            <TextBlock Text="..." x:Name="dots">
+                                <TextBlock.Triggers>
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard RepeatBehavior="Forever">
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0.2" Duration="0:0:0.5" AutoReverse="True"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </TextBlock.Triggers>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </Button>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>

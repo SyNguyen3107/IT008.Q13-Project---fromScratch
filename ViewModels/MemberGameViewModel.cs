@@ -15,6 +15,7 @@ namespace EasyFlips.ViewModels
         private readonly ComparisonService _comparisonService;
         private int _lastProcessedIndex = -1;
         private FlashcardAction _lastProcessedAction = FlashcardAction.None;
+        private System.Timers.Timer? _countdownTimer;
 
         // [QUAN TRỌNG] Khi biến này đổi -> Báo lệnh Submit kiểm tra lại
         [ObservableProperty]
@@ -34,12 +35,16 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SubmitAnswerCommand))]
         private string _userAnswer = string.Empty;
+        private int time;
 
         [ObservableProperty]
         private string _resultMessage = string.Empty;
 
         [ObservableProperty]
         private string _currentQuestionInfo;
+
+        [ObservableProperty]
+        private string _correctAnswer = string.Empty;
 
         public MemberGameViewModel(
             IAuthService authService,
@@ -66,14 +71,38 @@ namespace EasyFlips.ViewModels
                 CurrentCard = CurrentDeck.Cards.ElementAt(0);
                 CurrentQuestionInfo = $"1/{CurrentDeck.Cards.Count}";
             }
-
+            time = timePerRound;
             await SubscribeToRealtimeChannel();
 
             // Load lại trạng thái cũ nếu lỡ vào sau
             var currentClassroom = await _supabaseService.GetClassroomAsync(classroomId);
             if (currentClassroom?.SyncState != null) OnFlashcardStateReceived(currentClassroom.SyncState);
+            SetupTimer();
         }
+        private void SetupTimer()
+        {
+            // Hủy timer cũ nếu có để tránh chạy chồng chéo
+            _countdownTimer?.Stop();
+            _countdownTimer?.Dispose();
 
+            _countdownTimer = new System.Timers.Timer(1000);
+            _countdownTimer.Elapsed += (s, e) =>
+            {
+                if (TimeRemaining > 0)
+                {
+                    // Giảm TimeRemaining (biến này phải thuộc lớp Base và có [ObservableProperty])
+                    TimeRemaining--;
+                }
+                else
+                {
+                    Application.Current.Dispatcher.Invoke(() => IsInputEnabled = false);
+                    _countdownTimer.Stop();
+                }
+            };
+
+            // QUAN TRỌNG: Phải có dòng này thì timer mới bắt đầu chạy
+            _countdownTimer.Start();
+        }
         protected override async Task SubscribeToRealtimeChannel()
         {
             var result = await _supabaseService.SubscribeToFlashcardChannelAsync(ClassroomId, OnFlashcardStateReceived);
@@ -82,13 +111,14 @@ namespace EasyFlips.ViewModels
 
         private void OnFlashcardStateReceived(FlashcardSyncState state)
         {
+            
             Application.Current.Dispatcher.Invoke(() =>
             {
                 // CHỈ return nếu CẢ index VÀ action đều y hệt cái cũ (tránh xử lý trùng tin nhắn realtime)
                 // Nhưng hãy cẩn thận: Nếu Server gửi lại cùng 1 Action để Reset, ta vẫn nên nhận.
                 if (state.CurrentCardIndex == _lastProcessedIndex && state.Action == _lastProcessedAction)
                     return;
-
+                
                 // Cập nhật vết (track) dữ liệu cuối cùng đã xử lý
                 _lastProcessedIndex = state.CurrentCardIndex;
                 _lastProcessedAction = state.Action;
@@ -128,28 +158,28 @@ namespace EasyFlips.ViewModels
 
         private void PrepareForNewQuestion()
         {
-            Debug.WriteLine($"[GameFlow] Đang chuẩn bị câu hỏi mới (Index: {CurrentIndex})");
-
             CurrentPhase = GamePhase.Question;
             UserAnswer = "";
             ResultMessage = string.Empty;
             IsShowingResult = false;
-
-            // Mở khóa input
             IsInputEnabled = true;
-            Debug.WriteLine($"[GameFlow] IsInputEnabled đã set thành: {IsInputEnabled}");
+
+            // Reset đếm ngược 10 giây cho câu hỏi mới
+            TimeRemaining = time;
+            SetupTimer();
 
             SubmitAnswerCommand.NotifyCanExecuteChanged();
         }
         private void HandleFlipCard()
         {
             CurrentPhase = GamePhase.Result;
-
+            IsShowingResult = true;
             if (CanSubmit())
             {
                 SubmitAnswerCommand.Execute(null);
             }
-
+            TimeRemaining = 10;
+            SetupTimer();
             IsInputEnabled = false;
             SubmitAnswerCommand.NotifyCanExecuteChanged();
         }
@@ -167,6 +197,7 @@ namespace EasyFlips.ViewModels
             if (CurrentCard != null)
             {
                 bool isCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard.Answer);
+                CorrectAnswer = CurrentCard.Answer;
                 if (isCorrect)
                 {
                     Score += 10;
@@ -183,10 +214,10 @@ namespace EasyFlips.ViewModels
             }
         }
         partial void OnIsInputEnabledChanged(bool value)
-{
-    // Ép lệnh Submit cập nhật trạng thái ngay lập tức trên UI
-        SubmitAnswerCommand.NotifyCanExecuteChanged();
-}
+            {
+                // Ép lệnh Submit cập nhật trạng thái ngay lập tức trên UI
+                    SubmitAnswerCommand.NotifyCanExecuteChanged();
+            }
         partial void OnUserAnswerChanged(string value)
         {
             Application.Current.Dispatcher.Invoke(() =>
@@ -199,6 +230,11 @@ namespace EasyFlips.ViewModels
         private bool CanSubmit()
         {
             return IsInputEnabled && !string.IsNullOrWhiteSpace(UserAnswer);
+        }
+        public void DisposeTimer()
+        {
+            _countdownTimer?.Stop();
+            _countdownTimer?.Dispose();
         }
     }
 }
