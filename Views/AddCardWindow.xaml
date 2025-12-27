@@ -5,211 +5,337 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:EasyFlips.Converters"
         mc:Ignorable="d"
-        Title="Add Card" Height="650" Width="800" 
-        Background="#2c2c2c"
-        WindowStartupLocation="CenterScreen">
+        Title="Card Studio" Height="600" Width="1100"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True">
 
     <Window.Resources>
         <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
-        <!-- Style cho nút Xóa nhỏ gọn -->
-        <Style x:Key="RemoveButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#E74C3C"/>
-            <!-- Màu đỏ -->
+
+        <SolidColorBrush x:Key="BgDark" Color="#1F222A"/>
+        <SolidColorBrush x:Key="CardFace" Color="#1E1E24"/>
+        <SolidColorBrush x:Key="PrimaryBlue" Color="#3e7efd"/>
+        <SolidColorBrush x:Key="PrimaryPurple" Color="#6C5DD3"/>
+        <SolidColorBrush x:Key="AccentCyan" Color="#44daa6"/>
+        <SolidColorBrush x:Key="TextGrey" Color="#A0A0A5"/>
+
+        <LinearGradientBrush x:Key="MainGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#6C5DD3" Offset="0"/>
+            <GradientStop Color="#8E2DE2" Offset="1"/>
+        </LinearGradientBrush>
+
+        <Style x:Key="CircleIconBtn" TargetType="Button">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Background" Value="#2C2C35"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="5,0"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="ToolTip" Value="Remove this file"/>
-            <Setter Property="Content" Value="✕"/>
+            <Setter Property="Margin" Value="5,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="16">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Background" Value="{StaticResource PrimaryPurple}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <!-- Deck -->
-            <RowDefinition Height="*"/>
-            <!-- Front -->
-            <RowDefinition Height="*"/>
-            <!-- Back -->
-            <RowDefinition Height="Auto"/>
-            <!-- Answer -->
-            <RowDefinition Height="Auto"/>
-            <!-- Buttons -->
+    <Border Background="{StaticResource BgDark}" CornerRadius="20" BorderBrush="#333" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="40" Opacity="0.8"/>
+        </Border.Effect>
 
-        </Grid.RowDefinitions>
+        <Grid>
+            <Ellipse Width="400" Height="400" Fill="#3e7efd" Opacity="0.03" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-100"/>
+            <Ellipse Width="400" Height="400" Fill="#44daa6" Opacity="0.03" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="-100"/>
 
-        <!-- 1. Hàng đầu: Type / Deck -->
-        <Grid Grid.Row="0" Margin="0,0,0,15">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="1*"/>
-            </Grid.ColumnDefinitions>
+            <Grid Margin="30">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <TextBlock Grid.Column="0" Text="Type" FontSize="14" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <Border Grid.Column="1" CornerRadius="6" Background="#434343" Height="30" Margin="0,0,20,0">
-                <Button Content="Basic" FontSize="14" Foreground="White" Background="Transparent" BorderThickness="0" Cursor="Hand"/>
-            </Border>
+                <Grid Grid.Row="0" Margin="0,0,0,30">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="✨ CARD STUDIO" FontSize="22" FontWeight="Bold" Foreground="White" Margin="0,0,20,0" VerticalAlignment="Center"/>
 
-            <TextBlock Grid.Column="2" Text="Deck" FontSize="14" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <Border Grid.Column="3" CornerRadius="6" Background="#434343" Height="30">
-                <!-- Binding tên Deck -->
-                <Button Content="{Binding SelectedDeck.Name, TargetNullValue='Select Deck..'}" 
-                        FontSize="14" Foreground="White" Background="Transparent" BorderThickness="0" Cursor="Hand"
-                        Command="{Binding ChooseDeckCommand}"/>
-            </Border>
+                        <Button Command="{Binding ChooseDeckCommand}" Cursor="Hand" Background="Transparent" BorderThickness="0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bdr" Background="#25252A" CornerRadius="8" Padding="15,8" BorderBrush="#333" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Deck:" Foreground="#666" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SelectedDeck.Name, TargetNullValue='Select Deck...'}" 
+                                                       Foreground="#6C5DD3" FontWeight="Bold" VerticalAlignment="Center"/>
+                                            <TextBlock Text=" ▼" Foreground="#666" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bdr" Property="Background" Value="#2F2F35"/>
+                                            <Setter TargetName="bdr" Property="BorderBrush" Value="{StaticResource PrimaryPurple}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+
+                    <Button Command="{Binding CancelCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                            Content="✕" HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Background="Transparent" BorderThickness="0" Foreground="#666" FontSize="18" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="Transparent">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Foreground" Value="White"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Background="{StaticResource CardFace}" CornerRadius="15">
+                        <Border.Effect>
+                            <DropShadowEffect Color="Black" BlurRadius="20" Opacity="0.3" ShadowDepth="5"/>
+                        </Border.Effect>
+                        <Grid>
+                            <Border Height="4" VerticalAlignment="Top" Background="{StaticResource PrimaryBlue}" CornerRadius="15,15,0,0"/>
+
+                            <Grid Margin="20">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <TextBlock Text="FRONT SIDE" Foreground="{StaticResource PrimaryBlue}" FontWeight="Bold" Opacity="0.7" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button Style="{StaticResource CircleIconBtn}" Content="🔗" Command="{Binding PasteLinkCommand}" CommandParameter="FrontImage" ToolTip="Paste Link"/>
+                                        <Button Style="{StaticResource CircleIconBtn}" Content="📷" Command="{Binding PickFrontImageCommand}" ToolTip="Add Image"/>
+                                        <Button Style="{StaticResource CircleIconBtn}" Content="🔊" Command="{Binding PickFrontAudioCommand}" ToolTip="Add Audio"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBox Grid.Row="1" Text="{Binding FrontText, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True" TextWrapping="Wrap"
+                                         Background="Transparent" Foreground="White" BorderThickness="0"
+                                         FontSize="18" Margin="0,15"
+                                         VerticalScrollBarVisibility="Auto"
+                                         CaretBrush="{StaticResource PrimaryPurple}">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox">
+                                            <Style.Resources>
+                                                <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Top" Stretch="None">
+                                                    <VisualBrush.Visual>
+                                                        <TextBlock Text="Enter question..." Foreground="#444" FontSize="18"/>
+                                                    </VisualBrush.Visual>
+                                                </VisualBrush>
+                                            </Style.Resources>
+                                            <Style.Triggers>
+                                                <Trigger Property="Text" Value="{x:Null}">
+                                                    <Setter Property="Background" Value="{StaticResource CueBannerBrush}"/>
+                                                </Trigger>
+                                                <Trigger Property="Text" Value="">
+                                                    <Setter Property="Background" Value="{StaticResource CueBannerBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+
+                                <StackPanel Grid.Row="2" Orientation="Horizontal">
+                                    <Border Background="#2C2C35" CornerRadius="15" Padding="5,2,10,2" Margin="0,0,10,0"
+                                            Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="24" Height="24" Margin="0,0,5,0">
+                                                <Ellipse.Fill>
+                                                    <ImageBrush ImageSource="{Binding FrontImagePath}" Stretch="UniformToFill"/>
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <TextBlock Text="Image" Foreground="#CCC" FontSize="11" VerticalAlignment="Center"/>
+                                            <Button Content="✕" Command="{Binding RemoveFrontImageCommand}" Background="Transparent" Foreground="Red" BorderThickness="0" Margin="5,0,0,0" Cursor="Hand"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#2C2C35" CornerRadius="15" Padding="10,5"
+                                            Visibility="{Binding FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="🔊 Audio" Foreground="#F1C40F" FontSize="11" VerticalAlignment="Center"/>
+                                            <Button Content="✕" Command="{Binding RemoveFrontAudioCommand}" Background="Transparent" Foreground="Red" BorderThickness="0" Margin="5,0,0,0" Cursor="Hand"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2" Background="{StaticResource CardFace}" CornerRadius="15">
+                        <Border.Effect>
+                            <DropShadowEffect Color="Black" BlurRadius="20" Opacity="0.3" ShadowDepth="5"/>
+                        </Border.Effect>
+                        <Grid>
+                            <Border Height="4" VerticalAlignment="Top" Background="{StaticResource AccentCyan}" CornerRadius="15,15,0,0"/>
+
+                            <Grid Margin="20">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <TextBlock Text="BACK SIDE" Foreground="{StaticResource AccentCyan}" FontWeight="Bold" Opacity="0.7" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button Style="{StaticResource CircleIconBtn}" Content="🔗" Command="{Binding PasteLinkCommand}" CommandParameter="BackImage" ToolTip="Paste Link"/>
+                                        <Button Style="{StaticResource CircleIconBtn}" Content="📷" Command="{Binding PickBackImageCommand}" ToolTip="Add Image"/>
+                                        <Button Style="{StaticResource CircleIconBtn}" Content="🔊" Command="{Binding PickBackAudioCommand}" ToolTip="Add Audio"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBox Grid.Row="1" Text="{Binding BackText, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True" TextWrapping="Wrap"
+                                         Background="Transparent" Foreground="White" BorderThickness="0"
+                                         FontSize="18" Margin="0,15"
+                                         VerticalScrollBarVisibility="Auto"
+                                         CaretBrush="{StaticResource AccentCyan}">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox">
+                                            <Style.Resources>
+                                                <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Top" Stretch="None">
+                                                    <VisualBrush.Visual>
+                                                        <TextBlock Text="Enter answer..." Foreground="#444" FontSize="18"/>
+                                                    </VisualBrush.Visual>
+                                                </VisualBrush>
+                                            </Style.Resources>
+                                            <Style.Triggers>
+                                                <Trigger Property="Text" Value="{x:Null}">
+                                                    <Setter Property="Background" Value="{StaticResource CueBannerBrush}"/>
+                                                </Trigger>
+                                                <Trigger Property="Text" Value="">
+                                                    <Setter Property="Background" Value="{StaticResource CueBannerBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+
+                                <StackPanel Grid.Row="2" Orientation="Horizontal">
+                                    <Border Background="#2C2C35" CornerRadius="15" Padding="5,2,10,2" Margin="0,0,10,0"
+                                            Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="24" Height="24" Margin="0,0,5,0">
+                                                <Ellipse.Fill>
+                                                    <ImageBrush ImageSource="{Binding BackImagePath}" Stretch="UniformToFill"/>
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <TextBlock Text="Image" Foreground="#CCC" FontSize="11" VerticalAlignment="Center"/>
+                                            <Button Content="✕" Command="{Binding RemoveBackImageCommand}" Background="Transparent" Foreground="Red" BorderThickness="0" Margin="5,0,0,0" Cursor="Hand"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#2C2C35" CornerRadius="15" Padding="10,5"
+                                            Visibility="{Binding BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="🔊 Audio" Foreground="#F1C40F" FontSize="11" VerticalAlignment="Center"/>
+                                            <Button Content="✕" Command="{Binding RemoveBackAudioCommand}" Background="Transparent" Foreground="Red" BorderThickness="0" Margin="5,0,0,0" Cursor="Hand"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Grid Grid.Row="2" Margin="0,30,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Background="#1E1E24" CornerRadius="20" Height="50" HorizontalAlignment="Left" BorderBrush="#333" BorderThickness="1" MinWidth="400">
+                        <Grid Margin="15,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,15,0">
+                                <TextBlock Text="⌨" Foreground="#666" FontSize="16" Margin="0,0,8,0"/>
+                                <TextBlock Text="Answer Key" Foreground="#ffc107" FontWeight="SemiBold" FontSize="12"/>
+                                <TextBlock Text="(Optional)" Foreground="#666" Margin="5,0,0,0" FontStyle="Italic"/>
+                            </StackPanel>
+
+                            <TextBox Grid.Column="1" Text="{Binding Answer, UpdateSourceTrigger=PropertyChanged}"
+                                     Background="Transparent" BorderThickness="0" Foreground="{StaticResource AccentCyan}"
+                                     FontSize="16" VerticalContentAlignment="Center"
+                                     CaretBrush="White"/>
+                        </Grid>
+                    </Border>
+
+                    <Button Grid.Column="1" Content="ADD CARD" Command="{Binding SaveCardCommand}" IsDefault="True"
+                            Width="160" Height="50" FontSize="15" FontWeight="Bold" Foreground="White"
+                            Cursor="Hand">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bdr" Background="{StaticResource PrimaryPurple}" CornerRadius="25">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#6C5DD3" BlurRadius="20" Opacity="0.5" ShadowDepth="0"/>
+                                    </Border.Effect>
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bdr" Property="Opacity" Value="0.9"/>
+                                        <Setter Property="RenderTransform">
+                                            <Setter.Value>
+                                                <ScaleTransform ScaleX="1.02" ScaleY="1.02"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="RenderTransform">
+                                            <Setter.Value>
+                                                <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+            </Grid>
         </Grid>
-
-        <!-- 2. FRONT -->
-        <GroupBox Grid.Row="1" Header="Front" Foreground="White" BorderBrush="#555" Margin="0,0,0,10">
-            <!-- DockPanel giúp layout ổn định hơn Grid khi nội dung thay đổi -->
-            <DockPanel Margin="5">
-
-                <!-- Bottom: Media Preview & Buttons -->
-                <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical" Margin="0,5,0,0">
-
-                    <!-- KHỐI HIỂN THỊ ẢNH FRONT (Gồm nút Xem và nút Xóa) -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5" 
-                                Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}">
-                        <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding FrontImagePath}"
-                                HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Image Source="{Binding FrontImagePath}" Height="50" Margin="0,0,10,0"/>
-                                <TextBlock VerticalAlignment="Center">
-                                    <Run Text="📷" Foreground="#3498DB"/>
-                                    <Run Text="{Binding FrontImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </Button>
-                        <!-- Nút Xóa -->
-                        <Button Style="{StaticResource RemoveButtonStyle}" Command="{Binding RemoveFrontImageCommand}"/>
-                    </StackPanel>
-
-                    <!-- KHỐI HIỂN THỊ AUDIO FRONT -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5"
-                                Visibility="{Binding FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}">
-                        <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding FrontAudioPath}"
-                                HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
-                                <TextBlock Text="{Binding FrontAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
-                            </StackPanel>
-                        </Button>
-                        <!-- Nút Xóa -->
-                        <Button Style="{StaticResource RemoveButtonStyle}" Command="{Binding RemoveFrontAudioCommand}"/>
-                    </StackPanel>
-
-                    <!-- Toolbar Nút Bấm -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <!-- Image Controls -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
-                            <TextBlock Text="Image:" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <Button ToolTip="Upload Image" Command="{Binding PickFrontImageCommand}" Content="📂" Background="#434343" Foreground="White" Width="30" Margin="0,0,2,0"/>
-                            <Button ToolTip="Paste Image Link" Command="{Binding PasteLinkCommand}" CommandParameter="FrontImage" Content="📋" Background="#434343" Foreground="White" Width="30"/>
-                        </StackPanel>
-
-                        <!-- Audio Controls -->
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Audio:" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <Button ToolTip="Upload Audio" Command="{Binding PickFrontAudioCommand}" Content="📂" Background="#434343" Foreground="White" Width="30" Margin="0,0,2,0"/>
-                            <Button ToolTip="Paste Audio Link" Command="{Binding PasteLinkCommand}" CommandParameter="FrontAudio" Content="📋" Background="#434343" Foreground="White" Width="30"/>
-                        </StackPanel>
-                    </StackPanel>
-                </StackPanel>
-
-                <TextBox Text="{Binding FrontText, UpdateSourceTrigger=PropertyChanged}"
-                         AcceptsReturn="True" TextWrapping="Wrap"
-                         Background="#333" Foreground="White" BorderThickness="0"
-                         FontSize="16" Padding="5" VerticalScrollBarVisibility="Auto"/>
-            </DockPanel>
-        </GroupBox>
-
-        <!-- 3. BACK  -->
-        <GroupBox Grid.Row="2" Header="Back" Foreground="White" BorderBrush="#555" Margin="0,0,0,10">
-            <DockPanel Margin="5">
-
-                <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical" Margin="0,5,0,0">
-
-                    <!-- KHỐI HIỂN THỊ ẢNH BACK -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5"
-                                Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}">
-                        <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding BackImagePath}"
-                                HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Image Source="{Binding BackImagePath}" Height="50" Margin="0,0,10,0"/>
-                                <TextBlock VerticalAlignment="Center">
-                                    <Run Text="📷" Foreground="#3498DB"/>
-                                    <Run Text="{Binding BackImageName}" Foreground="#3498DB" FontStyle="Italic" TextDecorations="Underline"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource RemoveButtonStyle}" Command="{Binding RemoveBackImageCommand}"/>
-                    </StackPanel>
-
-                    <!-- KHỐI HIỂN THỊ AUDIO BACK -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5"
-                                Visibility="{Binding BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}">
-                        <Button Command="{Binding OpenFileLocationCommand}" CommandParameter="{Binding BackAudioPath}"
-                                HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Cursor="Hand">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🔊" Foreground="#F1C40F" Margin="0,0,5,0"/>
-                                <TextBlock Text="{Binding BackAudioName}" Foreground="#F1C40F" FontStyle="Italic" TextDecorations="Underline"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource RemoveButtonStyle}" Command="{Binding RemoveBackAudioCommand}"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <!-- Image Controls -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
-                            <TextBlock Text="Image:" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <Button ToolTip="Upload Image" Command="{Binding PickBackImageCommand}" Content="📂" Background="#434343" Foreground="White" Width="30" Margin="0,0,2,0"/>
-                            <Button ToolTip="Paste Image Link" Command="{Binding PasteLinkCommand}" CommandParameter="BackImage" Content="📋" Background="#434343" Foreground="White" Width="30"/>
-                        </StackPanel>
-
-                        <!-- Audio Controls -->
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Audio:" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <Button ToolTip="Upload Audio" Command="{Binding PickBackAudioCommand}" Content="📂" Background="#434343" Foreground="White" Width="30" Margin="0,0,2,0"/>
-                            <Button ToolTip="Paste Audio Link" Command="{Binding PasteLinkCommand}" CommandParameter="BackAudio" Content="📋" Background="#434343" Foreground="White" Width="30"/>
-                        </StackPanel>
-                    </StackPanel>
-                </StackPanel>
-
-                <TextBox Text="{Binding BackText, UpdateSourceTrigger=PropertyChanged}"
-                         AcceptsReturn="True" TextWrapping="Wrap"
-                         Background="#333" Foreground="White" BorderThickness="0"
-                         FontSize="16" Padding="5" VerticalScrollBarVisibility="Auto"/>
-            </DockPanel>
-        </GroupBox>
-        <!-- 3. ANSWER -->
-        <GroupBox Grid.Row="3" Header="Answer (Keyword for typing)" Foreground="#81C784" BorderBrush="#555" Margin="0,0,0,10">
-            <TextBox Text="{Binding Answer, UpdateSourceTrigger=PropertyChanged}"
-                     Height="40"
-                     AcceptsReturn="False" 
-                     VerticalContentAlignment="Center"
-                     Background="#333" Foreground="White" BorderThickness="0"
-                     FontSize="16" Padding="5"/>
-        </GroupBox>
-        <!-- 4. CÁC NÚT CHỨC NĂNG -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <!-- Nút Add -->
-            <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="5,0">
-                <Button Content="Add" Command="{Binding SaveCardCommand}" Width="80" Height="25" 
-                        Background="Transparent" Foreground="White" BorderThickness="0" Cursor="Hand" IsDefault="True"/>
-            </Border>
-
-            <!-- Nút Close -->
-            <Border CornerRadius="6" Background="#434343" BorderThickness="1" Margin="5,0">
-                <Button Content="Close" Command="{Binding CancelCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
-                        Width="80" Height="25" Background="Transparent" Foreground="White" BorderThickness="0" Cursor="Hand" IsCancel="True"/>
-            </Border>
-        </StackPanel>
-
-    </Grid>
+    </Border>
 </Window>
