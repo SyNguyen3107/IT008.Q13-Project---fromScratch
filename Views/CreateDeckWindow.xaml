@@ -107,7 +107,7 @@
             <StackPanel Grid.Row="1" VerticalAlignment="Center">
                 <TextBlock Text="Deck Name" Foreground="{StaticResource TextGrey}" Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold"/>
                 <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                         Height="45"
+                         Height="45" 
                          d:Text="My New Deck"/>
             </StackPanel>
 
