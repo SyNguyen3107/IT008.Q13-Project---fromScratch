@@ -84,22 +84,26 @@ namespace EasyFlips.ViewModels
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (state.CurrentCardIndex == _lastProcessedIndex && state.Action == _lastProcessedAction) return;
+                // CHỈ return nếu CẢ index VÀ action đều y hệt cái cũ (tránh xử lý trùng tin nhắn realtime)
+                // Nhưng hãy cẩn thận: Nếu Server gửi lại cùng 1 Action để Reset, ta vẫn nên nhận.
+                if (state.CurrentCardIndex == _lastProcessedIndex && state.Action == _lastProcessedAction)
+                    return;
+
+                // Cập nhật vết (track) dữ liệu cuối cùng đã xử lý
                 _lastProcessedIndex = state.CurrentCardIndex;
                 _lastProcessedAction = state.Action;
 
                 if (CurrentDeck == null || CurrentDeck.Cards == null) return;
 
+                // Cập nhật Index và Card hiện tại
                 if (state.CurrentCardIndex >= 0 && state.CurrentCardIndex < CurrentDeck.Cards.Count)
                 {
-                    var targetCard = CurrentDeck.Cards.ElementAt(state.CurrentCardIndex);
-                    if (CurrentCard != targetCard) CurrentCard = targetCard;
+                    CurrentIndex = state.CurrentCardIndex;
+                    CurrentCard = CurrentDeck.Cards.ElementAt(state.CurrentCardIndex);
+                    CurrentQuestionInfo = $"{CurrentIndex + 1}/{CurrentDeck.Cards.Count}";
                 }
 
-                CurrentIndex = state.CurrentCardIndex;
-                CurrentQuestionInfo = $"{CurrentIndex + 1}/{CurrentDeck.Cards.Count}";
                 TimeRemaining = state.TimeRemaining;
-
                 UpdatePhaseFromAction(state.Action);
             });
         }
@@ -124,39 +128,45 @@ namespace EasyFlips.ViewModels
 
         private void PrepareForNewQuestion()
         {
+            Debug.WriteLine($"[GameFlow] Đang chuẩn bị câu hỏi mới (Index: {CurrentIndex})");
+
             CurrentPhase = GamePhase.Question;
-            // 1. Reset dữ liệu
-            UserAnswer = string.Empty;
+            UserAnswer = "";
             ResultMessage = string.Empty;
             IsShowingResult = false;
 
-            // 2. Mở khóa -> Việc này sẽ TỰ ĐỘNG kích hoạt NotifyCanExecuteChangedFor
+            // Mở khóa input
             IsInputEnabled = true;
-        }
+            Debug.WriteLine($"[GameFlow] IsInputEnabled đã set thành: {IsInputEnabled}");
 
+            SubmitAnswerCommand.NotifyCanExecuteChanged();
+        }
         private void HandleFlipCard()
         {
             CurrentPhase = GamePhase.Result;
 
-            // Logic Auto-Submit: Kiểm tra trực tiếp điều kiện
             if (CanSubmit())
             {
                 SubmitAnswerCommand.Execute(null);
             }
 
             IsInputEnabled = false;
-            IsShowingResult = true;
+            SubmitAnswerCommand.NotifyCanExecuteChanged();
         }
+
 
         // [QUAN TRỌNG] Gắn hàm kiểm tra điều kiện vào Command
         [RelayCommand(CanExecute = nameof(CanSubmit))]
         private async Task SubmitAnswer()
         {
-            IsInputEnabled = false; // Khóa ngay lập tức
+            
+
+            IsInputEnabled = false;
+          
 
             if (CurrentCard != null)
             {
-                bool isCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard.BackText);
+                bool isCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard.Answer);
                 if (isCorrect)
                 {
                     Score += 10;
@@ -167,10 +177,22 @@ namespace EasyFlips.ViewModels
                     ResultMessage = "Sai rồi!";
                 }
 
-                await _supabaseService.SendFlashcardScoreAsync(
+                _= _supabaseService.SendFlashcardScoreAsync(
                     ClassroomId, _authService.CurrentUserId, Score, isCorrect ? 1 : 0, 1
                 );
             }
+        }
+        partial void OnIsInputEnabledChanged(bool value)
+{
+    // Ép lệnh Submit cập nhật trạng thái ngay lập tức trên UI
+        SubmitAnswerCommand.NotifyCanExecuteChanged();
+}
+        partial void OnUserAnswerChanged(string value)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                SubmitAnswerCommand.NotifyCanExecuteChanged();
+            });
         }
 
         // Hàm này quyết định nút Sáng hay Tối

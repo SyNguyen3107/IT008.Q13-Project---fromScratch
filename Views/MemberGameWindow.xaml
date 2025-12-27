@@ -101,9 +101,21 @@
                                 <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bdr" Property="Background" Value="#95A5A6"/>
-                                <Setter TargetName="bdr" Property="Opacity" Value="0.8"/>
-                            </Trigger>
+        <Setter TargetName="bdr" Property="Background" Value="#95A5A6"/>
+        <Setter TargetName="bdr" Property="Opacity" Value="0.6"/>
+    </Trigger>
+
+    <Trigger Property="IsEnabled" Value="True">
+        <Setter TargetName="bdr" Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#11998e" Offset="0"/>
+                    <GradientStop Color="#38ef7d" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter TargetName="bdr" Property="Opacity" Value="1.0"/>
+    </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -216,7 +228,7 @@
             </Grid.ColumnDefinitions>
 
             <TextBox Grid.Column="0"
-                     Text="{Binding UserAnswer, UpdateSourceTrigger=PropertyChanged}"
+                     Text="{Binding UserAnswer, UpdateSourceTrigger=PropertyChanged ,Mode=TwoWay}"
                      IsEnabled="{Binding IsInputEnabled}"
                      Height="60">
                 <TextBox.InputBindings>
@@ -252,12 +264,11 @@
             </TextBox>
 
             <Button Grid.Column="1"
-                    Content="SUBMIT"
-                    Command="{Binding SubmitAnswerCommand}"
-                    IsEnabled="{Binding IsInputEnabled}"
-                    Style="{StaticResource MemberSubmitBtnStyle}"
-                    Width="140" Height="60" Margin="15,0,0,0"/>
-        </Grid>
+                Content="SUBMIT"
+                Command="{Binding SubmitAnswerCommand}"
+                Style="{StaticResource MemberSubmitBtnStyle}"
+                Width="140" Height="60" Margin="15,0,0,0"/>
+                </Grid>
 
     </Grid>
 </Window>
