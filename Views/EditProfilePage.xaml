@@ -134,7 +134,7 @@
                     </Grid>
 
                     <StackPanel Margin="0,0,0,20">
-                        <TextBlock Text="Username" Foreground="{StaticResource TextGrey}" Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold"/>
+                        <TextBlock Text="User Name" Foreground="{StaticResource TextGrey}" Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold"/>
                         <TextBox Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" MaxLength="30" Height="45"/>
                     </StackPanel>
 
