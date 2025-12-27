@@ -168,6 +168,12 @@
                             <TextBlock Text="Sync Data"/>
                         </StackPanel>
                     </Button>
+                    <Button Command="{Binding NavigateToDashboardCommand}" Style="{StaticResource SidebarBtnStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📊" Margin="0,0,15,0"/>
+                            <TextBlock Text="Analytics"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
                 <StackPanel Grid.Row="2" Margin="0,0,0,30">
@@ -373,8 +379,8 @@
         <Frame x:Name="MainFrame" 
                Grid.Column="0" Grid.ColumnSpan="2" 
                NavigationUIVisibility="Hidden"
-               Visibility="Hidden"
-               Background="#181A20" 
+               Visibility="Collapsed" 
+               Background="#0F0F12" 
                Navigated="MainFrame_Navigated"/>
     </Grid>
 </Window>

@@ -83,7 +83,7 @@
         </Style>
     </Page.Resources>
 
-    <Grid Background="#AA000000">
+    <Grid Background="Transparent">
 
         <Border Width="400" Height="550" 
                 HorizontalAlignment="Center" VerticalAlignment="Center"

@@ -410,5 +410,33 @@ namespace EasyFlips.Services
             }
         }
 
+        public void NavigateToDashboard()
+        {
+            // Tìm đúng cửa sổ chính đang mở
+            var mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
+            if (mainWindow != null)
+            {
+                // 1. MỞ: Hiện Frame lên (nó sẽ che toàn bộ Sidebar và nội dung chính)
+                mainWindow.MainFrame.Visibility = Visibility.Visible;
+
+                // 2. Chèn trang Dashboard vào
+                var dashboardPage = _serviceProvider.GetRequiredService<DashBoardWinDow>();
+                mainWindow.MainFrame.Navigate(dashboardPage);
+            }
+        }
+
+        public void NavigateToHome()
+        {
+            // Lấy cửa sổ chính đang hiển thị
+            var mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
+
+            if (mainWindow != null)
+            {
+                // Phải dùng Dispatcher nếu bạn gọi từ một Thread khác, 
+                // nhưng thông thường chỉ cần:
+                mainWindow.MainFrame.Visibility = Visibility.Collapsed;
+                mainWindow.MainFrame.Content = null;
+            }
+        }
     }
 }

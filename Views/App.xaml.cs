@@ -199,6 +199,7 @@ namespace EasyFlips
             services.AddTransient<MemberGameViewModel>();
             services.AddTransient<LeaderBoardViewModel>();
             services.AddTransient<LeaderBoardWindow>(); // hoặc LeaderBoardWindow nếu dùng WPF
+            services.AddTransient<DashboardViewModel>();
 
             // Windows
             services.AddTransient<MainWindow>();
@@ -221,7 +222,7 @@ namespace EasyFlips
             services.AddTransient<MemberLobbyWindow>();
             services.AddTransient<HostGameWindow>();
             services.AddTransient<MemberGameWindow>();
-
+            services.AddTransient<DashBoardWinDow>();
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
             services.AddSingleton<UserSession>();
         }

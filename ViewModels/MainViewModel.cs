@@ -174,5 +174,11 @@ namespace EasyFlips.ViewModels
         {
             Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.DataContext == this)?.Close();
         }
+        [RelayCommand]
+        private void NavigateToDashboard()
+        {
+            // Gọi Service điều hướng để hiển thị Dashboard
+            _navigationService.NavigateToDashboard();
+        }
     }
 }

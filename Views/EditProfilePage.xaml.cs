@@ -1,8 +1,9 @@
-﻿using System.Windows;
-using System.Windows.Controls;
+﻿using EasyFlips.Services;
 using EasyFlips.ViewModels;
-using EasyFlips.Services;
 using Microsoft.Extensions.DependencyInjection; // Cần dòng này để dùng GetRequiredService
+using System.Windows;
+using System.Windows.Controls;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace EasyFlips.Views
 {
@@ -26,8 +27,7 @@ namespace EasyFlips.Views
                     mainWindow.MainFrame.Visibility = Visibility.Hidden;
                 }
             };
-
-
         }
+        
     }
 }

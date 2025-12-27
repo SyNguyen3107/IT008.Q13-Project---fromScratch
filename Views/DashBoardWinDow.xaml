@@ -1,0 +1,135 @@
+﻿<Page x:Class="EasyFlips.Views.DashBoardWinDow"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Learning Analytics" Height="720" Width="940"
+      Background="#0F0F12">
+
+    <Grid Margin="40">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="160"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="0,0,0,40">
+            <Button Command="{Binding GoBackCommand}" 
+            DockPanel.Dock="Right"
+            Background="#1AFFFFFF" 
+            BorderThickness="0" 
+            Cursor="Hand"
+            Padding="20,10"
+            VerticalAlignment="Center">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="15"/>
+                    </Style>
+                </Button.Resources>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Back" Foreground="White" FontSize="18" FontWeight="Medium" VerticalAlignment="Center"/>
+                    <TextBlock Text=" ↩" Foreground="White" FontSize="20" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                </StackPanel>
+            </Button>
+
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Welcome back, Explorer!" Foreground="#A0A0B0" FontSize="14"/>
+                <TextBlock Text="Learning Overview" Foreground="White" FontSize="32" FontWeight="Black" Margin="0,5,0,0"/>
+            </StackPanel>
+        </DockPanel>
+
+        <UniformGrid Grid.Row="1" Columns="3" Margin="-10,0">
+            <Border Margin="10" CornerRadius="24" Padding="25">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#6200EE" Offset="0"/>
+                        <GradientStop Color="#9D50BB" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="STRENGTH" Foreground="#CCFFFFFF" FontSize="11" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Stats.MemoryStrength, StringFormat='{}{0}%'}" Foreground="White" FontSize="42" FontWeight="Black" Margin="0,5"/>
+                    <TextBlock Text="Excellent progress!" Foreground="#CCFFFFFF" FontSize="11"/>
+                </StackPanel>
+            </Border>
+
+            <Border Margin="10" Background="#1E1E26" CornerRadius="24" Padding="25" BorderBrush="#1AFFFFFF" BorderThickness="1">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="CURRENT STREAK" Foreground="#A0A0B0" FontSize="11" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Stats.Streak, StringFormat='{}{0} Days'}" Foreground="White" FontSize="42" FontWeight="Black" Margin="0,5"/>
+                    <Border Height="4" Background="#10FFFFFF" CornerRadius="2" Margin="0,10,0,0">
+                        <Border Width="120" HorizontalAlignment="Left" Background="#FF9800" CornerRadius="2"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Margin="10" Background="#1E1E26" CornerRadius="24" Padding="25" BorderBrush="#1AFFFFFF" BorderThickness="1">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="DUE TODAY" Foreground="#A0A0B0" FontSize="11" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Stats.DueToday, StringFormat='{}{0} Cards'}" Foreground="White" FontSize="42" FontWeight="Black" Margin="0,5"/>
+                    <TextBlock Text="{Binding NextReviewText}" Foreground="#A0A0B0" FontSize="11"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <Grid Grid.Row="2" Margin="0,30,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.8*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="#16161D" CornerRadius="30" Padding="35" Margin="0,0,10,0" BorderBrush="#0DFFFFFF" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="RETENTION BREAKDOWN" Foreground="#A0A0B0" FontSize="12" FontWeight="Bold" Margin="0,0,0,30"/>
+
+                    <StackPanel Margin="0,0,0,25">
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock Text="New Content" Foreground="White" FontSize="14"/>
+                            <TextBlock Text="{Binding Stats.New}" Foreground="{StaticResource Brush.Accent2}" DockPanel.Dock="Right" FontWeight="Bold"/>
+                        </DockPanel>
+                        <Border Height="8" Background="#0DFFFFFF" CornerRadius="4">
+                            <Border Background="{StaticResource Brush.Accent2}" CornerRadius="4" HorizontalAlignment="Left" 
+                                    Width="{Binding NewWidth, FallbackValue=20}"/>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,0,25">
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock Text="Active Learning" Foreground="White" FontSize="14"/>
+                            <TextBlock Text="{Binding Stats.Learning}" Foreground="{StaticResource Brush.Primary}" DockPanel.Dock="Right" FontWeight="Bold"/>
+                        </DockPanel>
+                        <Border Height="8" Background="#0DFFFFFF" CornerRadius="4">
+                            <Border Background="{StaticResource Brush.Primary}" CornerRadius="4" HorizontalAlignment="Left" 
+                                    Width="{Binding LearningWidth, FallbackValue=20}"/>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock Text="Mastered" Foreground="White" FontSize="14"/>
+                            <TextBlock Text="{Binding Stats.Review}" Foreground="{StaticResource Brush.Accent1}" DockPanel.Dock="Right" FontWeight="Bold"/>
+                        </DockPanel>
+                        <Border Height="8" Background="#0DFFFFFF" CornerRadius="4">
+                            <Border Background="{StaticResource Brush.Accent1}" CornerRadius="4" HorizontalAlignment="Left" 
+                                    Width="{Binding MasteredWidth, FallbackValue=20}"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Background="#16161D" CornerRadius="30" Margin="10,0,0,0" Padding="30" BorderBrush="#0DFFFFFF" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="WEEKLY ACTIVITY" Foreground="#A0A0B0" FontSize="12" FontWeight="Bold" Margin="0,0,0,20"/>
+                    <UniformGrid Columns="7" Height="140" VerticalAlignment="Bottom">
+                        <Border Background="#1AFFFFFF" Height="{Binding WeeklyHeights[0]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                        <Border Background="{StaticResource Brush.Primary}" Height="{Binding WeeklyHeights[1]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                        <Border Background="#1AFFFFFF" Height="{Binding WeeklyHeights[2]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                        <Border Background="{StaticResource Brush.Primary}" Height="{Binding WeeklyHeights[3]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                        <Border Background="#1AFFFFFF" Height="{Binding WeeklyHeights[4]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                        <Border Background="{StaticResource Brush.Primary}" Height="{Binding WeeklyHeights[5]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                        <Border Background="{StaticResource Brush.Primary}" Height="{Binding WeeklyHeights[6]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                    </UniformGrid>
+                    <TextBlock Text="{Binding ActiveTime}" Foreground="White" FontSize="14" FontWeight="Bold" Margin="0,20,0,0" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

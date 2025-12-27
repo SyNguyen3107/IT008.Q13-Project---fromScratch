@@ -11,6 +11,7 @@ namespace EasyFlips.Repositories
     public class CardRepository : ICardRepository
     {
         private readonly AppDbContext _context;
+        
 
         public CardRepository(AppDbContext context)
         {
@@ -113,5 +114,6 @@ namespace EasyFlips.Repositories
 
             await _context.SaveChangesAsync();
         }
+
     }
 }

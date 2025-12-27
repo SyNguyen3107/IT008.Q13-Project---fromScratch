@@ -16,6 +16,7 @@ namespace EasyFlips.ViewModels
         // Hành động để báo cho View biết là cần đóng cửa sổ (dùng cho nút Cancel)
         public Action CloseAction { get; set; }
 
+
         [ObservableProperty]
         private bool _canSave;
         [ObservableProperty] private string userName;
@@ -150,7 +151,18 @@ namespace EasyFlips.ViewModels
                 Debug.WriteLine($"[EditProfile] IsBusy reset to false");
             }
         }
-
+        partial void OnUserNameChanged(string value)
+        {
+            // Kiểm tra nếu tên mới khác với tên hiện tại trong session thì cho phép lưu
+            if (_userSession != null)
+            {
+                CanSave = value != _userSession.UserName || !string.IsNullOrEmpty(_selectedLocalImagePath);
+            }
+            else
+            {
+                CanSave = true;
+            }
+        }
 
         [RelayCommand]
         public void Cancel()
