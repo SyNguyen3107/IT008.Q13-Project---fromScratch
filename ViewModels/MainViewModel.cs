@@ -87,7 +87,17 @@ namespace EasyFlips.ViewModels
             Decks.Clear();
             foreach (var deck in decks) Decks.Add(deck);
         }
+        // [FIX] Tải avatar
+        public MainViewModel(UserSession session)
+        {
+            UserSession = session;
 
+            // Kích hoạt tải ảnh lần đầu khi mở app
+            if (!string.IsNullOrEmpty(UserSession.AvatarURL))
+            {
+                UserSession.LoadAvatarImage(UserSession.AvatarURL);
+            }
+        }
         // --- COMMANDS ---
 
         // Lệnh Reload danh sách Deck (Gán vào nút "Decks" ở MainWindow)
