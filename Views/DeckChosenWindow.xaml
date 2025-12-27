@@ -80,8 +80,7 @@
 
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                         <TextBlock Text="{Binding DeckName}" Foreground="White" FontSize="28" FontWeight="Bold" 
-                                   TextAlignment="Center" TextWrapping="Wrap" Margin="20,0"/>
-
+                                   TextAlignment="Center" TextWrapping="Wrap" Margin="40,0"/>
                         <Border Background="#30000000" CornerRadius="10" HorizontalAlignment="Center" Margin="0,10,0,0" Padding="15,5">
                             <TextBlock Foreground="White" FontSize="14" Opacity="0.9">
                                 <Run Text="Total Cards: "/>
@@ -89,33 +88,34 @@
                             </TextBlock>
                         </Border>
                     </StackPanel>
-
-                    <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Top"
-                            Background="Transparent" BorderThickness="0" Foreground="White" Opacity="0.7"
-                            FontSize="18" Cursor="Hand" Margin="0,10,15,0"
-                            Command="{Binding CloseCommand}"
-                            CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border Background="Transparent">
-                                                <ContentPresenter/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Opacity" Value="1"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
                 </Grid>
             </Border>
+
+            <Button Grid.Row="0" Content="✕" Panel.ZIndex="99"
+                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Background="Transparent" BorderThickness="0" Foreground="White" Opacity="0.8"
+                    FontSize="18" Cursor="Hand" Margin="0,15,15,0"
+                    Click="CloseButton_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="Transparent" Padding="10">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                                <Setter Property="Foreground" Value="#FF9999"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
 
             <Grid Grid.Row="1" Margin="25,20,25,10">
                 <Grid.ColumnDefinitions>
