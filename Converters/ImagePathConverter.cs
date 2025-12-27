@@ -1,5 +1,6 @@
 ﻿using EasyFlips.Helpers;
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows.Data;
@@ -11,6 +12,8 @@ namespace EasyFlips.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+
+            Debug.WriteLine($"ImagePathConverter: Converting value: {value}");
             string fileName = value as string;
             if (string.IsNullOrEmpty(fileName)) return null;
 

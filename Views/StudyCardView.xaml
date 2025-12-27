@@ -5,17 +5,26 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:converters="clr-namespace:EasyFlips.Converters"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="800"
-             Background="#2c2c2c">
-
-    <!-- Đã thêm 2 dòng xmlns:mc và xmlns:d ở trên để sửa lỗi -->
+             d:DesignHeight="650" d:DesignWidth="800"
+             Background="#1E1E1E">
 
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
         <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBoolToVisConverter"/>
         <converters:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
-        <converters:ImagePathConverter x:Key="ImagePathConverter"/>
-        <Style x:Key="ModernButtonStyle" TargetType="Button">
+        
+            <converters:ImagePathConverter x:Key="ImagePathConverter"/>
+        
+        <converters:DiffTypeToBrushConverter x:Key="DiffTypeToBrushConverter"/>
+        <converters:DiffTypeToTextDecorationConverter x:Key="DiffTypeToTextDecorationConverter"/>
+
+        <Style x:Key="GradeButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -24,144 +33,149 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Opacity" Value="0.8"/>
+                                <Setter TargetName="border" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="ModernButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#0078D7"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="12">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
-    <Grid Margin="20">
+    <Grid Margin="30">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <!-- Nội dung thẻ (chiếm phần lớn) -->
             <RowDefinition Height="Auto"/>
-            <!-- Ô nhập liệu -->
             <RowDefinition Height="Auto"/>
-            <!-- Nút Show/Grade -->
         </Grid.RowDefinitions>
 
-        <!-- 1. NỘI DUNG THẺ -->
-        <Border Grid.Row="0" CornerRadius="15" Padding="20"
-        Background="{StaticResource Brush.Surface}" 
-        BorderThickness="0,3,0,0" 
-        BorderBrush="{StaticResource Brush.Primary}">
-            
+        <Border Grid.Row="0" CornerRadius="20" Padding="25"
+                Background="#2D2D30" 
+                BorderThickness="0,4,0,0" 
+                BorderBrush="#6C5DD3">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="20" Color="Black" Opacity="0.3" ShadowDepth="5"/>
+            </Border.Effect>
+
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel VerticalAlignment="Center">
 
-                    <!-- MẶT TRƯỚC -->
-                    <TextBlock Text="{Binding QuestionText}" Foreground="White" FontSize="28" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,10"/>
+                    <TextBlock Text="{Binding QuestionText}" 
+                               Foreground="White" FontSize="32" FontWeight="SemiBold"
+                               TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,15"/>
 
-                    <Image Source="{Binding FrontImagePath, Converter={StaticResource ImagePathConverter}}" 
-                           MaxHeight="300" 
-                           MaxWidth="600"
-                           Stretch="Uniform"
-                           Margin="0,0,0,10"
-                           Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
+                    <Image Source="{Binding CurrentCard.FrontImagePath, Converter={StaticResource ImagePathConverter}}"
+                           Stretch="Uniform" MaxHeight="250" HorizontalAlignment="Center" Margin="0,0,0,15"
+                           Visibility="{Binding CurrentCard.FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
 
                     <Button Command="{Binding PlayAudioCommand}" CommandParameter="{Binding FrontAudioPath}"
                             Visibility="{Binding FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
-                            Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,0,0,10">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔊 Play audio" Foreground="White" FontSize="16"/>
-                        </StackPanel>
+                            HorizontalAlignment="Center" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,0,0,10">
+                        <TextBlock Text="🔊 Play Question Audio" Foreground="#A29BFE" FontSize="16"/>
                     </Button>
 
-                    <Separator Margin="0, 20" Background="#555" Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}"/>
-
-                    <!-- MẶT SAU (KẾT QUẢ & ĐÁP ÁN) -->
                     <StackPanel Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}">
 
-                        <!-- Kết quả so sánh -->
-                        <ItemsControl ItemsSource="{Binding ComparisonPieces}" HorizontalAlignment="Center">
+                        <Separator Margin="0,20" Background="#444" Height="2"/>
+
+                        <ItemsControl ItemsSource="{Binding ComparisonPieces}" HorizontalAlignment="Center" Margin="0,0,0,10">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal"/>
+                                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Text}"
-                                       Foreground="{Binding Type, Converter={StaticResource DiffTypeToBrushConverter}}"
-                                       FontWeight="{Binding Type, Converter={StaticResource DiffTypeToFontWeightConverter}}"
-                                       TextDecorations="{Binding Type, Converter={StaticResource DiffTypeToTextDecorationConverter}}"
-                                        FontSize="24" Margin="1,0"/>
+                                    <TextBlock Text="{Binding Text}" FontSize="26" Margin="1,0"
+                                               Foreground="{Binding Type, Converter={StaticResource DiffTypeToBrushConverter}}"
+                                               TextDecorations="{Binding Type, Converter={StaticResource DiffTypeToTextDecorationConverter}}"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
-                            <TextBlock Text="Score: " Foreground="Gray" FontSize="14" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding TotalScore}" Foreground="Red" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-                        </StackPanel>
+                        </ItemsControl>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
-                            <TextBlock Text="Correct Answer: " Foreground="#88FFFFFF" FontSize="14" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding CorrectAnswer}" Foreground="#4CD137" FontSize="20" FontWeight="Black" VerticalAlignment="Center">
-                                <TextBlock.Effect>
-                                    <DropShadowEffect BlurRadius="10" Color="#4CD137" Opacity="0.6" ShadowDepth="0"/>
-                                </TextBlock.Effect>
-                            </TextBlock>
+                            <TextBlock Text="Correct: " Foreground="LightGray" FontSize="16"/>
+                            <TextBlock Text="{Binding CorrectAnswer}" Foreground="#2ECC71" FontSize="22" FontWeight="Bold"/>
                         </StackPanel>
 
-                        <TextBlock Text="{Binding AnswerText}" Foreground="White" FontSize="20" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,10"/>
-
-                        <Image Source="{Binding BackImagePath, Converter={StaticResource ImagePathConverter}}" 
-                               MaxHeight="300" 
-                               MaxWidth="600"
-                               Stretch="Uniform"
-                               Margin="0,0,0,10"
-                               Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
+                        <Image Source="{Binding CurrentCard.BackImagePath, Converter={StaticResource ImagePathConverter}}"
+                               Stretch="Uniform" MaxHeight="250" HorizontalAlignment="Center" Margin="0,0,0,15"
+                               Visibility="{Binding CurrentCard.BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
 
                         <Button Command="{Binding PlayAudioCommand}" CommandParameter="{Binding BackAudioPath}"
                                 Visibility="{Binding BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
-                                Background="Transparent" BorderThickness="0" Cursor="Hand">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <TextBlock Text="🔊 Play audio" Foreground="White" FontSize="16"/>
-                            </StackPanel>
+                                HorizontalAlignment="Center" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                            <TextBlock Text="🔊 Play Answer Audio" Foreground="#A29BFE" FontSize="16"/>
                         </Button>
+
+                        <TextBlock Text="{Binding AnswerText}" Foreground="#DDD" FontSize="18" 
+                                   FontStyle="Italic" TextAlignment="Center" Margin="0,15"
+                                   Visibility="{Binding AnswerText, Converter={StaticResource NullToCollapsedConverter}}"/>
                     </StackPanel>
 
                 </StackPanel>
             </ScrollViewer>
         </Border>
 
-        <!-- 2. Ô NHẬP LIỆU -->
-        <Grid Grid.Row="1" Margin="0,20,0,0" Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}">
+        <Grid Grid.Row="1" Margin="0,25,0,0" 
+              Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="Type answer:" Foreground="LightGray" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="16"/>
+            <TextBlock Text="Your Answer:" Foreground="#B2BEC3" VerticalAlignment="Center" Margin="0,0,15,0" FontSize="18"/>
             <TextBox Grid.Column="1" 
                      Text="{Binding UserInputText, UpdateSourceTrigger=PropertyChanged}"
-                     FontSize="18" Padding="5" Background="#444" Foreground="White" BorderThickness="0">
+                     FontSize="20" Padding="12,8" Background="#333" Foreground="White" 
+                     BorderThickness="0" BorderBrush="#6C5DD3">
+                <TextBox.Resources>
+                    <Style TargetType="{x:Type Border}">
+                        <Setter Property="CornerRadius" Value="10"/>
+                    </Style>
+                </TextBox.Resources>
                 <TextBox.InputBindings>
                     <KeyBinding Key="Enter" Command="{Binding ShowAnswerCommand}"/>
                 </TextBox.InputBindings>
             </TextBox>
         </Grid>
 
-        <!-- 3. NÚT BẤM -->
-        <Grid Grid.Row="2" Margin="0,20,0,0">
-            <Button Content="Show Answer" Style="{StaticResource ModernButtonStyle}"
-            FontSize="16" FontWeight="ExtraBold" Height="45"
-            Background="#0078D7" Foreground="White" 
-            Command="{Binding ShowAnswerCommand}"
-            Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}">
+        <Grid Grid.Row="2" Margin="0,30,0,0">
+            <Button Content="SHOW ANSWER" Style="{StaticResource ModernButtonStyle}"
+                    FontSize="18" FontWeight="Bold" Height="55"
+                    Command="{Binding ShowAnswerCommand}"
+                    Visibility="{Binding IsAnswerVisible, Converter={StaticResource InvertedBoolToVisConverter}}">
                 <Button.Effect>
-                    <DropShadowEffect BlurRadius="15" Color="#0078D7" Opacity="0.4" ShadowDepth="0"/>
+                    <DropShadowEffect BlurRadius="15" Color="#0078D7" Opacity="0.5" ShadowDepth="0"/>
                 </Button.Effect>
             </Button>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
-                Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}">
-                <Button Content="Again" Style="{StaticResource ModernButtonStyle}" Command="{Binding AgainCommand}" Width="95" Height="45" Margin="5" Background="#E74C3C" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
-                <Button Content="Hard" Style="{StaticResource ModernButtonStyle}" Command="{Binding HardCommand}" Width="95" Height="45" Margin="5" Background="#F39C12" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
-                <Button Content="Good" Style="{StaticResource ModernButtonStyle}" Command="{Binding GoodCommand}" Width="95" Height="45" Margin="5" Background="#2ECC71" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
-                <Button Content="Easy" Style="{StaticResource ModernButtonStyle}" Command="{Binding EasyCommand}" Width="95" Height="45" Margin="5" Background="#3498DB" Foreground="White" FontWeight="Bold" Cursor="Hand"/>
+                        Visibility="{Binding IsAnswerVisible, Converter={StaticResource BoolToVisConverter}}">
+                <Button Content="Again" Style="{StaticResource GradeButtonStyle}" Background="#E74C3C" Command="{Binding AgainCommand}"/>
+                <Button Content="Hard" Style="{StaticResource GradeButtonStyle}" Background="#F39C12" Command="{Binding HardCommand}"/>
+                <Button Content="Good" Style="{StaticResource GradeButtonStyle}" Background="#2ECC71" Command="{Binding GoodCommand}"/>
+                <Button Content="Easy" Style="{StaticResource GradeButtonStyle}" Background="#3498DB" Command="{Binding EasyCommand}"/>
             </StackPanel>
         </Grid>
 

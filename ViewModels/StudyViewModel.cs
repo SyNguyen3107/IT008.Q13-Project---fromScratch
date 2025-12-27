@@ -39,7 +39,7 @@ namespace EasyFlips.ViewModels
         private bool _isAnswerVisible = false;
 
         public bool IsInputRequired => !IsAnswerVisible;
-
+       
         [ObservableProperty] private string _userInputText = string.Empty;
         [ObservableProperty] private bool _hasCards = true;
 
@@ -102,7 +102,7 @@ namespace EasyFlips.ViewModels
                     CorrectAnswer = "";
                     FrontImagePath = null; BackImagePath = null;
                     FrontAudioPath = null; BackAudioPath = null;
-
+                    
                     IsAnswerVisible = true; // Hiện text chúc mừng
 
                     // [FIX]: Truyền _currentDeckId vào message để khớp với Constructor
@@ -186,6 +186,6 @@ namespace EasyFlips.ViewModels
             }
         }
 
-       
+        
     }
 }
