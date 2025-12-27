@@ -133,7 +133,7 @@
                                 <DropShadowEffect Color="#6C5DD3" BlurRadius="15" Opacity="0.4"/>
                             </Ellipse.Effect>
                             <Ellipse.Fill>
-                                <ImageBrush ImageSource="{Binding UserSession.AvatarURL, TargetNullValue='pack://application:,,,/Images/default_user.png'}" Stretch="UniformToFill"/>
+                                <ImageBrush ImageSource="{Binding UserSession.AvatarBitmap, TargetNullValue='pack://application:,,,/Images/default_user.png'}" Stretch="UniformToFill"/>
                             </Ellipse.Fill>
                         </Ellipse>
 

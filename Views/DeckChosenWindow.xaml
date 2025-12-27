@@ -4,63 +4,155 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        
         Title="{Binding DeckName}" 
-        Height="300" Width="480" 
+        Height="400" Width="500" 
         ResizeMode="NoResize" 
         WindowStartupLocation="CenterScreen"
-        Background="#2c2c2c">
-    <!-- Lưu ý: Title đã được Bind vào DeckName -->
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True">
 
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Window.Resources>
+        <SolidColorBrush x:Key="SurfaceDark" Color="#1F222A"/>
+        <SolidColorBrush x:Key="CardBg" Color="#2B2E38"/>
+        <SolidColorBrush x:Key="TextGrey" Color="#9E9EA7"/>
 
-        <!-- Tiêu đề (Cũng hiện tên Deck ở đây cho đẹp) -->
-        <TextBlock Grid.Row="0" Text="{Binding DeckName}" Foreground="White" FontSize="20" FontWeight="Bold" Margin="0,0,0,12" TextAlignment="Center"/>
+        <SolidColorBrush x:Key="StatusBlue" Color="#3498DB"/>
+        <SolidColorBrush x:Key="StatusRed" Color="#E74C3C"/>
+        <SolidColorBrush x:Key="StatusGreen" Color="#2ECC71"/>
+        <SolidColorBrush x:Key="StatusPurple" Color="#6C5DD3"/>
 
-        <!-- Các chỉ số -->
-        <StackPanel Grid.Row="1" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Stretch" >
-            <!-- New -->
-            <Border Padding="8" Margin="0,0,0,8" CornerRadius="6" Background="#434343">
-                <DockPanel>
-                    <TextBlock Text="New" FontWeight="SemiBold" DockPanel.Dock="Left" Foreground="RoyalBlue"/>
-                    <TextBlock Text="{Binding NewCount}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Right" DockPanel.Dock="Right" Foreground="RoyalBlue"/>
-                </DockPanel>
+        <LinearGradientBrush x:Key="NeonPurpleGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#8E2DE2" Offset="0"/>
+            <GradientStop Color="#4A00E0" Offset="1"/>
+        </LinearGradientBrush>
+
+        <Style x:Key="StudyBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource StatusPurple}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="25">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#6C5DD3" BlurRadius="20" Opacity="0.5" ShadowDepth="5"/>
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.9"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{StaticResource SurfaceDark}" CornerRadius="20" BorderBrush="#333" BorderThickness="1" ClipToBounds="True">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="30" Opacity="0.6"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="140"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="{StaticResource NeonPurpleGradient}">
+                <Grid>
+                    <TextBlock Text="🎴" FontSize="120" Opacity="0.1" Foreground="White" 
+                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-23,-20,0,0"/>
+
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding DeckName}" Foreground="White" FontSize="28" FontWeight="Bold" 
+                                   TextAlignment="Center" TextWrapping="Wrap" Margin="40,0"/>
+                        <Border Background="#30000000" CornerRadius="10" HorizontalAlignment="Center" Margin="0,10,0,0" Padding="15,5">
+                            <TextBlock Foreground="White" FontSize="14" Opacity="0.9">
+                                <Run Text="Total Cards: "/>
+                                <Run Text="{Binding TotalCards, FallbackValue='0'}" FontWeight="Bold"/>
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                </Grid>
             </Border>
 
-            <!-- Learning -->
-            <Border Padding="8" Margin="0,0,0,8" CornerRadius="6" Background="#434343">
-                <DockPanel>
-                    <TextBlock Text="Learning" FontWeight="SemiBold" DockPanel.Dock="Left" Foreground="#D32F2F"/>
-                    <TextBlock Text="{Binding LearningCount}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Right" DockPanel.Dock="Right" Foreground="#D32F2F"/>
-                </DockPanel>
-            </Border>
+            <Button Grid.Row="0" Content="✕" Panel.ZIndex="99"
+                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Background="Transparent" BorderThickness="0" Foreground="White" Opacity="0.8"
+                    FontSize="18" Cursor="Hand" Margin="0,15,15,0"
+                    Click="CloseButton_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="Transparent" Padding="10">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                                <Setter Property="Foreground" Value="#FF9999"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
 
-            <!-- Review -->
-            <Border Padding="8" Margin="0,0,0,8" CornerRadius="6" Background="#434343">
-                <DockPanel>
-                    <TextBlock Text="Review" FontWeight="SemiBold" DockPanel.Dock="Left" Foreground="#388E3C"/>
-                    <TextBlock Text="{Binding ReviewCount}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Right" DockPanel.Dock="Right" Foreground="#388E3C"/>
-                </DockPanel>
-            </Border>
-        </StackPanel>
+            <Grid Grid.Row="1" Margin="25,20,25,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="15"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="15"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-        <!-- Nút Study Now -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
-            <Button Content="Study Now"
-                    Width="120"
-                    Height="36"
-                    FontSize="14"
-                    FontWeight="Bold"
-                    Background="#FF367FF4"
-                    Foreground="White"
-                    Cursor="Hand"
+                <Border Grid.Column="0" Background="{StaticResource CardBg}" CornerRadius="15">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding NewCount}" Foreground="{StaticResource StatusBlue}" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="New" Foreground="{StaticResource StatusBlue}" FontSize="13" Opacity="0.7" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Background="{StaticResource CardBg}" CornerRadius="15">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding LearningCount}" Foreground="{StaticResource StatusRed}" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Learning" Foreground="{StaticResource StatusRed}" FontSize="13" Opacity="0.7" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="4" Background="{StaticResource CardBg}" CornerRadius="15">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding ReviewCount}" Foreground="{StaticResource StatusGreen}" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Review" Foreground="{StaticResource StatusGreen}" FontSize="13" Opacity="0.7" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Button Grid.Row="2" Content="STUDY NOW"
+                    Width="220" Height="50" Margin="0,0,0,25"
+                    Style="{StaticResource StudyBtnStyle}"
                     Command="{Binding StudyNowCommand}"
                     CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
-        </StackPanel>
-    </Grid>
+        </Grid>
+    </Border>
 </Window>

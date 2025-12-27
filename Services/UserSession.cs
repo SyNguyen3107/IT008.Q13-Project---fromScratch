@@ -2,6 +2,10 @@
 using Firebase.Auth;
 using Firebase.Auth.Requests;
 using Newtonsoft.Json.Linq;
+using System.IO;
+using System.Net.Http;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media.Imaging;
 
 namespace EasyFlips.Services
 {
@@ -12,6 +16,10 @@ namespace EasyFlips.Services
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsLoggedIn))]
         private string? userId;
+
+        // Thuộc tính chứa ảnh để hiển thị lên UI
+        [ObservableProperty]
+        private BitmapImage _avatarBitmap;
 
         [ObservableProperty]
         private string? email;
@@ -62,6 +70,50 @@ namespace EasyFlips.Services
             {
                 AvatarURL = newAvatarUrl;
             }
+            LoadAvatarImage(newAvatarUrl);
         }
+        // [FIX] Hàm tải ảnh tối ưu(Fix lỗi không hiện + Fix lag)
+        public async void LoadAvatarImage(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return;
+
+            try
+            {
+                // Dùng HttpClient tải dữ liệu về bộ nhớ đệm trước
+                // Điều này đảm bảo ảnh tải xong mới hiện, không bị trắng
+                using (var client = new HttpClient())
+                {
+                    var data = await client.GetByteArrayAsync(url);
+
+                    // Chạy trên UI Thread để tạo Bitmap
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        using (var stream = new MemoryStream(data))
+                        {
+                            var bitmap = new BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.StreamSource = stream;
+
+                            // Quan trọng: CacheOnLoad để lưu vào RAM, ngắt kết nối Stream
+                            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+
+                            // Quan trọng: Thu nhỏ ảnh xuống 350px để nhẹ RAM (Avatar chỉ cần nhỏ)
+                            bitmap.DecodePixelWidth = 350;
+
+                            bitmap.EndInit();
+                            bitmap.Freeze(); // Đóng băng để dùng mượt mà
+
+                            AvatarBitmap = bitmap; // Cập nhật lên giao diện
+                        }
+                    });
+                }
+            }
+            catch
+            {
+                // Nếu lỗi (link chết, mất mạng), gán null để UI hiện ảnh mặc định (TargetNullValue)
+                AvatarBitmap = null;
+            }
+        }
+
     }
 }
