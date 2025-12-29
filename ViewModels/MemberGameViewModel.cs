@@ -1,18 +1,19 @@
-﻿using EasyFlips.Interfaces;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DiffPlex.DiffBuilder.Model;
+using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using System.Windows;
 
 namespace EasyFlips.ViewModels
 {
     public partial class MemberGameViewModel : BaseGameViewModel
     {
-        private readonly ComparisonService _comparisonService;
         private int _lastProcessedIndex = -1;
         private FlashcardAction _lastProcessedAction = FlashcardAction.None;
         private System.Timers.Timer? _countdownTimer;
@@ -28,7 +29,8 @@ namespace EasyFlips.ViewModels
         private int _pendingScoreEarned = 0;
         private string _pendingResultMessage = string.Empty;
         private bool _pendingIsCorrect = false;
-
+        private readonly ComparisonService _comparisonService = new ComparisonService();
+        public ObservableCollection<DiffPiece> ComparisonPieces { get; } = new();
         private string _myDisplayName = "Unknown Player";
 
         [ObservableProperty]
@@ -236,7 +238,6 @@ namespace EasyFlips.ViewModels
         {
             CurrentPhase = GamePhase.Result;
             IsShowingResult = true;
-
             if (IsInputEnabled)
             {
                 _pendingIsCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard?.Answer ?? "");
@@ -258,13 +259,42 @@ namespace EasyFlips.ViewModels
 
             ResultMessage = _pendingResultMessage;
             CorrectAnswer = CurrentCard?.Answer ?? "";
-
+            GenerateComparison();
             TimeRemaining = 10;
             SetupTimer();
             IsInputEnabled = false;
             SubmitAnswerCommand.NotifyCanExecuteChanged();
             _pendingScoreEarned = 0;
         }
+
+
+        private void GenerateComparison()
+        {
+            ComparisonPieces.Clear();
+            if (string.IsNullOrEmpty(CorrectAnswer)) return;
+
+            int score = _comparisonService.SmartScore(UserAnswer, CorrectAnswer);
+
+            List<DiffPiece> pieces;
+            if (score < 50)
+            {
+                pieces = _comparisonService.GetWordDiff(UserAnswer, CorrectAnswer);
+            }
+            else
+            {
+                pieces = _comparisonService.GetCharDiff(UserAnswer, CorrectAnswer);
+            }
+
+            if (pieces.Count == 0 && !string.IsNullOrEmpty(UserAnswer))
+            {
+                ComparisonPieces.Add(new DiffPiece(UserAnswer, ChangeType.Unchanged));
+            }
+            else
+            {
+                foreach (var piece in pieces) ComparisonPieces.Add(piece);
+            }
+        }
+
 
         [RelayCommand(CanExecute = nameof(CanSubmit))]
         private async Task SubmitAnswer()
@@ -276,8 +306,8 @@ namespace EasyFlips.ViewModels
                 _pendingIsCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard.Answer);
                 _pendingScoreEarned = _pendingIsCorrect ? 10 : 0;
 
-                if (_pendingIsCorrect) _pendingResultMessage = "Chính xác! +10đ";
-                else _pendingResultMessage = $"Sai rồi!";
+                if (_pendingIsCorrect) _pendingResultMessage = "Excellent! +10 Points";
+                else _pendingResultMessage = "Incorrect!";
 
                 _localTotalAnswered++;
                 if (_pendingIsCorrect) _localCorrectCount++;
