@@ -17,7 +17,17 @@ namespace EasyFlips.ViewModels
         private FlashcardAction _lastProcessedAction = FlashcardAction.None;
         private System.Timers.Timer? _countdownTimer;
 
-        // [QUAN TRỌNG] Khi biến này đổi -> Báo lệnh Submit kiểm tra lại
+        // [LOGIC MỚI] Biến theo dõi tổng số liệu cục bộ để Upsert
+        private int _localCorrectCount = 0;
+        private int _localTotalAnswered = 0;
+
+        private int _pendingScoreEarned = 0;
+        private string _pendingResultMessage = string.Empty;
+        private bool _pendingIsCorrect = false;
+
+        // [FIX LỖI IAuthService] Lưu tên hiển thị tại đây thay vì gọi AuthService liên tục
+        private string _myDisplayName = "Unknown Player";
+
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SubmitAnswerCommand))]
         private bool _isInputEnabled;
@@ -31,7 +41,6 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private string _connectionStatus = "Đang kết nối...";
 
-        // [QUAN TRỌNG] Khi gõ chữ -> Báo lệnh Submit kiểm tra lại ngay lập tức
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SubmitAnswerCommand))]
         private string _userAnswer = string.Empty;
@@ -60,8 +69,41 @@ namespace EasyFlips.ViewModels
 
         public override async Task InitializeAsync(string roomId, string classroomId, Deck? deck, int timePerRound)
         {
-            if (deck == null) deck = await _supabaseService.GetDeckByClassroomIdAsync(classroomId);
-            if (deck != null && deck.Cards != null) deck.Cards = deck.Cards.OrderBy(c => c.Id).ToList();
+            try
+            {
+                if (deck == null) deck = await _supabaseService.GetDeckByClassroomIdAsync(classroomId);
+                if (deck != null && deck.Cards != null) deck.Cards = deck.Cards.OrderBy(c => c.Id).ToList();
+
+                // [FIX LỖI] Logic lấy DisplayName an toàn (Không phụ thuộc IAuthService thiếu field)
+                var userId = _authService.CurrentUserId;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    // 1. Ưu tiên: Lấy từ bảng Profile
+                    var profile = await _supabaseService.GetProfileAsync(userId);
+                    if (profile != null && !string.IsNullOrEmpty(profile.DisplayName))
+                    {
+                        _myDisplayName = profile.DisplayName;
+                    }
+                    else
+                    {
+                        // 2. Dự phòng: Lấy từ Supabase Client trực tiếp (Bỏ qua IAuthService)
+                        var email = _supabaseService.Client.Auth.CurrentUser?.Email;
+                        if (!string.IsNullOrEmpty(email))
+                        {
+                            _myDisplayName = email.Split('@')[0];
+                        }
+                        else
+                        {
+                            // 3. Đường cùng
+                            _myDisplayName = $"Player {userId.Substring(0, 4)}";
+                        }
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.WriteLine($"[MemberVM] Init Profile Error: {ex.Message}");
+            }
 
             await base.InitializeAsync(roomId, classroomId, deck, timePerRound);
 
@@ -79,9 +121,9 @@ namespace EasyFlips.ViewModels
             if (currentClassroom?.SyncState != null) OnFlashcardStateReceived(currentClassroom.SyncState);
             SetupTimer();
         }
+
         private void SetupTimer()
         {
-            // Hủy timer cũ nếu có để tránh chạy chồng chéo
             _countdownTimer?.Stop();
             _countdownTimer?.Dispose();
 
@@ -90,7 +132,6 @@ namespace EasyFlips.ViewModels
             {
                 if (TimeRemaining > 0)
                 {
-                    // Giảm TimeRemaining (biến này phải thuộc lớp Base và có [ObservableProperty])
                     TimeRemaining--;
                 }
                 else
@@ -99,10 +140,9 @@ namespace EasyFlips.ViewModels
                     _countdownTimer.Stop();
                 }
             };
-
-            // QUAN TRỌNG: Phải có dòng này thì timer mới bắt đầu chạy
             _countdownTimer.Start();
         }
+
         protected override async Task SubscribeToRealtimeChannel()
         {
             var result = await _supabaseService.SubscribeToFlashcardChannelAsync(ClassroomId, OnFlashcardStateReceived);
@@ -111,21 +151,16 @@ namespace EasyFlips.ViewModels
 
         private void OnFlashcardStateReceived(FlashcardSyncState state)
         {
-            
             Application.Current.Dispatcher.Invoke(() =>
             {
-                // CHỈ return nếu CẢ index VÀ action đều y hệt cái cũ (tránh xử lý trùng tin nhắn realtime)
-                // Nhưng hãy cẩn thận: Nếu Server gửi lại cùng 1 Action để Reset, ta vẫn nên nhận.
                 if (state.CurrentCardIndex == _lastProcessedIndex && state.Action == _lastProcessedAction)
                     return;
-                
-                // Cập nhật vết (track) dữ liệu cuối cùng đã xử lý
+
                 _lastProcessedIndex = state.CurrentCardIndex;
                 _lastProcessedAction = state.Action;
 
                 if (CurrentDeck == null || CurrentDeck.Cards == null) return;
 
-                // Cập nhật Index và Card hiện tại
                 if (state.CurrentCardIndex >= 0 && state.CurrentCardIndex < CurrentDeck.Cards.Count)
                 {
                     CurrentIndex = state.CurrentCardIndex;
@@ -163,61 +198,85 @@ namespace EasyFlips.ViewModels
             ResultMessage = string.Empty;
             IsShowingResult = false;
             IsInputEnabled = true;
-
-            // Reset đếm ngược 10 giây cho câu hỏi mới
             TimeRemaining = time;
             SetupTimer();
-
             SubmitAnswerCommand.NotifyCanExecuteChanged();
         }
+
         private void HandleFlipCard()
         {
             CurrentPhase = GamePhase.Result;
             IsShowingResult = true;
-            if (CanSubmit())
+
+            // Nếu chưa nộp bài thì tự động nộp (tính là sai hoặc bỏ qua)
+            if (IsInputEnabled)
             {
+                // Logic tự submit khi hết giờ (0 điểm)
                 SubmitAnswerCommand.Execute(null);
+                // Lưu ý: Execute là async, nhưng ở đây ta cần update UI ngay sau đó
+                // Để đơn giản, ta gán luôn giá trị mặc định nếu chưa kịp submit
+                if (string.IsNullOrEmpty(ResultMessage)) ResultMessage = $"Hết giờ! Đáp án: {CurrentCard?.Answer}";
             }
+            else
+            {
+                // [QUAN TRỌNG] Lúc này mới cộng điểm vào UI Member
+                Score += _pendingScoreEarned;
+                ResultMessage = _pendingResultMessage;
+            }
+
             TimeRemaining = 10;
             SetupTimer();
             IsInputEnabled = false;
             SubmitAnswerCommand.NotifyCanExecuteChanged();
+
+            // Reset biến tạm cho vòng sau
+            _pendingScoreEarned = 0;
         }
 
-
-        // [QUAN TRỌNG] Gắn hàm kiểm tra điều kiện vào Command
         [RelayCommand(CanExecute = nameof(CanSubmit))]
         private async Task SubmitAnswer()
         {
-            
-
             IsInputEnabled = false;
-          
 
             if (CurrentCard != null)
             {
-                bool isCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard.Answer);
-                CorrectAnswer = CurrentCard.Answer;
-                if (isCorrect)
-                {
-                    Score += 10;
-                    ResultMessage = "Chính xác! +10đ";
-                }
-                else
-                {
-                    ResultMessage = "Sai rồi!";
-                }
+                // Tính toán kết quả NGẦM
+                _pendingIsCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard.Answer);
+                _pendingScoreEarned = _pendingIsCorrect ? 10 : 0;
 
-                _= _supabaseService.SendFlashcardScoreAsync(
-                    ClassroomId, _authService.CurrentUserId, Score, isCorrect ? 1 : 0, 1
+                // Chuẩn bị thông báo (nhưng chưa hiện)
+                if (_pendingIsCorrect) _pendingResultMessage = "Chính xác! +10đ";
+                else _pendingResultMessage = $"Sai rồi! Đáp án: {CurrentCard.Answer}";
+
+                // Cập nhật số liệu cục bộ
+                _localTotalAnswered++;
+                if (_pendingIsCorrect) _localCorrectCount++;
+
+                // [QUAN TRỌNG] Tính tổng điểm DỰ KIẾN để gửi Server, nhưng CHƯA cộng vào UI Score
+                int projectedTotalScore = Score + _pendingScoreEarned;
+
+                // [UX] Hiện thông báo chờ
+                ResultMessage = "Đã nộp bài! Chờ kết quả...";
+
+                // Gửi điểm lên Server ngay để Host cập nhật Realtime (Host sẽ thấy điểm tăng ngay)
+                // Nếu bạn muốn Host cũng chưa thấy điểm tăng thì gửi 'Score' cũ, 
+                // nhưng thường Host cần thấy điểm ngay.
+                await _supabaseService.SendFlashcardScoreAsync(
+                    ClassroomId,
+                    _authService.CurrentUserId,
+                    _myDisplayName,
+                    projectedTotalScore, // Gửi điểm đã cộng
+                    _localCorrectCount,
+                    _localTotalAnswered
                 );
             }
         }
+
         partial void OnIsInputEnabledChanged(bool value)
-            {
-                // Ép lệnh Submit cập nhật trạng thái ngay lập tức trên UI
-                    SubmitAnswerCommand.NotifyCanExecuteChanged();
-            }
+        {
+            SubmitAnswerCommand.NotifyCanExecuteChanged();
+        }
+
         partial void OnUserAnswerChanged(string value)
         {
             Application.Current.Dispatcher.Invoke(() =>
@@ -226,11 +285,11 @@ namespace EasyFlips.ViewModels
             });
         }
 
-        // Hàm này quyết định nút Sáng hay Tối
         private bool CanSubmit()
         {
             return IsInputEnabled && !string.IsNullOrWhiteSpace(UserAnswer);
         }
+
         public void DisposeTimer()
         {
             _countdownTimer?.Stop();

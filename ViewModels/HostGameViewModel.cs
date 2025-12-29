@@ -4,7 +4,7 @@ using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
 using System;
-using System.Collections.ObjectModel;
+using System.Collections.ObjectModel; // Cần thiết cho ObservableCollection
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,19 +13,19 @@ using System.Windows.Threading;
 
 namespace EasyFlips.ViewModels
 {
-    /// <summary>
-    /// ViewModel quản lý màn hình Game phía Host (Người tổ chức).
-    /// Chịu trách nhiệm: Điều khiển Timer, chuyển thẻ, tính điểm và Broadcast trạng thái cho Members.
-    /// </summary>
     public partial class HostGameViewModel : BaseGameViewModel
     {
         private DispatcherTimer _roundTimer;
 
         #region Properties
 
+        // [FIX LỖI] Thêm khai báo Leaderboard tại đây
+        [ObservableProperty]
+        private ObservableCollection<LeaderboardEntry> _leaderboard = new ObservableCollection<LeaderboardEntry>();
+
         [ObservableProperty] private bool _isCardFlipped;
         [ObservableProperty] private string _statusMessage;
-        [ObservableProperty] private string _statusColor = "#FF5E57"; // Màu đỏ nhạt mặc định
+        [ObservableProperty] private string _statusColor = "#FF5E57";
         [ObservableProperty] private string _currentQuestionInfo;
         [ObservableProperty] private int _progressMaximum;
         [ObservableProperty] private string _correctAnswer;
@@ -43,28 +43,23 @@ namespace EasyFlips.ViewModels
 
         #region Initialization
 
-        /// <summary>
-        /// Khởi tạo Game Host: Tải Deck, sắp xếp thẻ, lấy danh sách thành viên và bắt đầu đếm ngược.
-        /// </summary>
         public override async Task InitializeAsync(
-            string roomId,
-            string classroomId,
-            Deck deck,
-            int timePerRound)
+    string roomId,
+    string classroomId,
+    Deck deck,
+    int timePerRound)
         {
             await base.InitializeAsync(roomId, classroomId, deck, timePerRound);
 
             if (deck == null || deck.Cards.Count == 0)
                 throw new InvalidOperationException("Deck trống, không thể bắt đầu game");
 
-            // 1. Subscribe kênh Realtime để nhận điểm số (Score) từ Member
+            // 1. Subscribe kênh Realtime
             await SubscribeToRealtimeChannel();
 
-            // Delay nhỏ để đảm bảo kết nối ổn định trước khi bắn tin đầu tiên
             await Task.Delay(150);
 
-            // 2. [QUAN TRỌNG] Sắp xếp thẻ theo ID
-            // Điều này bắt buộc để Member (dùng cùng logic sort) hiển thị đúng thẻ tương ứng với Host
+            // 2. Sắp xếp thẻ
             if (CurrentDeck != null && CurrentDeck.Cards != null)
             {
                 CurrentDeck.Cards = CurrentDeck.Cards.OrderBy(c => c.Id).ToList();
@@ -75,14 +70,30 @@ namespace EasyFlips.ViewModels
             CurrentCard = CurrentDeck.Cards.ElementAt(CurrentIndex);
             CurrentQuestionInfo = $"{CurrentIndex + 1}/{CurrentDeck.Cards.Count}";
 
-            // 4. Load danh sách thành viên hiện tại trong phòng
+            // 4. Load danh sách thành viên
             var members = await _supabaseService.GetClassroomMembersWithProfileAsync(classroomId);
             UpdatePlayerList(members);
 
-            // 5. Bắt đầu Countdown (3-2-1)
+            // [FIX VẤN ĐỀ LEADERBOARD TRỐNG] 
+            // Khởi tạo Leaderboard ngay lập tức từ danh sách members lấy được
+            Leaderboard.Clear();
+            foreach (var mem in members)
+            {
+                Leaderboard.Add(new LeaderboardEntry
+                {
+                    UserId = mem.UserId,
+                    DisplayName = mem.DisplayName,
+                    AvatarUrl = mem.AvatarUrl,
+                    TotalScore = 0,
+                    CorrectCount = 0,
+                    TotalAnswered = 0
+                });
+            }
+
+            // 5. Bắt đầu Countdown
             StartCountdown();
 
-            // Gửi tín hiệu bắt đầu phiên lên Server (Lưu DB)
+            // Gửi tín hiệu Start
             _ = _supabaseService.StartFlashcardSessionAsync(
                 ClassroomId,
                 _authService.CurrentUserId,
@@ -97,22 +108,15 @@ namespace EasyFlips.ViewModels
 
         #region Timer Logic & State Machine
 
-        /// <summary>
-        /// Bắt đầu đếm ngược 3 giây trước khi vào câu hỏi.
-        /// </summary>
         private void StartCountdown()
         {
             CurrentPhase = GamePhase.Waiting;
             StatusMessage = "Chuẩn bị bắt đầu";
-            StatusColor = "#FF5E57"; // Red
+            StatusColor = "#FF5E57";
 
             StartTimer(3);
         }
 
-        /// <summary>
-        /// Chuyển sang pha Câu Hỏi (Question Phase).
-        /// Gửi tín hiệu NextCard cho Member.
-        /// </summary>
         private async Task StartQuestionAsync()
         {
             CurrentPhase = GamePhase.Question;
@@ -121,29 +125,20 @@ namespace EasyFlips.ViewModels
 
             StartTimer(TotalTimePerRound);
 
-            // Fire-and-forget broadcast: Gửi lệnh NextCard và lưu vào DB
             _ = BroadcastPhaseAsync(GamePhase.Question, FlashcardAction.NextCard);
         }
 
-        /// <summary>
-        /// Chuyển sang pha Kết Quả (Result Phase).
-        /// Gửi tín hiệu FlipCard (lật mặt sau) cho Member.
-        /// </summary>
         private async Task StartResultAsync()
         {
             CurrentPhase = GamePhase.Result;
             StatusMessage = "Xem kết quả";
-            StatusColor = "#27AE60"; // Green
+            StatusColor = "#27AE60";
 
-            StartTimer(10); // Thời gian xem kết quả (10s)
+            StartTimer(10);
 
             _ = BroadcastPhaseAsync(GamePhase.Result, FlashcardAction.FlipCard);
         }
 
-        /// <summary>
-        /// Logic đếm ngược thời gian.
-        /// </summary>
-        /// <param name="seconds">Số giây đếm ngược</param>
         private void StartTimer(int seconds)
         {
             _roundTimer?.Stop();
@@ -157,15 +152,12 @@ namespace EasyFlips.ViewModels
                 if (TimeRemaining <= 0)
                 {
                     _roundTimer.Stop();
-                    _ = HandleTimeUpAsync(); // Xử lý khi hết giờ
+                    _ = HandleTimeUpAsync();
                 }
             };
             _roundTimer.Start();
         }
 
-        /// <summary>
-        /// Xử lý chuyển trạng thái khi Timer về 0.
-        /// </summary>
         private async Task HandleTimeUpAsync()
         {
             _roundTimer?.Stop();
@@ -174,18 +166,15 @@ namespace EasyFlips.ViewModels
                 switch (CurrentPhase)
                 {
                     case GamePhase.Waiting:
-                        // Hết thời gian chờ -> Vào câu hỏi
                         await StartQuestionAsync();
                         break;
 
                     case GamePhase.Question:
-                        // Hết thời gian trả lời -> Tự động lật thẻ -> Xem kết quả
                         await FlipCardAsync();
                         await StartResultAsync();
                         break;
 
                     case GamePhase.Result:
-                        // Hết thời gian xem kết quả -> Sang câu tiếp theo
                         await GoToNextCardOrEndAsync();
                         break;
                 }
@@ -200,17 +189,12 @@ namespace EasyFlips.ViewModels
 
         #region Game Flow Actions
 
-        /// <summary>
-        /// Lật thẻ (Hiển thị đáp án).
-        /// </summary>
         [RelayCommand]
         public async Task FlipCardAsync()
         {
-            ShowCard(); // Cập nhật UI Host
-
+            ShowCard();
             CorrectAnswer = CurrentCard?.Answer;
 
-            // Gọi Service để update trạng thái (Log purpose)
             _ = _supabaseService.FlipCardAsync(
                 ClassroomId,
                 _authService.CurrentUserId,
@@ -222,25 +206,19 @@ namespace EasyFlips.ViewModels
             );
         }
 
-        /// <summary>
-        /// Chuyển sang thẻ tiếp theo hoặc kết thúc game nếu hết thẻ.
-        /// </summary>
         private async Task GoToNextCardOrEndAsync()
         {
-            // Nếu đã là thẻ cuối cùng -> Kết thúc
             if (CurrentIndex + 1 >= CurrentDeck.Cards.Count)
             {
                 await EndGameAsync();
                 return;
             }
 
-            // Tăng Index và reset trạng thái
             CurrentIndex++;
             CurrentCard = CurrentDeck.Cards.ElementAt(CurrentIndex);
             CurrentQuestionInfo = $"{CurrentIndex + 1}/{CurrentDeck.Cards.Count}";
             IsCardFlipped = false;
 
-            // Broadcast lệnh chuyển thẻ và bắt đầu Timer câu hỏi mới
             _ = BroadcastPhaseAsync(GamePhase.Question, FlashcardAction.NextCard);
             await StartQuestionAsync();
         }
@@ -254,9 +232,6 @@ namespace EasyFlips.ViewModels
             CorrectAnswer = CurrentCard?.Answer;
         }
 
-        /// <summary>
-        /// Kết thúc phiên chơi, lưu trạng thái EndSession và đóng cửa sổ.
-        /// </summary>
         private async Task EndGameAsync()
         {
             await _supabaseService.EndFlashcardSessionAsync(ClassroomId, _authService.CurrentUserId);
@@ -272,45 +247,86 @@ namespace EasyFlips.ViewModels
 
         protected override async Task SubscribeToRealtimeChannel()
         {
-            // Host lắng nghe để nhận điểm số từ Member
             await _supabaseService.SubscribeToFlashcardChannelAsync(
                 ClassroomId,
-                OnFlashcardStateReceived, // Host nhận lại state của mình (optional)
-                OnScoreReceived           // Quan trọng: Nhận điểm số để update Leaderboard
+                OnFlashcardStateReceived,
+                OnScoreReceived
             );
         }
 
         private void OnFlashcardStateReceived(FlashcardSyncState state)
         {
-            // Host chủ động điều khiển state nên hàm này chủ yếu để debug hoặc log
+            // Host tự quản lý state
         }
 
-        /// <summary>
-        /// Xử lý khi nhận được bài làm từ Member.
-        /// </summary>
         private void OnScoreReceived(ScoreSubmission submission)
         {
-            // Tìm player trong danh sách hoặc thêm mới
-            var player = Players.FirstOrDefault(p => p.Id == submission.UserId);
-            if (player == null)
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                player = new PlayerInfo
-                {
-                    Id = submission.UserId,
-                    Name = submission.DisplayName,
-                    Score = 0
-                };
-                Players.Add(player);
-            }
+                Debug.WriteLine($"---------------");
+                Debug.WriteLine($"[HOST-RECEIVE] ID: {submission.UserId}");
+                Debug.WriteLine($"[HOST-RECEIVE] Name: {submission.DisplayName}");
+                Debug.WriteLine($"[HOST-RECEIVE] New Score: {submission.Score}");
+                // 1. Tìm user
+                var existingUser = Leaderboard.FirstOrDefault(x => x.UserId == submission.UserId);
 
-            // Cộng điểm
-            player.Score += submission.Score;
+                if (existingUser != null)
+                {
+                    Debug.WriteLine($"[HOST-LOGIC] Found existing user: {existingUser.DisplayName} (Old Score: {existingUser.TotalScore})");
+                    // [CẬP NHẬT] Gán trực tiếp giá trị mới, UI sẽ tự nhảy số nhờ ObservableObject
+                    existingUser.TotalScore = submission.Score;
+                    existingUser.CorrectCount = submission.CorrectCount;
+                    existingUser.TotalAnswered = submission.TotalAnswered;
+
+                    Debug.WriteLine($"[HOST-LOGIC] Updated to New Score: {existingUser.TotalScore}");
+                }
+                else
+                {
+                    // [THÊM MỚI]
+                    var newEntry = new LeaderboardEntry
+                    {
+                        UserId = submission.UserId,
+                        DisplayName = submission.DisplayName,
+                        TotalScore = submission.Score,
+                        CorrectCount = submission.CorrectCount,
+                        TotalAnswered = submission.TotalAnswered,
+                        AvatarUrl = Players.FirstOrDefault(p => p.Id == submission.UserId)?.AvatarUrl
+                    };
+                    Leaderboard.Add(newEntry);
+                }
+
+                // 2. Sắp xếp lại Leaderboard (Bubble sort nhẹ nhàng để tránh vẽ lại toàn bộ)
+                // Nếu chỉ có 1 người hoặc danh sách ít, dùng Sort trực tiếp trên ObservableCollection
+                var sorted = Leaderboard.OrderByDescending(x => x.TotalScore).ToList();
+
+                // Chỉ Clear/Add lại nếu thứ tự thực sự thay đổi (để tránh nháy UI không cần thiết)
+                bool needResort = false;
+                for (int i = 0; i < sorted.Count; i++)
+                {
+                    if (Leaderboard[i].UserId != sorted[i].UserId)
+                    {
+                        needResort = true;
+                        break;
+                    }
+                }
+
+                if (needResort)
+                {
+                    Debug.WriteLine("[HOST-LOGIC] Re-sorting Leaderboard...");
+                    Leaderboard.Clear();
+                    foreach (var item in sorted) Leaderboard.Add(item);
+                }
+
+                // [LOG 2] In ra toàn bộ Leaderboard hiện tại trong bộ nhớ để đối chiếu với UI
+                Debug.WriteLine("=== CURRENT LEADERBOARD STATE (MEMORY) ===");
+                foreach (var entry in Leaderboard)
+                {
+                    Debug.WriteLine($"User: {entry.DisplayName} | Score: {entry.TotalScore}");
+                }
+                Debug.WriteLine("==========================================");
+            });
         }
 
-        /// <summary>
-        /// Gửi trạng thái Game hiện tại lên Server (Lưu vào Database).
-        /// Member sẽ lắng nghe thay đổi này để đồng bộ UI.
-        /// </summary>
         private async Task BroadcastPhaseAsync(GamePhase phase, FlashcardAction action)
         {
             try
@@ -330,7 +346,6 @@ namespace EasyFlips.ViewModels
                     IsSessionActive = phase != GamePhase.Finished
                 };
 
-                // Gọi hàm lưu vào DB (Cơ chế Hybrid Sync)
                 await _supabaseService.BroadcastFlashcardStateAsync(ClassroomId, state);
             }
             catch (Exception ex)

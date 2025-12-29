@@ -1,3 +1,4 @@
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Newtonsoft.Json;
 using Supabase.Realtime.Models;
 using Supabase.Realtime.Presence;
@@ -7,7 +8,7 @@ namespace EasyFlips.Models
     #region Enums
 
     /// <summary>
-    /// C�c h�nh ??ng ??ng b? flashcard qua Realtime.
+    /// Các hành ??ng ??ng b? flashcard qua Realtime.
     /// </summary>
     public enum FlashcardAction
     {
@@ -20,7 +21,7 @@ namespace EasyFlips.Models
         EndSession,
         PauseSession,
         ResumeSession,
-        SyncState  // G?i tr?ng th�i hi?n t?i cho Member v�o tr?
+        SyncState  // G?i tr?ng thái hi?n t?i cho Member vào tr?
     }
 
     /// <summary>
@@ -30,9 +31,9 @@ namespace EasyFlips.Models
     {
         Waiting,    // ?ang ch? b?t ??u
         Countdown,  // ??m ng??c 3-2-1
-        Question,   // Hi?n th? c�u h?i, ng??i ch?i tr? l?i
-        Result,     // Hi?n th? ?�p �n, xem k?t qu?
-        Finished    // K?t th�c phi�n
+        Question,   // Hi?n th? câu h?i, ng??i ch?i tr? l?i
+        Result,     // Hi?n th? ?áp án, xem k?t qu?
+        Finished    // K?t thúc phiên
     }
 
     #endregion
@@ -40,7 +41,7 @@ namespace EasyFlips.Models
     #region Sync Models
 
     /// <summary>
-    /// Tr?ng th�i ??ng b? flashcard - broadcast qua Realtime.
+    /// Tr?ng thái ??ng b? flashcard - broadcast qua Realtime.
     /// </summary>
     public class FlashcardSyncState
     {
@@ -101,7 +102,7 @@ namespace EasyFlips.Models
     #region Presence Models
 
     /// <summary>
-    /// Presence cho flashcard session - theo d�i ai ?ang online.
+    /// Presence cho flashcard session - theo dõi ai ?ang online.
     /// </summary>
     public class FlashcardPresence : BasePresence
     {
@@ -126,7 +127,7 @@ namespace EasyFlips.Models
     #region Score Models
 
     /// <summary>
-    /// ?i?m s? g?i t? Member l�n Host.
+    /// UI Model: Dùng để hiển thị điểm trên giao diện Host (Leaderboard).
     /// </summary>
     public class ScoreSubmission
     {
@@ -135,6 +136,23 @@ namespace EasyFlips.Models
 
         [JsonProperty("display_name")]
         public string DisplayName { get; set; } = string.Empty;
+
+        [JsonProperty("score")]
+        public int Score { get; set; }
+
+        // [MỚI] Thêm vào để khớp với logic tính điểm
+        [JsonProperty("correct_count")]
+        public int CorrectCount { get; set; }
+
+        // [MỚI] Thêm vào để tính tỉ lệ phần trăm
+        [JsonProperty("total_answered")]
+        public int TotalAnswered { get; set; }
+
+        // [SỬA] Đổi tên từ SubmittedAt -> Timestamp để khớp với code trong SupabaseService
+        [JsonProperty("timestamp")]
+        public DateTime? Timestamp { get; set; } = DateTime.UtcNow;
+
+        // --- Các trường phụ (Giữ lại để không lỗi code cũ, có thể không dùng tới) ---
 
         [JsonProperty("card_index")]
         public int CardIndex { get; set; }
@@ -145,20 +163,14 @@ namespace EasyFlips.Models
         [JsonProperty("is_correct")]
         public bool IsCorrect { get; set; }
 
-        [JsonProperty("score")]
-        public int Score { get; set; }
-
         [JsonProperty("time_taken_ms")]
         public long TimeTakenMs { get; set; }
-
-        [JsonProperty("submitted_at")]
-        public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
     }
 
     /// <summary>
     /// Entry trong b?ng x?p h?ng.
     /// </summary>
-    public class LeaderboardEntry
+    public partial class LeaderboardEntry : ObservableObject
     {
         [JsonProperty("user_id")]
         public string UserId { get; set; } = string.Empty;
@@ -169,27 +181,32 @@ namespace EasyFlips.Models
         [JsonProperty("avatar_url")]
         public string? AvatarUrl { get; set; }
 
-        [JsonProperty("total_score")]
-        public int TotalScore { get; set; }
+        // [SỬA] Dùng ObservableProperty cho điểm số
+        [ObservableProperty]
+        [property: JsonProperty("total_score")]
+        private int _totalScore;
 
-        [JsonProperty("correct_count")]
-        public int CorrectCount { get; set; }
+        [ObservableProperty]
+        [property: JsonProperty("correct_count")]
+        private int _correctCount;
 
-        [JsonProperty("total_answered")]
-        public int TotalAnswered { get; set; }
+        [ObservableProperty]
+        [property: JsonProperty("total_answered")]
+        private int _totalAnswered;
 
-        [JsonProperty("rank")]
-        public int Rank { get; set; }
+        [ObservableProperty]
+        [property: JsonProperty("rank")]
+        private int _rank;
     }
 
-    #endregion
+#endregion
 
-    #region Event Args
+#region Event Args
 
-    /// <summary>
-    /// EventArgs khi nh?n ???c s? ki?n ??ng b? flashcard.
-    /// </summary>
-    public class FlashcardSyncEventArgs : EventArgs
+/// <summary>
+/// EventArgs khi nh?n ???c s? ki?n ??ng b? flashcard.
+/// </summary>
+public class FlashcardSyncEventArgs : EventArgs
     {
         public FlashcardSyncState State { get; set; } = new();
         public bool IsFromHost { get; set; }
@@ -208,7 +225,7 @@ namespace EasyFlips.Models
     #region Channel Subscription Result
 
     /// <summary>
-    /// K?t qu? khi subscribe v�o channel.
+    /// K?t qu? khi subscribe vào channel.
     /// </summary>
     public class ChannelSubscriptionResult
     {
@@ -218,5 +235,6 @@ namespace EasyFlips.Models
     }
 
     #endregion
+
 }
 

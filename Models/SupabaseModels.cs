@@ -181,4 +181,44 @@ namespace EasyFlips.Models
         public bool IsHost => Role.Equals("host", StringComparison.OrdinalIgnoreCase);
         public string RoleDisplay => IsHost ? "👑 Host" : "👤 Thành viên";
     }
+    /// <summary>
+    /// Model map với bảng 'submissions' trong Database Supabase.
+    /// Dùng cho phương án gửi điểm qua Database (Thay vì Broadcast).
+    /// </summary>
+    [Table("submissions")]
+    public class Submission : BaseModel
+    {
+        [PrimaryKey("id", false)]
+        [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
+        public string? Id { get; set; }
+
+        [Column("classroom_id")]
+        [JsonProperty("classroom_id")]
+        public string ClassroomId { get; set; }
+
+        [Column("user_id")]
+        [JsonProperty("user_id")]
+        public string UserId { get; set; }
+
+        [Column("display_name")]
+        [JsonProperty("display_name")]
+        public string DisplayName { get; set; }
+
+        [Column("score")]
+        [JsonProperty("score")]
+        public int Score { get; set; }
+
+        [Column("correct_count")]
+        [JsonProperty("correct_count")]
+        public int CorrectCount { get; set; }
+
+        [Column("total_answered")]
+        [JsonProperty("total_answered")]
+        public int TotalAnswered { get; set; }
+
+        // Cũng áp dụng Ignore cho CreatedAt để DB tự sinh ngày giờ
+        [Column("created_at")]
+        [JsonProperty("created_at", NullValueHandling = NullValueHandling.Ignore)]
+        public DateTime? CreatedAt { get; set; }
+    }
 }

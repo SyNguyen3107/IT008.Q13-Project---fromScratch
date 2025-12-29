@@ -18,6 +18,7 @@ using static Supabase.Postgrest.Constants;
 using static Supabase.Realtime.Constants;
 using static Supabase.Realtime.PostgresChanges.PostgresChangesOptions;
 
+
 namespace EasyFlips.Services
 {
     public class FlashcardBroadcast : BaseBroadcast<Dictionary<string, object>> { }
@@ -267,7 +268,8 @@ namespace EasyFlips.Services
                              .Set(c => c.SyncState, state)
                              .Update();
                 Debug.WriteLine($"[HOST-DB] Saved State: {state.Action}");
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Debug.WriteLine($"[HOST-DB] Failed to save state: {ex.Message}");
             }
@@ -341,31 +343,35 @@ namespace EasyFlips.Services
             await BroadcastFlashcardStateAsync(classroomId, state);
         }
 
+        // [SỬA ĐỔI: Chuyển sang lắng nghe bảng submissions]
         public async Task<SubscribeResult> SubscribeToFlashcardChannelAsync(
-            string classroomId,
-            Action<FlashcardSyncState> onStateReceived,
-            Action<ScoreSubmission>? onScoreReceived = null)
+     string classroomId,
+     Action<FlashcardSyncState> onStateReceived,
+     Action<ScoreSubmission>? onScoreReceived = null)
         {
-            var result = new SubscribeResult { ChannelName = $"hybrid-sync:{classroomId}" };
+            var result = new SubscribeResult { ChannelName = $"room-hybrid:{classroomId}" };
             try
             {
                 await _client.Realtime.ConnectAsync();
 
                 string channelName = $"room-hybrid:{classroomId}";
+
+                // Clean up channels cũ
                 if (_activeChannels.TryGetValue(channelName, out var old))
                 {
                     old.Unsubscribe();
                     _activeChannels.Remove(channelName);
-                    _activeBroadcasts.Remove(channelName);
                 }
 
                 var channel = _client.Realtime.Channel(channelName);
                 _activeChannels[channelName] = channel;
 
-                // 1. Nghe DB (Game State)
+                // 1. Nghe DB Classrooms (Game State)
                 var dbOptions = new PostgresChangesOptions("public", "classrooms") { Filter = $"id=eq.{classroomId}" };
                 channel.Register(dbOptions);
-                channel.AddPostgresChangeHandler(ListenType.Updates, (sender, change) =>
+
+                // Sử dụng lambda trực tiếp thay vì biến Action để tránh lỗi type mismatch
+                channel.AddPostgresChangeHandler(ListenType.Updates, (IRealtimeChannel sender, PostgresChangesResponse change) =>
                 {
                     try
                     {
@@ -375,23 +381,52 @@ namespace EasyFlips.Services
                     catch { }
                 });
 
-                // 2. Nghe Broadcast (Score)
-                var broadcast = channel.Register<FlashcardBroadcast>(true, false);
-                _activeBroadcasts[channelName] = broadcast;
-
-                broadcast.AddBroadcastEventHandler((sender, args) =>
+                // 2. Nghe DB Submissions (Score)
+                if (onScoreReceived != null)
                 {
-                    if (args.Event == "FLASHCARD_SCORE" && args.Payload != null)
+                    var scoreOptions = new PostgresChangesOptions("public", "submissions") { Filter = $"classroom_id=eq.{classroomId}" };
+                    channel.Register(scoreOptions);
+
+                    // [FIX LỖI CS1503] Dùng Local Function thay vì Action<...>
+                    // C# sẽ tự động convert hàm này thành PostgresChangesHandler
+                    void ScoreHandler(IRealtimeChannel sender, PostgresChangesResponse change)
                     {
                         try
                         {
-                            var json = JsonConvert.SerializeObject(args.Payload);
-                            var submission = JsonConvert.DeserializeObject<ScoreSubmission>(json);
-                            if (submission != null) onScoreReceived?.Invoke(submission);
+                            var sub = change.Model<Submission>();
+                            if (sub != null)
+                            {
+                                // Kiểm tra UserId (Tránh lỗi null khi update nếu chưa bật REPLICA IDENTITY FULL)
+                                if (string.IsNullOrEmpty(sub.UserId))
+                                {
+                                    Debug.WriteLine($"[HOST-REALTIME] Warning: Received {change.Event} but UserID is missing.");
+                                    return;
+                                }
+
+                                Debug.WriteLine($"[HOST-DB] Score {change.Event} from {sub.DisplayName}: {sub.Score}");
+
+                                var scoreSubmission = new ScoreSubmission
+                                {
+                                    UserId = sub.UserId,
+                                    DisplayName = sub.DisplayName,
+                                    Score = sub.Score,
+                                    CorrectCount = sub.CorrectCount,
+                                    TotalAnswered = sub.TotalAnswered,
+                                    Timestamp = sub.CreatedAt
+                                };
+                                onScoreReceived.Invoke(scoreSubmission);
+                            }
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[HOST-DB] Error parsing submission: {ex.Message}");
+                        }
                     }
-                });
+
+                    // Đăng ký handler (Truyền tên hàm vào)
+                    channel.AddPostgresChangeHandler(ListenType.Inserts, ScoreHandler);
+                    channel.AddPostgresChangeHandler(ListenType.Updates, ScoreHandler);
+                }
 
                 await channel.Subscribe();
                 result.Success = true;
@@ -403,7 +438,6 @@ namespace EasyFlips.Services
             }
             return result;
         }
-
         // Wrapper để tương thích ngược với GameViewModel cũ
         public async Task JoinFlashcardSyncChannelAsync(string classroomId, string userId, Action<FlashcardSyncState> onStateReceived)
         {
@@ -422,22 +456,38 @@ namespace EasyFlips.Services
             await Task.CompletedTask;
         }
 
-        public async Task SendFlashcardScoreAsync(string classroomId, string userId, int score, int correctCount, int totalAnswered)
+        // [SỬA ĐỔI: Chuyển sang Insert vào bảng submissions]
+        public async Task SendFlashcardScoreAsync(string classroomId, string userId, string displayName, int score, int correctCount, int totalAnswered)
         {
             try
             {
-                string channelName = $"room-hybrid:{classroomId}";
-                if (!_activeBroadcasts.TryGetValue(channelName, out var broadcast)) return;
-
-                var payload = new Dictionary<string, object>
+                var submission = new Submission
                 {
-                    { "user_id", userId }, { "score", score },
-                    { "correct_count", correctCount }, { "total_answered", totalAnswered },
-                    { "timestamp", DateTime.UtcNow }
+                    ClassroomId = classroomId,
+                    UserId = userId,
+                    DisplayName = displayName,
+                    Score = score,
+                    CorrectCount = correctCount,
+                    TotalAnswered = totalAnswered
+                    // Id để null
                 };
-                await broadcast.Send("FLASHCARD_SCORE", payload);
+
+                // [SỬA LẠI ĐOẠN NÀY]
+                // Chỉ định rõ ràng: "Nếu trùng user_id VÀ classroom_id thì Update, ngược lại thì Insert"
+                var options = new Supabase.Postgrest.QueryOptions
+                {
+                    Upsert = true,
+                    OnConflict = "user_id, classroom_id" // <--- THÊM DÒNG NÀY
+                };
+
+                await _client.From<Submission>().Upsert(submission, options);
+
+                Debug.WriteLine($"[MEMBER-DB] Score UPSERTED for {displayName}: {score}");
             }
-            catch (Exception ex) { Debug.WriteLine($"[Score] Failed: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Score] Failed to upsert: {ex.Message}");
+            }
         }
 
         #endregion

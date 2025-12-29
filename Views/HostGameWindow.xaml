@@ -235,7 +235,7 @@
                     </StackPanel>
                 </StackPanel>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden">
-                    <ItemsControl ItemsSource="{Binding Players}">
+                    <ItemsControl ItemsSource="{Binding Leaderboard}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Vertical"/>
@@ -259,25 +259,13 @@
                                         </Ellipse>
 
                                         <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="White" FontSize="14"/>
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Foreground="White" FontSize="14"/>
 
-                                            <TextBlock FontSize="12" Foreground="#F1C40F" Margin="0,2,0,0">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Text" Value="Player"/>
-                                                        <Setter Property="Foreground" Value="#BDC3C7"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsHost}" Value="True">
-                                                                <Setter Property="Text" Value="HOST 👑"/>
-                                                                <Setter Property="Foreground" Value="#F1C40F"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+                                            <TextBlock FontSize="12" Foreground="#F1C40F" Margin="0,2,0,0" Text="Player" />
                                         </StackPanel>
+
                                         <Border Grid.Column="2" VerticalAlignment="Center" Background="#20F59E0B" CornerRadius="5" Padding="8,4">
-                                            <TextBlock Text="{Binding Score}" FontSize="14" FontWeight="Bold" Foreground="#F59E0B"/>
+                                            <TextBlock Text="{Binding TotalScore}" FontSize="14" FontWeight="Bold" Foreground="#F59E0B"/>
                                         </Border>
                                     </Grid>
                                 </Border>
