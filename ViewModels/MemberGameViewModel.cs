@@ -16,6 +16,11 @@ namespace EasyFlips.ViewModels
         private int _lastProcessedIndex = -1;
         private FlashcardAction _lastProcessedAction = FlashcardAction.None;
         private System.Timers.Timer? _countdownTimer;
+        [ObservableProperty]
+        private int _startCountdownValue;
+        private bool _hasStartedFirstCountdown = false;
+        [ObservableProperty]
+        private bool _isShowingStartCountdown;
 
         // [LOGIC MỚI] Biến theo dõi tổng số liệu cục bộ để Upsert
         private int _localCorrectCount = 0;
@@ -144,6 +149,22 @@ namespace EasyFlips.ViewModels
             _countdownTimer.Start();
         }
 
+        private async Task RunInitialCountdown(int seconds)
+        {
+            IsShowingStartCountdown = true;
+            IsInputEnabled = false; // Khóa không cho gõ khi đang đếm 3.2.1
+            StartCountdownValue = seconds;
+
+            while (StartCountdownValue > 0)
+            {
+                // _audioService.PlaySound("beep.mp3"); // Nếu bạn muốn thêm âm thanh
+                await Task.Delay(1000);
+                StartCountdownValue--;
+            }
+
+            IsShowingStartCountdown = false;
+        }
+
         protected override async Task SubscribeToRealtimeChannel()
         {
             var result = await _supabaseService.SubscribeToFlashcardChannelAsync(ClassroomId, OnFlashcardStateReceived);
@@ -178,7 +199,15 @@ namespace EasyFlips.ViewModels
         {
             switch (action)
             {
+
                 case FlashcardAction.StartSession:
+                    if (!_hasStartedFirstCountdown)
+                    {
+                        _hasStartedFirstCountdown = true;
+                        await RunInitialCountdown(3);
+                    }
+                    PrepareForNewQuestion();
+                    break;
                 case FlashcardAction.NextCard:
                     PrepareForNewQuestion();
                     break;

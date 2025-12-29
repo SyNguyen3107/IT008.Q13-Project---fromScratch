@@ -358,5 +358,52 @@
                 </Button>
             </Grid>
         </Grid>
+        <Grid x:Name="CountdownOverlay" 
+              Visibility="{Binding IsShowingStartCountdown, Converter={StaticResource BoolToVis}}"
+              Panel.ZIndex="100">
+            <Border Background="#F21A1A1A"/>
+
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="TRẬN ĐẤU SẼ BẮT ĐẦU TRONG" 
+                           Foreground="{StaticResource Brush.TextSecondary}" 
+                           FontSize="18" 
+                           FontWeight="Bold" 
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,10"/>
+
+                <TextBlock Text="{Binding StartCountdownValue, NotifyOnTargetUpdated=True}" 
+           Foreground="{StaticResource Brush.Accent2}" 
+           FontSize="180" 
+           FontWeight="Black" 
+           HorizontalAlignment="Center"
+           RenderTransformOrigin="0.5,0.5">
+
+                    <TextBlock.RenderTransform>
+                        <ScaleTransform x:Name="NumberScale" ScaleX="1" ScaleY="1"/>
+                    </TextBlock.RenderTransform>
+
+                    <TextBlock.Triggers>
+                        <EventTrigger RoutedEvent="Binding.TargetUpdated">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                     From="2.0" To="1.0" Duration="0:0:0.5">
+                                        <DoubleAnimation.EasingFunction>
+                                            <BackEase Amplitude="1" EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                     From="2.0" To="1.0" Duration="0:0:0.5">
+                                        <DoubleAnimation.EasingFunction>
+                                            <BackEase Amplitude="1" EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </TextBlock.Triggers>
+                </TextBlock>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

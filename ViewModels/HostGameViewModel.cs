@@ -114,7 +114,7 @@ namespace EasyFlips.ViewModels
             CurrentPhase = GamePhase.Waiting;
             StatusMessage = "Chuẩn bị bắt đầu";
             StatusColor = "#FF5E57";
-
+            _ = BroadcastPhaseAsync(GamePhase.Countdown, FlashcardAction.StartSession);
             StartTimer(3);
         }
 
