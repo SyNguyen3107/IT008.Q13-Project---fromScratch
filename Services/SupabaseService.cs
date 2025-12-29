@@ -566,8 +566,21 @@ namespace EasyFlips.Services
         }
 
         #endregion
+        public async Task DeactivateClassroomAsync(string classroomId)
+        {
+            try
+            {
+                await _client.From<Classroom>()
+                             .Where(x => x.Id == classroomId)
+                             .Set(x => x.IsActive, false)
+                             .Update();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Deactivate] Error: {ex.Message}");
+            }
+        }
     }
-
     public class CustomFileSessionHandler : IGotrueSessionPersistence<Session>
     {
         private readonly string _cachePath;

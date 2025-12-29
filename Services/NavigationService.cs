@@ -286,14 +286,28 @@ namespace EasyFlips.Services
         /// </summary>
         public void ShowMainWindow()
         {
-            // Kiểm tra xem MainWindow đã mở chưa để tránh mở trùng
-            if (!Application.Current.Windows.OfType<MainWindow>().Any())
+            // Kiểm tra an toàn để tránh crash
+            if (Application.Current == null) return;
+
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                var vm = _serviceProvider.GetRequiredService<MainViewModel>();
-                var window = _serviceProvider.GetRequiredService<MainWindow>();
-                window.DataContext = vm;
-                window.Show();
-            }
+                // Kiểm tra xem MainWindow đã tồn tại chưa
+                var existingWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
+
+                if (existingWindow != null)
+                {
+                    existingWindow.Show();
+                    if (existingWindow.WindowState == WindowState.Minimized)
+                        existingWindow.WindowState = WindowState.Normal;
+                    existingWindow.Activate();
+                }
+                else
+                {
+                    // Nếu chưa có thì khởi tạo mới thông qua ServiceProvider (để giữ DI)
+                    var newMain = _serviceProvider.GetRequiredService<MainWindow>();
+                    newMain.Show();
+                }
+            });
         }
         public async Task ShowHostGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound)
         {

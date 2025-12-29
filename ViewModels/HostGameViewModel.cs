@@ -39,6 +39,7 @@ namespace EasyFlips.ViewModels
             AudioService audioService)
             : base(authService, supabaseService, navigationService, audioService)
         {
+            QuitConfirmationMessage = "Are you sure you want to disband the room? All members will be disconnected.";
         }
 
         #region Initialization
@@ -355,5 +356,18 @@ namespace EasyFlips.ViewModels
         }
 
         #endregion
+        protected override async Task OnQuitSpecificAsync()
+        {
+            try
+            {
+                await _supabaseService.EndFlashcardSessionAsync(ClassroomId, _authService.CurrentUserId);
+                await _supabaseService.DeactivateClassroomAsync(ClassroomId);
+            }
+            catch (Exception ex)
+            {
+                // Thông báo lỗi tiếng Anh
+                MessageBox.Show($"Error cleaning up room: {ex.Message}", "Error");
+            }
+        }
     }
 }

@@ -16,6 +16,33 @@
 
         <DropShadowEffect x:Key="CardShadow" Color="Black" Opacity="0.4" BlurRadius="25" ShadowDepth="0"/>
 
+        <Style x:Key="QuitButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" CornerRadius="8" Padding="15,8">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#EB3349" Offset="0"/>
+                                    <GradientStop Color="#F45C43" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="{StaticResource Brush.Surface}"/>
             <Setter Property="Foreground" Value="White"/>
@@ -108,7 +135,6 @@
                 </StackPanel>
 
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
-
                     <Border CornerRadius="12" Padding="15,8" Margin="0,0,12,0">
                         <Border.Style>
                             <Style TargetType="Border">
@@ -152,9 +178,13 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Background="#1AFFFFFF" CornerRadius="12" Padding="15,8">
+                    <Border Background="#1AFFFFFF" CornerRadius="12" Padding="15,8" Margin="0,0,12,0">
                         <TextBlock Text="{Binding CurrentQuestionInfo}" Foreground="White" FontSize="14" FontWeight="Bold"/>
                     </Border>
+
+                    <Button Command="{Binding QuitGameCommand}" 
+                            Content="LEAVE ROOM"
+                            Style="{StaticResource QuitButtonStyle}"/>
                 </StackPanel>
             </Grid>
 
@@ -177,27 +207,13 @@
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="White"/>
-
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding TimeRemaining}" Value="5">
-                                        <Setter Property="Foreground" Value="#FF6B6B"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding TimeRemaining}" Value="4">
-                                        <Setter Property="Foreground" Value="#FF6B6B"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding TimeRemaining}" Value="3">
-                                        <Setter Property="Foreground" Value="#FF6B6B"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding TimeRemaining}" Value="2">
-                                        <Setter Property="Foreground" Value="#FF6B6B"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding TimeRemaining}" Value="1">
                                         <Setter Property="Foreground" Value="#FF6B6B"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding TimeRemaining}" Value="0">
                                         <Setter Property="Foreground" Value="#FF6B6B"/>
                                     </DataTrigger>
-
                                     <DataTrigger Binding="{Binding IsShowingResult}" Value="True">
                                         <Setter Property="Foreground" Value="#4ADE80"/>
                                     </DataTrigger>
@@ -285,9 +301,9 @@
                     </TextBox.InputBindings>
                 </TextBox>
                 <Button Grid.Column="1" Height="60" 
-                    Style="{StaticResource ModernButtonStyle}" 
-                    Command="{Binding SubmitAnswerCommand}">
-                    
+                        Style="{StaticResource ModernButtonStyle}" 
+                        Command="{Binding SubmitAnswerCommand}">
+
                     <Grid>
                         <TextBlock Text="SUBMIT" VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock.Style>

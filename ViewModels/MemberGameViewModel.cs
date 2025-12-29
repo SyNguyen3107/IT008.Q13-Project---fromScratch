@@ -65,6 +65,7 @@ namespace EasyFlips.ViewModels
         {
             _comparisonService = comparisonService;
             IsInputEnabled = false;
+            QuitConfirmationMessage = "Do you want to leave the room?";
         }
 
         public override async Task InitializeAsync(string roomId, string classroomId, Deck? deck, int timePerRound)
@@ -173,7 +174,7 @@ namespace EasyFlips.ViewModels
             });
         }
 
-        private void UpdatePhaseFromAction(FlashcardAction action)
+        private async void UpdatePhaseFromAction(FlashcardAction action)
         {
             switch (action)
             {
@@ -186,7 +187,15 @@ namespace EasyFlips.ViewModels
                     break;
                 case FlashcardAction.EndSession:
                     IsInputEnabled = false;
-                    MessageBox.Show("Kết thúc phiên!", "Thông báo");
+                    DisposeTimer(); // Dừng timer ngay lập tức
+
+                    // [MỚI] Thông báo và điều hướng về MainWindow
+                    MessageBox.Show("The host has ended this session.", "Notification");
+
+                    // Thực hiện dọn dẹp giống như khi chủ động Quit
+                    await _supabaseService.LeaveFlashcardSyncChannelAsync(ClassroomId);
+                    _navigationService.ShowMainWindow();
+                    RequestCloseWindow(); // Gọi Action để View đóng cửa sổ
                     break;
             }
         }
@@ -294,6 +303,15 @@ namespace EasyFlips.ViewModels
         {
             _countdownTimer?.Stop();
             _countdownTimer?.Dispose();
+        }
+        protected override async Task OnQuitSpecificAsync()
+        {
+            try
+            {
+                // Logic rời phòng (nếu cần)
+                await Task.CompletedTask;
+            }
+            catch { }
         }
     }
 }

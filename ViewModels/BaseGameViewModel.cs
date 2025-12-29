@@ -147,12 +147,17 @@ namespace EasyFlips.ViewModels
         /// <summary>
         /// Handles the "Quit Game" action with confirmation dialog.
         /// </summary>
+        // Trong BaseGameViewModel.cs
+
+        [ObservableProperty]
+        private string _quitConfirmationMessage = "Are you sure you want to quit the game?";
+
         [RelayCommand]
         public async Task QuitGame()
         {
-            // English Dialog
+            // Title: "Confirmation"
             if (MessageBox.Show(
-                "Are you sure you want to quit the game?",
+                QuitConfirmationMessage,
                 "Confirmation",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning) != MessageBoxResult.Yes)
@@ -160,11 +165,14 @@ namespace EasyFlips.ViewModels
 
             await OnQuitSpecificAsync();
 
-            // Clean up connection
             await _supabaseService.LeaveFlashcardSyncChannelAsync(ClassroomId);
 
             _navigationService.ShowMainWindow();
-            ForceCloseWindow();
+
+            if (CloseWindowAction != null)
+                RequestCloseWindow();
+            else
+                ForceCloseWindow();
         }
 
         /// <summary>
@@ -200,5 +208,12 @@ namespace EasyFlips.ViewModels
         protected abstract Task SubscribeToRealtimeChannel();
 
         #endregion
+        public Action? CloseWindowAction { get; set; }
+
+        // [BỔ SUNG] Hàm gọi Action đóng cửa sổ
+        protected void RequestCloseWindow()
+        {
+            CloseWindowAction?.Invoke();
+        }
     }
 }

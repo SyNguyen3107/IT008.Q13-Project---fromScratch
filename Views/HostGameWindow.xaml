@@ -41,7 +41,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        
+
 
         <Style x:Key="SubmitButtonStyle" TargetType="Button">
             <Setter Property="Background">
@@ -105,12 +105,9 @@
         <Style x:Key="NextCardButtonStyle" TargetType="Button" BasedOn="{StaticResource SubmitButtonStyle}">
             <Setter Property="Background">
                 <Setter.Value>
-                    <!-- Gradient xanh lá -->
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                         <GradientStop Color="#27AE60" Offset="0"/>
-                        <!-- xanh lá đậm -->
                         <GradientStop Color="#2ECC71" Offset="1"/>
-                        <!-- xanh lá sáng -->
                     </LinearGradientBrush>
                 </Setter.Value>
             </Setter>
@@ -214,7 +211,7 @@
         </Style>
 
     </Window.Resources>
-    
+
     <Grid Background="{StaticResource MainBackground}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="320"/>
@@ -289,12 +286,12 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,0">
-                    
+
                     <TextBlock Text="{Binding CurrentQuestionInfo}" 
            FontSize="24" FontWeight="Bold" Foreground="#27AE60"/>
                     <TextBlock Text=" Questions" 
                     FontSize="14" Foreground="#BDC3C7" VerticalAlignment="Bottom" Margin="5,0,0,4"/>
-   
+
                 </StackPanel>
 
 
@@ -309,7 +306,7 @@
                             </Style.Triggers>
                         </Style>
                     </StackPanel.Style>
-                    
+
 
                     <Border Background="#15181C" CornerRadius="25" Padding="30,5" BorderBrush="#33FFFFFF" BorderThickness="1" HorizontalAlignment="Center">
                         <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
@@ -325,7 +322,7 @@
                        TextAlignment="Center"/>
                         </StackPanel>
                     </Border>
-                    
+
                     <ProgressBar Margin="0,10,0,0"
                      Style="{StaticResource GlassProgressBarStyle}"
                      Value="{Binding TimeRemaining}"
@@ -339,7 +336,7 @@
 
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
-                    <Button Command="{Binding QuitGameCommand}" Content="QUIT GAME" 
+                    <Button Command="{Binding QuitGameCommand}" Content="CLOSE ROOM" 
                             Style="{StaticResource QuitButtonStyle}" 
                             FontSize="12" Foreground="White" FontWeight="SemiBold"/>
                 </StackPanel>
@@ -353,7 +350,6 @@
 
                     <Grid>
 
-                        <!-- COUNTDOWN VIEW -->
                         <Grid>
                             <Grid.Style>
                                 <Style TargetType="Grid">
@@ -376,13 +372,11 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- FRONT CARD (QUESTION) -->
                         <Grid Margin="30">
                             <Grid.Style>
                                 <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <!-- Chỉ hiển thị khi đang Question và chưa flip -->
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
                                                 <Condition Binding="{Binding CurrentPhase}" Value="Question"/>
@@ -401,7 +395,7 @@
 
                             <StackPanel Grid.Row="0" VerticalAlignment="Center">
                                 <Image Source="{Binding CurrentCard.FrontImagePath, Converter={StaticResource ImagePathConverter}}"
-                       Stretch="Uniform" MaxHeight="250" Margin="0,0,0,20"/>
+                        Stretch="Uniform" MaxHeight="250" Margin="0,0,0,20"/>
                                 <TextBlock Text="{Binding CurrentCard.FrontText}"
                            TextWrapping="Wrap" TextAlignment="Center"
                            FontSize="26" FontWeight="SemiBold" Foreground="White"/>
@@ -414,13 +408,11 @@
                             </Grid>
                         </Grid>
 
-                        <!-- BACK CARD (ANSWER/RESULT) -->
                         <Grid Margin="30">
                             <Grid.Style>
                                 <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <!-- Hiển thị khi đã flip hoặc đang ở pha Result -->
                                         <DataTrigger Binding="{Binding IsCardFlipped}" Value="True">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
@@ -445,10 +437,10 @@
                                              Stretch="Uniform" MaxHeight="300" Margin="0,0,0,20"/>
 
 
-                                        <Button Content="BACK TO QUESTION"
+                                    <Button Content="BACK TO QUESTION"
                                             Command="{Binding BackToFrontCommand}"
                                             Width="220" Height="45">
-                                            <Button.Style>
+                                        <Button.Style>
                                             <Style TargetType="Button" BasedOn="{StaticResource SubmitButtonStyle}">
                                                 <Setter Property="Visibility" Value="Visible"/>
                                                 <Style.Triggers>
