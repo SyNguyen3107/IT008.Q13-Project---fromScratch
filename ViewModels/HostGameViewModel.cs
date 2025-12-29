@@ -2,9 +2,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Interfaces;
 using EasyFlips.Models;
+using EasyFlips.Repositories;
 using EasyFlips.Services;
 using System;
 using System.Collections.ObjectModel; // Cần thiết cho ObservableCollection
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -45,10 +47,10 @@ namespace EasyFlips.ViewModels
         #region Initialization
 
         public override async Task InitializeAsync(
-    string roomId,
-    string classroomId,
-    Deck deck,
-    int timePerRound)
+        string roomId,
+        string classroomId,
+        Deck deck,
+        int timePerRound)
         {
             await base.InitializeAsync(roomId, classroomId, deck, timePerRound);
 
@@ -362,6 +364,7 @@ namespace EasyFlips.ViewModels
             {
                 await _supabaseService.EndFlashcardSessionAsync(ClassroomId, _authService.CurrentUserId);
                 await _supabaseService.DeactivateClassroomAsync(ClassroomId);
+                
             }
             catch (Exception ex)
             {
@@ -369,5 +372,20 @@ namespace EasyFlips.ViewModels
                 MessageBox.Show($"Error cleaning up room: {ex.Message}", "Error");
             }
         }
+
+
+        #region Close Window
+        [RelayCommand]
+        private async Task WindowClosing(CancelEventArgs e)
+        {
+
+                e.Cancel = true;
+
+                // 2. Gọi hàm giải tán phòng của bạn
+                // Hàm này sẽ tự lo việc hỏi Confirm, xóa DB và tự đóng Window sau khi xong
+                await QuitGame();
+
+        }
+        #endregion
     }
 }

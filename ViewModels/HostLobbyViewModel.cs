@@ -6,6 +6,7 @@ using EasyFlips.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -187,6 +188,20 @@ namespace EasyFlips.ViewModels
         }
 
         [RelayCommand]
+        private async Task WindowClosing(CancelEventArgs e)
+        {
+
+            if (!CanCloseWindow)
+            {
+                e.Cancel = true;
+
+                // 2. Gọi hàm giải tán phòng của bạn
+                // Hàm này sẽ tự lo việc hỏi Confirm, xóa DB và tự đóng Window sau khi xong
+                await CloseRoom();
+            }
+        }
+
+        [RelayCommand]
         private async Task CloseRoom()
         {
             if (MessageBox.Show("Bạn có chắc muốn giải tán phòng?", "Xác nhận", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
@@ -248,5 +263,7 @@ namespace EasyFlips.ViewModels
                 MessageBox.Show($"Lỗi mở cài đặt: {ex.Message}");
             }
         }
+
+
     }
 }

@@ -6,6 +6,7 @@ using EasyFlips.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -163,9 +164,8 @@ namespace EasyFlips.ViewModels
                 MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
 
-            await OnQuitSpecificAsync();
-
             await _supabaseService.LeaveFlashcardSyncChannelAsync(ClassroomId);
+            await OnQuitSpecificAsync();
 
             _navigationService.ShowMainWindow();
 
@@ -197,6 +197,7 @@ namespace EasyFlips.ViewModels
                 }
             });
         }
+        
 
         #endregion
 

@@ -26,17 +26,7 @@ namespace EasyFlips.Views
             };
         }
 
-        // CHỈ GIỮ LẠI LOGIC CHẶN NÚT X
-        protected override void OnClosing(CancelEventArgs e)
-        {
-            if (!_canClose)
-            {
-                e.Cancel = true; // Chặn lại
-                MessageBox.Show("Vui lòng nhấn nút 'QUIT GAME' để giải tán phòng đúng cách!",
-                                "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-            base.OnClosing(e);
-        }
+        
 
         // [ĐÃ XÓA] Logic OnClosed mở MainWindow -> Vì ViewModel đã lo việc này rồi!
     }

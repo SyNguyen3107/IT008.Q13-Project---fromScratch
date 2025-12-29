@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:EasyFlips.ViewModels"
         xmlns:cv="clr-namespace:EasyFlips.Converters" 
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         
         mc:Ignorable="d"
         Title="EasyFlips Game" Height="720" Width="1080"
@@ -12,6 +13,13 @@
         Background="{StaticResource Brush.Dark}"
         Foreground="White">
 
+
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Closing">
+            <i:InvokeCommandAction Command="{Binding WindowClosingCommand}" 
+                               PassEventArgsToCommand="True"/>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
     <Window.Resources>
         <cv:ImagePathConverter x:Key="ImagePathConverter"/>
         <Style x:Key="AnswerTextBoxStyle" TargetType="TextBox">
