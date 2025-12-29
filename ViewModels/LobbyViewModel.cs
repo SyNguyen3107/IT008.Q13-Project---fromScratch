@@ -113,14 +113,13 @@ namespace EasyFlips.ViewModels
                 var roomInfo = await _classroomRepository.GetClassroomByCodeAsync(RoomId);
                 if (roomInfo == null)
                 {
-                    MessageBox.Show("Phòng không tồn tại!");
+                    MessageBox.Show("Room not found!", "Error");
                     ForceCloseWindow();
                     return;
                 }
 
                 _realClassroomIdUUID = roomInfo.Id;
 
-                // Cài đặt thông số phòng ban đầu
                 MaxPlayers = maxPlayers ?? roomInfo.MaxPlayers;
                 TimePerRound = roomInfo.TimePerRound > 0 ? roomInfo.TimePerRound : 15;
                 TotalWaitTime = roomInfo.WaitTime;
@@ -135,7 +134,7 @@ namespace EasyFlips.ViewModels
                     await InitializeStudentAsync(roomInfo, waitTime);
                 }
 
-                // Tải dữ liệu lần đầu và bắt đầu Polling
+
                 await RefreshLobbyState();
                 StartPolling();
                 _audioService.PlayLoopingAudio("Resources/Sound/Lobby.mp3");
@@ -143,7 +142,7 @@ namespace EasyFlips.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi khi khởi tạo phòng: {ex.Message}");
+                MessageBox.Show($"Failed to initialize the room: {ex.Message}", "Error");
                 ForceCloseWindow();
             }
         }
@@ -174,7 +173,6 @@ namespace EasyFlips.ViewModels
             var myId = _authService.CurrentUserId ?? _userSession.UserId;
             await _supabaseService.AddMemberAsync(_realClassroomIdUUID, myId);
 
-            // Tính toán thời gian trôi qua để đồng bộ Timer
             var updatedUtc = DateTime.SpecifyKind(roomInfo.UpdatedAt, DateTimeKind.Utc);
             var elapsed = (int)(DateTime.Now - updatedUtc).TotalSeconds;
 
@@ -188,7 +186,7 @@ namespace EasyFlips.ViewModels
             }
             else
             {
-                MessageBox.Show("⏰ Hết giờ, bạn không thể join vào phòng này nữa.", "Thông báo");
+                MessageBox.Show("⏰ Time's up! You can no longer join this room.", "Notification");
                 AutoStartSeconds = 0;
                 IsAutoStartActive = false;
                 CanCloseWindow = true;
@@ -228,7 +226,7 @@ namespace EasyFlips.ViewModels
         {
             try
             {
-                // 1. Kiểm tra phòng tồn tại
+              
                 var room = await _supabaseService.GetClassroomAsync(_realClassroomIdUUID);
                 if (room == null || !room.IsActive)
                 {
@@ -236,30 +234,30 @@ namespace EasyFlips.ViewModels
                     return;
                 }
 
-                // 2. Đồng bộ Settings
+               
                 SyncRoomSettings(room);
 
                 var myId = _authService.CurrentUserId ?? _userSession.UserId;
 
-                // 3. Gửi Heartbeat (Member only)
+                
                 if (!IsHost)
                 {
                     _ = _supabaseService.SendHeartbeatAsync(_realClassroomIdUUID, myId);
                 }
 
-                // 4. Lấy danh sách thành viên mới nhất
+              
                 var currentMembers = await _supabaseService.GetClassroomMembersWithProfileAsync(_realClassroomIdUUID);
 
-                // 5. Host xử lý kick người dùng mất kết nối
+              
                 if (IsHost)
                 {
                     await HandleAutoKickAsync(currentMembers, myId);
                 }
 
-                // 6. Cập nhật UI
+               
                 UpdatePlayerList(currentMembers);
 
-                // 7. Kiểm tra trạng thái Game Start
+               
                 if (room.Status == "PLAYING" && !IsHost)
                 {
                     NavigateToGame();
@@ -295,7 +293,7 @@ namespace EasyFlips.ViewModels
         private void HandleRoomDissolved()
         {
             StopPolling();
-            MessageBox.Show("Chủ phòng đã giải tán phòng chơi.", "Thông báo");
+            MessageBox.Show("The host has disbanded the room.", "Notification");
             CanCloseWindow = true;
             ForceCloseWindow();
         }
@@ -317,7 +315,7 @@ namespace EasyFlips.ViewModels
                 {
                     DateTime lastActiveUtc;
 
-                    // Chuẩn hóa thời gian về UTC để so sánh chính xác
+                    
                     if (member.LastActive.Kind == DateTimeKind.Unspecified)
                     {
                         lastActiveUtc = DateTime.SpecifyKind(member.LastActive, DateTimeKind.Utc);
@@ -334,7 +332,7 @@ namespace EasyFlips.ViewModels
                 }
             }
                     
-            // Thực hiện xóa user khỏi DB và list tạm
+           
             foreach (var userId in usersToKick)
             {
                 System.Diagnostics.Debug.WriteLine($"[AutoKick] Kicking user: {userId}");
@@ -360,13 +358,13 @@ namespace EasyFlips.ViewModels
             {
                 var currentIds = serverMembers.Select(m => m.UserId).ToHashSet();
 
-                // Xóa người không còn trong phòng
+            
                 var idsFromServer = serverMembers.Select(x => x.UserId).ToHashSet();
                 var playersToRemove = Players.Where(p => !idsFromServer.Contains(p.Id)).ToList();
                 foreach (var p in playersToRemove) Players.Remove(p);
 
                 var joinedIds = currentIds.Except(_knownPlayerIds).ToList();
-                // Thêm người mới vào phòng
+             
                 foreach (var member in serverMembers)
                 {
                     if (!Players.Any(p => p.Id == member.UserId))
@@ -435,7 +433,7 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private async Task LeaveRoom()
         {
-            if (MessageBox.Show("Rời phòng?", "Xác nhận", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (MessageBox.Show("Are you sure you want to leave the room?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 try
                 {
@@ -461,15 +459,17 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private async Task CloseRoom()
         {
-            if (MessageBox.Show("Giải tán phòng?", "Xác nhận", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (MessageBox.Show("Are you sure you want to disband the room?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 try
                 {
                     StopPolling();
                     if (IsHost)
                     {
+                        
                         await _classroomRepository.DeleteClassroomAsync(RoomId);
                     }
+
                     CanCloseWindow = true;
                     ForceCloseWindow();
                 }
@@ -515,7 +515,6 @@ namespace EasyFlips.ViewModels
 
                 if (settingsWindow.ShowDialog() == true)
                 {
-                    // Cập nhật cài đặt lên DB
                     await _classroomRepository.UpdateClassroomSettingsAsync(
                         _realClassroomIdUUID,
                         settingsVm.SelectedDeck?.Id,
@@ -524,21 +523,19 @@ namespace EasyFlips.ViewModels
                         settingsVm.WaitTimeMinutes * 60
                     );
 
-                    // Cập nhật Local state
                     TotalWaitTime = settingsVm.WaitTimeMinutes * 60;
                     AutoStartSeconds = TotalWaitTime;
                     MaxPlayers = settingsVm.MaxPlayers;
 
-                    // Restart Auto-start timer
                     IsAutoStartActive = true;
                     _autoStartTimer.Start();
 
-                    MessageBox.Show("Cập nhật cài đặt phòng thành công.", "Thành công");
+                    MessageBox.Show("Room settings updated successfully.", "Success");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi mở cài đặt: {ex.Message}", "Lỗi");
+                MessageBox.Show($"Failed to open settings: {ex.Message}", "Error");
             }
         }
 
@@ -557,11 +554,11 @@ namespace EasyFlips.ViewModels
 
             if (IsMuted)
             {
-                _audioService.StopAudio(); // hoặc giảm volume về 0
+                _audioService.StopAudio(); 
             }
             else
             {
-                _audioService.PlayLoopingAudio("Resources/Sound/Lobby.mp3"); // bật lại nhạc
+                _audioService.PlayLoopingAudio("Resources/Sound/Lobby.mp3");
             }
         }
 

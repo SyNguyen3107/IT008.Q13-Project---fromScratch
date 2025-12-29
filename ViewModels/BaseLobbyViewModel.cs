@@ -67,7 +67,6 @@ namespace EasyFlips.ViewModels
 
         public ObservableCollection<PlayerInfo> Players { get; } = new ObservableCollection<PlayerInfo>();
 
-        // Property để Binding View biết có thể đóng cửa sổ hay chưa
         public bool CanCloseWindow { get; set; } = false;
         #endregion
 
@@ -103,7 +102,7 @@ namespace EasyFlips.ViewModels
                 var roomInfo = await _classroomRepository.GetClassroomByCodeAsync(RoomId);
                 if (roomInfo == null)
                 {
-                    MessageBox.Show("Phòng không tồn tại!", "Lỗi");
+                    MessageBox.Show("Room does not exist!", "Error");
                     ForceCloseWindow();
                     return;
                 }
@@ -114,25 +113,21 @@ namespace EasyFlips.ViewModels
                 TotalWaitTime = roomInfo.WaitTime;
                 AutoStartSeconds = roomInfo.WaitTime;
 
-                // Template Method: Cho phép lớp con thực hiện logic khởi tạo riêng
                 await OnInitializeSpecificAsync(roomInfo);
 
-                // Tải dữ liệu và bắt đầu polling
                 await RefreshLobbyState();
                 StartPolling();
                 _audioService.PlayLoopingAudio("Resources/Sound/Lobby.mp3");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi khởi tạo phòng: {ex.Message}");
+                MessageBox.Show($"Room initialization error: {ex.Message}", "Error");
                 ForceCloseWindow();
             }
         }
 
-        // Abstract method để lớp con implement logic riêng khi init
         protected abstract Task OnInitializeSpecificAsync(Classroom roomInfo);
 
-        // Abstract method để lớp con implement logic riêng trong vòng lặp polling (VD: Heartbeat vs AutoKick)
         protected abstract Task OnPollingSpecificAsync(List<MemberWithProfile> currentMembers);
 
         #region Polling Logic
@@ -152,7 +147,6 @@ namespace EasyFlips.ViewModels
         {
             try
             {
-                // 1. Kiểm tra phòng tồn tại / Status
                 var room = await _supabaseService.GetClassroomAsync(_realClassroomIdUUID);
                 if (room == null || !room.IsActive)
                 {
@@ -160,23 +154,16 @@ namespace EasyFlips.ViewModels
                     return;
                 }
 
-                // 2. Đồng bộ Settings (Thời gian, MaxPlayers)
                 SyncRoomSettings(room);
 
-                // 3. Lấy danh sách thành viên
                 var currentMembers = await _supabaseService.GetClassroomMembersWithProfileAsync(_realClassroomIdUUID);
 
-                // 4. Update UI Player List
                 UpdatePlayerList(currentMembers);
 
-                // 5. Logic riêng của Host/Member (Heartbeat hoặc Kick)
                 await OnPollingSpecificAsync(currentMembers);
 
-                // 6. Kiểm tra Game Start
                 if (room.Status == "PLAYING")
                 {
-                    // Với Host: Đã handle trong command StartGame, nhưng check thừa cũng không sao
-                    // Với Member: Đây là lúc chuyển màn hình
                     HandleGameStarted();
                 }
             }
@@ -188,7 +175,6 @@ namespace EasyFlips.ViewModels
 
         protected virtual void HandleGameStarted()
         {
-            // Mặc định cho Member, Host sẽ override nếu cần logic khác (hoặc dùng chung)
             StopPolling();
             NavigateToGame();
         }
@@ -198,14 +184,11 @@ namespace EasyFlips.ViewModels
             if (MaxPlayers != room.MaxPlayers) MaxPlayers = room.MaxPlayers;
             if (TimePerRound != room.TimePerRound) TimePerRound = room.TimePerRound;
 
-            // Logic đồng bộ timer (quan trọng cho Member)
             if (room.UpdatedAt != _lastUpdatedAt)
             {
                 _lastUpdatedAt = room.UpdatedAt;
                 TotalWaitTime = room.WaitTime;
 
-                // Chỉ sync lại timer nếu không phải là người đang điều khiển (Host sẽ tự tick timer)
-                // Tuy nhiên để đơn giản, cả 2 đều sync theo server updated_at để nhất quán
                 var updatedUtc = DateTime.SpecifyKind(room.UpdatedAt, DateTimeKind.Utc);
                 var elapsed = (int)(DateTime.Now - updatedUtc).TotalSeconds;
                 AutoStartSeconds = Math.Max(room.WaitTime - elapsed, 0);
@@ -219,11 +202,9 @@ namespace EasyFlips.ViewModels
                 var currentIds = serverMembers.Select(m => m.UserId).ToHashSet();
                 var joinedIds = currentIds.Except(_knownPlayerIds).ToList();
 
-                // Xóa người rời phòng
                 var playersToRemove = Players.Where(p => !currentIds.Contains(p.Id)).ToList();
                 foreach (var p in playersToRemove) Players.Remove(p);
 
-                // Thêm người mới
                 foreach (var member in serverMembers)
                 {
                     if (!Players.Any(p => p.Id == member.UserId))
@@ -256,9 +237,6 @@ namespace EasyFlips.ViewModels
             }
             else
             {
-                // Khi hết giờ:
-                // Host sẽ tự động trigger StartGame trong lớp con.
-                // Member chỉ đợi status chuyển sang PLAYING từ Polling.
                 StopAutoStart();
                 OnTimerFinished();
             }
@@ -275,9 +253,8 @@ namespace EasyFlips.ViewModels
         protected void HandleRoomDissolved()
         {
             StopPolling();
-            MessageBox.Show("Phòng đã bị giải tán hoặc không còn tồn tại.", "Thông báo");
+            MessageBox.Show("The room has been disbanded or no longer exists.", "Notification");
 
-            // Mở lại MainWindow trước khi đóng Lobby
             _navigationService.ShowMainWindow();
 
             CanCloseWindow = true;

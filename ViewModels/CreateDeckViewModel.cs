@@ -22,14 +22,12 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private string _description = string.Empty;
 
-        // Constructor Injection
         public CreateDeckViewModel(IDeckRepository deckRepository, IMessenger messenger)
         {
             _deckRepository = deckRepository;
             _messenger = messenger;
         }
 
-        // Constructor mặc định (nếu cần thiết cho Design time, nhưng nên hạn chế dùng)
         public CreateDeckViewModel()
         {
             _messenger = WeakReferenceMessenger.Default;
@@ -45,20 +43,20 @@ namespace EasyFlips.ViewModels
         {
             try
             {
-                // Tạo Deck mới (ID sẽ được tự sinh trong Constructor của Deck hoặc Repository)
+
                 var newDeck = new Deck
                 {
                     Name = this.Name.Trim(),
                     Description = this.Description?.Trim(),
-                    // UserId sẽ được DeckRepository tự động gán từ AuthService
+
                 };
 
                 await _deckRepository.AddAsync(newDeck);
 
-                // Gửi tin nhắn để MainViewModel cập nhật lại danh sách
+
                 _messenger.Send(new DeckAddedMessage(newDeck));
 
-                // Đóng cửa sổ
+
                 if (param is Window window)
                 {
                     window.Close();

@@ -26,10 +26,8 @@ namespace EasyFlips.ViewModels
         {
             var myId = _authService.CurrentUserId ?? _userSession.UserId;
 
-            // 1. Thêm Member vào phòng (Join)
             await _supabaseService.AddMemberAsync(_realClassroomIdUUID, myId);
 
-            // 2. Tính toán thời gian còn lại để hiển thị đồng bộ với Host
             var updatedUtc = DateTime.SpecifyKind(roomInfo.UpdatedAt, DateTimeKind.Utc);
             var elapsed = (int)(DateTime.Now - updatedUtc).TotalSeconds;
             AutoStartSeconds = Math.Max(roomInfo.WaitTime - elapsed, 0);
@@ -41,19 +39,16 @@ namespace EasyFlips.ViewModels
             }
             else
             {
-                // Nếu vào khi đã hết giờ chờ (nhưng Host chưa Start hoặc đang Start)
-                // Thông báo hoặc cho phép ngồi chờ Host bấm nút
-                MessageBox.Show("Thời gian chờ đã kết thúc, vui lòng đợi chủ phòng bắt đầu.", "Thông báo");
+
+                MessageBox.Show("Waiting time is over. Please wait for the host to start.", "Notification");
                 IsAutoStartActive = false;
             }
         }
 
         protected override async Task OnPollingSpecificAsync(List<MemberWithProfile> currentMembers)
         {
-            // Logic Member: Gửi Heartbeat để báo mình còn sống
             var myId = _authService.CurrentUserId ?? _userSession.UserId;
 
-            // Kiểm tra xem mình có còn trong danh sách thành viên không (có bị Kick không?)
             bool amIStillInRoom = false;
             foreach (var m in currentMembers)
             {
@@ -67,20 +62,19 @@ namespace EasyFlips.ViewModels
             if (!amIStillInRoom)
             {
                 StopPolling();
-                MessageBox.Show("Bạn đã bị mời ra khỏi phòng (hoặc kết nối bị ngắt).", "Thông báo");
+                MessageBox.Show("You have been removed from the room (or the connection was lost).", "Notification");
                 CanCloseWindow = true;
                 ForceCloseWindow();
                 return;
             }
 
-            // Gửi Heartbeat update LastActive
             await _supabaseService.SendHeartbeatAsync(_realClassroomIdUUID, myId);
         }
 
         [RelayCommand]
         private async Task LeaveRoom()
         {
-            if (MessageBox.Show("Bạn muốn rời phòng?", "Xác nhận", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (MessageBox.Show("Are you sure you want to leave the room?", "Confirm", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 try
                 {
@@ -88,7 +82,6 @@ namespace EasyFlips.ViewModels
                     var myId = _authService.CurrentUserId ?? _userSession.UserId;
                     await _classroomRepository.RemoveMemberAsync(_realClassroomIdUUID, myId);
 
-                    // MỞ LẠI MAIN WINDOW
                     _navigationService.ShowMainWindow();
 
                     CanCloseWindow = true;
@@ -96,7 +89,6 @@ namespace EasyFlips.ViewModels
                 }
                 catch (Exception)
                 {
-                    // Dù lỗi API (ví dụ mất mạng) vẫn cho về trang chủ
                     _navigationService.ShowMainWindow();
                     ForceCloseWindow();
                 }

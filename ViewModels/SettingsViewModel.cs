@@ -18,21 +18,19 @@ namespace EasyFlips.ViewModels
 
         [ObservableProperty] private Deck _selectedDeck;
 
-        // Use a double backing property for Slider binding to avoid floating-point truncation
         [ObservableProperty] private double _maxPlayersDouble;
 
         [ObservableProperty] private int _timePerRound;
-        // Keep wait time displayed as minutes for UX
+
         [ObservableProperty] private int _waitTimeMinutes;
 
-        // Expose an integer view of max players (rounded) for labels and callers
         public int MaxPlayers
         {
             get => (int)Math.Round(MaxPlayersDouble);
             set => MaxPlayersDouble = value;
         }
 
-        // Keep ObservableProperty-generated change hook to update the integer view
+  
         partial void OnMaxPlayersDoubleChanged(double value)
         {
             OnPropertyChanged(nameof(MaxPlayers));
@@ -42,12 +40,12 @@ namespace EasyFlips.ViewModels
         {
             _deckRepository = deckRepository;
 
-            // Initialize properties (double backing so slider snaps cleanly)
+        
             _maxPlayersDouble = currentMaxPlayers;
             _timePerRound = currentTimePerRound;
             _waitTimeMinutes = currentWaitTimeSeconds / 60;
 
-            // Load decks async fire-and-forget (UI will update when loaded)
+
             _ = LoadDecksAsync(currentDeck);
         }
 
@@ -63,7 +61,6 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         public void Save(Window window)
         {
-            // Close dialog with positive result; actual persist handled by caller (LobbyViewModel)
             if (window != null)
             {
                 window.DialogResult = true;

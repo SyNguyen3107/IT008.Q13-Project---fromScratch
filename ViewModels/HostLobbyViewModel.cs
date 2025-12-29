@@ -17,7 +17,7 @@ namespace EasyFlips.ViewModels
     {
         private readonly IDeckRepository _deckRepository;
         private const int HEARTBEAT_TIMEOUT_SECONDS = 15;
-       
+
 
         [ObservableProperty] private Deck _selectedDeck;
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
@@ -37,23 +37,19 @@ namespace EasyFlips.ViewModels
 
         protected override async Task OnInitializeSpecificAsync(Classroom roomInfo)
         {
-            // 1. Load danh sách bộ bài cho Host chọn
             var decks = await _deckRepository.GetAllAsync();
             AvailableDecks.Clear();
             foreach (var d in decks) AvailableDecks.Add(d);
 
-            // Chọn mặc định bộ đầu tiên hoặc bộ đã lưu trong setting phòng (nếu có logic đó)
             if (!string.IsNullOrEmpty(roomInfo.DeckId))
             {
                 SelectedDeck = decks.FirstOrDefault(d => d.Id == roomInfo.DeckId);
             }
             else
             {
-                // Nếu chưa có thì chọn mặc định bộ đầu tiên
                 SelectedDeck = decks.FirstOrDefault();
             }
 
-            // 2. Kích hoạt Timer nếu có thời gian chờ
             if (AutoStartSeconds > 0)
             {
                 IsAutoStartActive = true;
@@ -63,40 +59,33 @@ namespace EasyFlips.ViewModels
 
         protected override async Task OnPollingSpecificAsync(List<MemberWithProfile> currentMembers)
         {
-            // Logic Host: Kiểm tra xem ai bị AFK để Kick
             var myId = _authService.CurrentUserId ?? _userSession.UserId;
             var now = DateTime.Now;
             var usersToKick = new List<string>();
 
             foreach (var member in currentMembers)
             {
-                if (member.UserId == myId) continue; // Không tự kick mình
-
-                // Chuẩn hóa về UTC để so sánh
+                if (member.UserId == myId) continue;
                 DateTime lastActiveUtc = member.LastActive.Kind == DateTimeKind.Unspecified
-                    ? DateTime.SpecifyKind(member.LastActive, DateTimeKind.Utc)
-                    : member.LastActive.ToUniversalTime();
+                ? DateTime.SpecifyKind(member.LastActive, DateTimeKind.Utc)
+                : member.LastActive.ToUniversalTime();
 
-                // Heartbeat timeout check
                 if ((now - lastActiveUtc).TotalSeconds > HEARTBEAT_TIMEOUT_SECONDS)
                 {
                     usersToKick.Add(member.UserId);
                 }
             }
 
-            // Thực hiện Kick
             foreach (var userId in usersToKick)
             {
                 System.Diagnostics.Debug.WriteLine($"[AutoKick] Kicking user: {userId}");
                 await _classroomRepository.RemoveMemberAsync(_realClassroomIdUUID, userId);
 
-                // UI sẽ tự cập nhật ở lần polling tiếp theo hoặc Polling Common Logic
             }
         }
 
         protected override void OnTimerFinished()
         {
-            // Hết giờ -> Host tự động bắt đầu game
             StartGameCommand.Execute(null);
         }
 
@@ -109,23 +98,18 @@ namespace EasyFlips.ViewModels
             {
                 if (SelectedDeck == null)
                 {
-                    MessageBox.Show("Vui lòng chọn một bộ thẻ trước khi bắt đầu!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("Please select a deck before starting!", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
                 StopAutoStart();
                 StopPolling();
 
-                // ⚠️ BƯỚC 1: Upload Deck lên Supabase Cloud
-                // Vì Deck lưu ở Local SQLite, Member không thể truy cập trực tiếp
-                // Cần upload lên Cloud để Member có thể fetch
-                System.Diagnostics.Debug.WriteLine($"[Host] 🔄 Đang upload deck lên cloud: {SelectedDeck.Name}");
-                
-                // Load full deck với cards từ local DB
+
                 var fullDeck = await _deckRepository.GetByIdAsync(SelectedDeck.Id);
                 if (fullDeck == null || fullDeck.Cards == null || !fullDeck.Cards.Any())
                 {
-                    MessageBox.Show("Bộ thẻ không có card nào! Vui lòng thêm card trước.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("This deck is empty! Please add some cards first.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     StartPolling();
                     return;
                 }
@@ -135,13 +119,12 @@ namespace EasyFlips.ViewModels
 
                 if (!uploadSuccess)
                 {
-                    MessageBox.Show("Không thể upload bộ thẻ lên server. Vui lòng thử lại.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Failed to upload the deck to the server. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     StartPolling();
                     return;
                 }
                 System.Diagnostics.Debug.WriteLine($"[Host] ✅ Upload deck thành công!");
 
-                // ⚠️ BƯỚC 2: Lưu DeckId vào Classroom
                 System.Diagnostics.Debug.WriteLine($"[Host] 🔄 Đang lưu DeckId: {SelectedDeck.Id}");
                 await _classroomRepository.UpdateClassroomSettingsAsync(
                    _realClassroomIdUUID,
@@ -152,31 +135,28 @@ namespace EasyFlips.ViewModels
                );
                 System.Diagnostics.Debug.WriteLine($"[Host] ✅ Đã lưu DeckId thành công");
 
-                // ⚠️ BƯỚC 3: Cập nhật status PLAYING (SAU CÙNG)
                 System.Diagnostics.Debug.WriteLine($"[Host] 🔄 Đang cập nhật status sang PLAYING...");
                 await _classroomRepository.UpdateStatusAsync(_realClassroomIdUUID, "PLAYING");
                 System.Diagnostics.Debug.WriteLine($"[Host] ✅ Đã cập nhật status thành công");
 
-                // Cập nhật SelectedDeck với full cards
                 SelectedDeck = fullDeck;
 
                 NavigateToGame();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi bắt đầu game: {ex.Message}", "Lỗi");
-                StartPolling(); // Resume polling nếu lỗi
+                MessageBox.Show($"Failed to start the game: {ex.Message}", "Error");
+                StartPolling();
             }
         }
-    
+
 
 
         protected override async void NavigateToGame()
         {
             CanCloseWindow = true;
 
-            Deck deckToPass = GetSelectedDeck(); // luôn có Deck
-
+            Deck deckToPass = GetSelectedDeck();
             await _navigationService.ShowHostGameWindowAsync(
                 RoomId,
                 _realClassroomIdUUID,
@@ -195,8 +175,6 @@ namespace EasyFlips.ViewModels
             {
                 e.Cancel = true;
 
-                // 2. Gọi hàm giải tán phòng của bạn
-                // Hàm này sẽ tự lo việc hỏi Confirm, xóa DB và tự đóng Window sau khi xong
                 await CloseRoom();
             }
         }
@@ -204,14 +182,13 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private async Task CloseRoom()
         {
-            if (MessageBox.Show("Bạn có chắc muốn giải tán phòng?", "Xác nhận", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (MessageBox.Show("Are you sure you want to disband the room?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 try
                 {
                     StopPolling();
                     await _classroomRepository.DeleteClassroomAsync(RoomId);
 
-                    // MỞ LẠI MAIN WINDOW
                     _navigationService.ShowMainWindow();
 
                     CanCloseWindow = true;
@@ -219,7 +196,7 @@ namespace EasyFlips.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Lỗi giải tán phòng: {ex.Message}");
+                    MessageBox.Show($"Failed to disband the room: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -229,38 +206,33 @@ namespace EasyFlips.ViewModels
         {
             try
             {
-                // Mở cửa sổ setting (tái sử dụng SettingsViewModel cũ)
                 var settingsVm = new SettingsViewModel(_deckRepository, SelectedDeck, MaxPlayers, TimePerRound, TotalWaitTime);
                 var settingsWindow = new Views.SettingsWindow(settingsVm);
 
                 if (settingsWindow.ShowDialog() == true)
                 {
-                    // Cập nhật lên DB
                     await _classroomRepository.UpdateClassroomSettingsAsync(
-                        _realClassroomIdUUID,
-                        settingsVm.SelectedDeck?.Id,
-                        settingsVm.MaxPlayers,
-                        settingsVm.TimePerRound,
-                        settingsVm.WaitTimeMinutes * 60
-                    );
+                    _realClassroomIdUUID,
+                    settingsVm.SelectedDeck?.Id,
+                    settingsVm.MaxPlayers,
+                    settingsVm.TimePerRound,
+                    settingsVm.WaitTimeMinutes * 60
+                );
 
-                    // Cập nhật Local
-                    SelectedDeck = settingsVm.SelectedDeck; // Quan trọng
-                    TotalWaitTime = settingsVm.WaitTimeMinutes * 60;
+                    SelectedDeck = settingsVm.SelectedDeck; TotalWaitTime = settingsVm.WaitTimeMinutes * 60;
                     AutoStartSeconds = TotalWaitTime;
                     MaxPlayers = settingsVm.MaxPlayers;
                     TimePerRound = settingsVm.TimePerRound;
 
-                    // Restart timer
                     IsAutoStartActive = true;
                     _autoStartTimer.Start();
 
-                    MessageBox.Show("Cập nhật cài đặt thành công.", "Thành công");
+                    MessageBox.Show("Settings updated successfully.", "Success");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi mở cài đặt: {ex.Message}");
+                MessageBox.Show($"Failed to open settings: {ex.Message}", "Error");
             }
         }
 

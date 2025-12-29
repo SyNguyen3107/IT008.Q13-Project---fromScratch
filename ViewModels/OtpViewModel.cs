@@ -47,16 +47,14 @@ namespace EasyFlips.ViewModels
             var success = await _authService.VerifyOtpAsync(_email, OtpCode);
             if (success)
             {
-                MessageBox.Show("Xác thực OTP thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                //Mở ResetPasswordWindow
+                MessageBox.Show("OTP verified successfully!", "Notification", MessageBoxButton.OK, MessageBoxImage.Information);
                 _navigationService.ShowResetPasswordWindow();
                 CloseCurrentWindow();
 
             }
             else
             {
-                MessageBox.Show("Mã OTP không hợp lệ hoặc đã hết hạn.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Invalid or expired OTP.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         private void CloseCurrentWindow()

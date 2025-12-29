@@ -13,15 +13,12 @@ namespace EasyFlips.ViewModels
     public partial class JoinViewModel : ObservableObject
     {
         private readonly INavigationService _navigationService;
-        private readonly IClassroomRepository _classroomRepository; // [ADD]
-
+        private readonly IClassroomRepository _classroomRepository;
         [ObservableProperty]
         private string _roomIdInput;
 
         [ObservableProperty]
-        private string _roomCode; // Binding với TextBox nhập mã
-
-        // [UPDATE] Constructor nhận thêm IClassroomRepository
+        private string _roomCode;
         public JoinViewModel(INavigationService navigationService, IClassroomRepository classroomRepository)
         {
             _navigationService = navigationService;
@@ -42,64 +39,57 @@ namespace EasyFlips.ViewModels
 
             if (string.IsNullOrWhiteSpace(code) || code.Length < 4)
             {
-                MessageBox.Show("Vui lòng nhập mã phòng hợp lệ (ví dụ: ABC123)", "Lỗi nhập liệu");
+                MessageBox.Show("Please enter a valid Room Code (e.g., ABC123).", "Input Error");
                 return;
             }
 
             try
             {
-                // [UPDATE] 1. Kiểm tra phòng trên Database
                 var room = await _classroomRepository.GetClassroomByCodeAsync(code);
 
-                // 2. Validate các trường hợp
                 if (room == null)
                 {
-                    MessageBox.Show("Phòng không tồn tại hoặc sai mã!", "Lỗi");
+                    MessageBox.Show("Room not found or invalid code!", "Error");
                     return;
                 }
 
                 if (room.Status == "CLOSED")
                 {
-                    MessageBox.Show("Phòng này đã bị đóng.", "Thông báo");
+                    MessageBox.Show("This room has been closed.", "Notification");
                     return;
                 }
 
                 if (room.Status == "PLAYING")
                 {
-                    MessageBox.Show("Trò chơi đã bắt đầu, bạn không thể vào lúc này.", "Tiếc quá");
+                    MessageBox.Show("The game is already in progress. You cannot join at this time.", "Oops!");
                     return;
                 }
 
-                // 3. Hợp lệ -> Vào Lobby
                 await _navigationService.ShowMemberLobbyWindowAsync(code);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi khi kiểm tra phòng: {ex.Message}", "Lỗi kết nối");
+                MessageBox.Show($"Error checking room status: {ex.Message}", "Connection Error");
             }
         }
         [RelayCommand]
         private void CloseWindow()
         {
-            // 1. Kiểm tra nếu App đang shutdown thì không làm gì cả
             if (Application.Current == null) return;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
                 try
                 {
-                    // 2. Dùng .ToList() để tạo bản sao danh sách cửa sổ TRƯỚC khi duyệt
-                    // Điều này ngăn lỗi "Collection was modified" khi cửa sổ đang đóng
                     var window = Application.Current.Windows
-                        .OfType<Window>()
-                        .ToList()
-                        .FirstOrDefault(w => w.DataContext == this);
+                .OfType<Window>()
+                .ToList()
+                .FirstOrDefault(w => w.DataContext == this);
 
                     window?.Close();
                 }
                 catch (Exception)
                 {
-                    // Bỏ qua lỗi nếu cửa sổ đã đóng hoặc không thể truy cập
                 }
             });
         }

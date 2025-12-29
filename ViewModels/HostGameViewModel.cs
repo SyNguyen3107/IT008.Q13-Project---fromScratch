@@ -5,7 +5,7 @@ using EasyFlips.Models;
 using EasyFlips.Repositories;
 using EasyFlips.Services;
 using System;
-using System.Collections.ObjectModel; // Cần thiết cho ObservableCollection
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -21,7 +21,6 @@ namespace EasyFlips.ViewModels
 
         #region Properties
 
-        // [FIX LỖI] Thêm khai báo Leaderboard tại đây
         [ObservableProperty]
         private ObservableCollection<LeaderboardEntry> _leaderboard = new ObservableCollection<LeaderboardEntry>();
 
@@ -55,30 +54,24 @@ namespace EasyFlips.ViewModels
             await base.InitializeAsync(roomId, classroomId, deck, timePerRound);
 
             if (deck == null || deck.Cards.Count == 0)
-                throw new InvalidOperationException("Deck trống, không thể bắt đầu game");
+                throw new InvalidOperationException("The selected deck contains no cards. Game initialization failed.");
 
-            // 1. Subscribe kênh Realtime
             await SubscribeToRealtimeChannel();
 
             await Task.Delay(150);
 
-            // 2. Sắp xếp thẻ
             if (CurrentDeck != null && CurrentDeck.Cards != null)
             {
                 CurrentDeck.Cards = CurrentDeck.Cards.OrderBy(c => c.Id).ToList();
             }
 
-            // 3. Khởi tạo thẻ đầu tiên
             CurrentIndex = 0;
             CurrentCard = CurrentDeck.Cards.ElementAt(CurrentIndex);
             CurrentQuestionInfo = $"{CurrentIndex + 1}/{CurrentDeck.Cards.Count}";
 
-            // 4. Load danh sách thành viên
             var members = await _supabaseService.GetClassroomMembersWithProfileAsync(classroomId);
             UpdatePlayerList(members);
 
-            // [FIX VẤN ĐỀ LEADERBOARD TRỐNG] 
-            // Khởi tạo Leaderboard ngay lập tức từ danh sách members lấy được
             Leaderboard.Clear();
             foreach (var mem in members)
             {
@@ -93,10 +86,8 @@ namespace EasyFlips.ViewModels
                 });
             }
 
-            // 5. Bắt đầu Countdown
             StartCountdown();
 
-            // Gửi tín hiệu Start
             _ = _supabaseService.StartFlashcardSessionAsync(
                 ClassroomId,
                 _authService.CurrentUserId,
@@ -114,7 +105,7 @@ namespace EasyFlips.ViewModels
         private void StartCountdown()
         {
             CurrentPhase = GamePhase.Waiting;
-            StatusMessage = "Chuẩn bị bắt đầu";
+            StatusMessage = "Preparing to start...";
             StatusColor = "#FF5E57";
             _ = BroadcastPhaseAsync(GamePhase.Countdown, FlashcardAction.StartSession);
             StartTimer(3);
@@ -123,7 +114,7 @@ namespace EasyFlips.ViewModels
         private async Task StartQuestionAsync()
         {
             CurrentPhase = GamePhase.Question;
-            StatusMessage = "Trả lời câu hỏi";
+            StatusMessage = "Answering...";
             StatusColor = "#FF5E57";
 
             StartTimer(TotalTimePerRound);
@@ -134,7 +125,7 @@ namespace EasyFlips.ViewModels
         private async Task StartResultAsync()
         {
             CurrentPhase = GamePhase.Result;
-            StatusMessage = "Xem kết quả";
+            StatusMessage = "Showing results...";
             StatusColor = "#27AE60";
 
             StartTimer(10);
@@ -259,7 +250,6 @@ namespace EasyFlips.ViewModels
 
         private void OnFlashcardStateReceived(FlashcardSyncState state)
         {
-            // Host tự quản lý state
         }
 
         private void OnScoreReceived(ScoreSubmission submission)
@@ -270,13 +260,11 @@ namespace EasyFlips.ViewModels
                 Debug.WriteLine($"[HOST-RECEIVE] ID: {submission.UserId}");
                 Debug.WriteLine($"[HOST-RECEIVE] Name: {submission.DisplayName}");
                 Debug.WriteLine($"[HOST-RECEIVE] New Score: {submission.Score}");
-                // 1. Tìm user
                 var existingUser = Leaderboard.FirstOrDefault(x => x.UserId == submission.UserId);
 
                 if (existingUser != null)
                 {
                     Debug.WriteLine($"[HOST-LOGIC] Found existing user: {existingUser.DisplayName} (Old Score: {existingUser.TotalScore})");
-                    // [CẬP NHẬT] Gán trực tiếp giá trị mới, UI sẽ tự nhảy số nhờ ObservableObject
                     existingUser.TotalScore = submission.Score;
                     existingUser.CorrectCount = submission.CorrectCount;
                     existingUser.TotalAnswered = submission.TotalAnswered;
@@ -285,7 +273,6 @@ namespace EasyFlips.ViewModels
                 }
                 else
                 {
-                    // [THÊM MỚI]
                     var newEntry = new LeaderboardEntry
                     {
                         UserId = submission.UserId,
@@ -298,11 +285,8 @@ namespace EasyFlips.ViewModels
                     Leaderboard.Add(newEntry);
                 }
 
-                // 2. Sắp xếp lại Leaderboard (Bubble sort nhẹ nhàng để tránh vẽ lại toàn bộ)
-                // Nếu chỉ có 1 người hoặc danh sách ít, dùng Sort trực tiếp trên ObservableCollection
                 var sorted = Leaderboard.OrderByDescending(x => x.TotalScore).ToList();
 
-                // Chỉ Clear/Add lại nếu thứ tự thực sự thay đổi (để tránh nháy UI không cần thiết)
                 bool needResort = false;
                 for (int i = 0; i < sorted.Count; i++)
                 {
@@ -320,7 +304,6 @@ namespace EasyFlips.ViewModels
                     foreach (var item in sorted) Leaderboard.Add(item);
                 }
 
-                // [LOG 2] In ra toàn bộ Leaderboard hiện tại trong bộ nhớ để đối chiếu với UI
                 Debug.WriteLine("=== CURRENT LEADERBOARD STATE (MEMORY) ===");
                 foreach (var entry in Leaderboard)
                 {
@@ -364,11 +347,10 @@ namespace EasyFlips.ViewModels
             {
                 await _supabaseService.EndFlashcardSessionAsync(ClassroomId, _authService.CurrentUserId);
                 await _supabaseService.DeactivateClassroomAsync(ClassroomId);
-                
+
             }
             catch (Exception ex)
             {
-                // Thông báo lỗi tiếng Anh
                 MessageBox.Show($"Error cleaning up room: {ex.Message}", "Error");
             }
         }
@@ -379,11 +361,9 @@ namespace EasyFlips.ViewModels
         private async Task WindowClosing(CancelEventArgs e)
         {
 
-                e.Cancel = true;
+            e.Cancel = true;
 
-                // 2. Gọi hàm giải tán phòng của bạn
-                // Hàm này sẽ tự lo việc hỏi Confirm, xóa DB và tự đóng Window sau khi xong
-                await QuitGame();
+            await QuitGame();
 
         }
         #endregion

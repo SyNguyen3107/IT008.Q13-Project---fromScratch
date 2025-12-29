@@ -44,7 +44,6 @@ namespace EasyFlips.ViewModels
 
         public string ProgressText => $"{CurrentIndex + 1}/{TotalCards}";
 
-        // Collection for UI binding of connected players
         public ObservableCollection<PlayerInfo> Players { get; } = new();
 
         #endregion
@@ -114,9 +113,8 @@ namespace EasyFlips.ViewModels
                         {
                             Id = m.UserId,
                             Name = m.DisplayName,
-                            // Fallback to default image if AvatarUrl is missing
                             AvatarUrl = string.IsNullOrEmpty(m.AvatarUrl)
-                                ? "/Resources/user.png" // Consider using pack://application... for robustness
+                                ? "/Resources/user.png"
                                 : m.AvatarUrl,
                             IsHost = m.Role == "owner" || m.Role == "host"
                         });
@@ -211,7 +209,6 @@ namespace EasyFlips.ViewModels
         #endregion
         public Action? CloseWindowAction { get; set; }
 
-        // [BỔ SUNG] Hàm gọi Action đóng cửa sổ
         protected void RequestCloseWindow()
         {
             CloseWindowAction?.Invoke();

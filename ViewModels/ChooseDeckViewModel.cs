@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using EasyFlips.Interfaces; // <-- Cần thêm để dùng IDeckRepository
+using EasyFlips.Interfaces; 
 using EasyFlips.Models;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -10,26 +10,26 @@ namespace EasyFlips.ViewModels
     {
         private readonly IDeckRepository _deckRepository;
         private readonly INavigationService _navigationService;
-        // Danh sách các deck để hiển thị
+
         [ObservableProperty]
         private ObservableCollection<Deck> decks = new();
 
-        // Deck được chọn
+       
         [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(ChooseCommand))] // Cập nhật trạng thái nút Choose
+        [NotifyCanExecuteChangedFor(nameof(ChooseCommand))] 
         private Deck? _selectedDeck;
 
-        // Constructor: Nhận Repository từ DI
+      
         public ChooseDeckViewModel(IDeckRepository deckRepository, INavigationService navigationService)
         {
             _deckRepository = deckRepository;
 
-            // Gọi hàm tải dữ liệu. Dùng _ = để bỏ qua cảnh báo async trong constructor
+            
             _ = LoadDecksAsync();
             _navigationService = navigationService;
         }
 
-        // Command Choose 
+      
         [RelayCommand]
         private void Choose(Window window)
         {
@@ -40,13 +40,13 @@ namespace EasyFlips.ViewModels
                 return;
             }
 
-            // Gửi deck được chọn ra ngoài window (qua DialogResult)
+        
             window.Tag = SelectedDeck;
             window.DialogResult = true;
             window.Close();
         }
 
-        // Commmand Cancel
+        
         [RelayCommand]
         private void Cancel(Window window)
         {
@@ -54,14 +54,13 @@ namespace EasyFlips.ViewModels
             window.Close();
         }
 
-        // Command Add
         [RelayCommand]
         private void Add()
         {
             _navigationService.ShowCreateDeckWindow();
-            _ = LoadDecksAsync(); // Fire-and-forget: tải lại danh sách deck sau khi tạo mới
+            _ = LoadDecksAsync(); 
         }
-        // Nạp danh sách Deck
+     
         public void LoadDecks(IEnumerable<Deck> deckList)
         {
             Decks.Clear();
@@ -70,7 +69,7 @@ namespace EasyFlips.ViewModels
         }
         public async Task LoadDecksAsync()
         {
-            // Lấy dữ liệu thật từ Database
+            
             var deckList = await _deckRepository.GetAllAsync();
 
             Decks.Clear();

@@ -59,7 +59,6 @@ namespace EasyFlips.ViewModels
             _deckRepository = deckRepository;
             _messenger = messenger;
 
-            // [QUAN TRỌNG]: Tự động tải danh sách Deck khi khởi tạo ViewModel
             _ = LoadDecksAsync();
         }
 
@@ -82,11 +81,9 @@ namespace EasyFlips.ViewModels
 
         private bool CanSaveCard()
         {
-            // Kiểm tra tối thiểu: Phải chọn Deck và có nội dung mặt trước/sau
             return SelectedDeck != null &&
                    !string.IsNullOrWhiteSpace(FrontText) &&
                    !string.IsNullOrWhiteSpace(BackText);
-            // Answer có thể tùy chọn, hoặc bắt buộc tùy logic của bạn
         }
 
         [RelayCommand(CanExecute = nameof(CanSaveCard))]
@@ -96,7 +93,6 @@ namespace EasyFlips.ViewModels
             {
                 var newCard = new Card
                 {
-                    // ID tự sinh trong Model hoặc Repository
                     DeckId = SelectedDeck.Id,
                     FrontText = this.FrontText,
                     BackText = this.BackText,
@@ -110,12 +106,10 @@ namespace EasyFlips.ViewModels
 
                 await _cardRepository.AddAsync(newCard);
 
-                // Gửi tin nhắn cập nhật UI
                 _messenger.Send(new CardAddedMessage(SelectedDeck.Id));
 
                 MessageBox.Show("Card added successfully!", "Success");
 
-                // Reset Form để nhập thẻ tiếp theo
                 FrontText = string.Empty;
                 BackText = string.Empty;
                 Answer = string.Empty;
@@ -202,7 +196,7 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private async Task ChooseDeck()
         {
-            // Sử dụng ServiceProvider của App để lấy Window (đã đăng ký DI)
+
             var chooseDeckWindow = EasyFlips.App.ServiceProvider.GetRequiredService<ChooseDeckWindow>();
 
             chooseDeckWindow.ShowDialog();
@@ -225,6 +219,6 @@ namespace EasyFlips.ViewModels
         [RelayCommand] private void RemoveBackImage() { BackImagePath = null; BackImageName = null; }
         [RelayCommand] private void RemoveBackAudio() { BackAudioPath = null; BackAudioName = null; }
 
-        // ... (Giữ nguyên PasteLink và OpenFileLocation nếu có) ...
+
     }
 }
