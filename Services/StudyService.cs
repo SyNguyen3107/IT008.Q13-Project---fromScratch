@@ -19,9 +19,8 @@ namespace EasyFlips.Services
     {
         private readonly ICardRepository _cardRepository;
         private readonly IDeckRepository _deckRepository;
-        private readonly IAuthService _authService; // [NEW] Cần Auth để lấy UserId
+        private readonly IAuthService _authService; 
 
-        // Inject AuthService
         public StudyService(ICardRepository cardRepository, IDeckRepository deckRepository, IAuthService authService)
         {
             _cardRepository = cardRepository;
@@ -29,10 +28,9 @@ namespace EasyFlips.Services
             _authService = authService;
         }
 
-        // --- 1. LOGIC LẤY THẺ CẦN HỌC ---
         public async Task<Card?> GetNextCardToReviewAsync(string deckId)
         {
-            // CardRepository đã dùng AsNoTracking() nên dữ liệu ở đây luôn mới
+
             var allCards = await _cardRepository.GetCardsByDeckIdAsync(deckId);
             var now = DateTime.Now;
 
@@ -112,7 +110,7 @@ namespace EasyFlips.Services
                 {
                     // Nếu app cho phép học offline/guest, cần xử lý logic ID ảo hoặc throw error
                     // Hiện tại assume user đã login
-                    throw new Exception("Bạn phải đăng nhập để lưu tiến độ học tập.");
+                    throw new Exception("You must be logged in to save your learning progress.");
                 }
 
                 // Ngắt tham chiếu vòng để tránh lỗi EF Core insert lại Card

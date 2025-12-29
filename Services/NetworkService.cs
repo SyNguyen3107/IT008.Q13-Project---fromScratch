@@ -22,24 +22,20 @@ namespace EasyFlips.Services
 
         private NetworkService()
         {
-            // [FIX]: Lấy trạng thái sơ bộ ngay lập tức dựa trên phần cứng
-            // Giúp UI hiển thị "Online" ngay lập tức, không bị flash "Offline" lúc mới mở
+
             IsConnected = NetworkInterface.GetIsNetworkAvailable();
         }
 
         // Hàm này BẮT BUỘC phải được gọi từ App.xaml.cs
         public void Initialize()
         {
-            // 1. Chạy kiểm tra HTTP ngay lập tức để xác thực internet thực sự
             _ = UpdateStatus();
 
-            // 2. Đăng ký sự kiện mạng của Windows
             NetworkChange.NetworkAvailabilityChanged += async (s, e) =>
             {
                 await UpdateStatus();
             };
 
-            // 3. Khởi tạo Timer kiểm tra định kỳ 15s
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
             _timer.Tick += async (s, e) => await UpdateStatus();
             _timer.Start();
@@ -48,7 +44,6 @@ namespace EasyFlips.Services
         private async Task UpdateStatus()
         {
             bool status = await CheckInternet();
-            // Chỉ bắn sự kiện nếu trạng thái thực sự thay đổi
             if (IsConnected != status)
             {
                 IsConnected = status;
@@ -60,7 +55,6 @@ namespace EasyFlips.Services
 
         private async Task<bool> CheckInternet()
         {
-            // Nếu phần cứng báo không có mạng thì trả về false luôn cho nhanh
             if (!NetworkInterface.GetIsNetworkAvailable()) return false;
 
             try

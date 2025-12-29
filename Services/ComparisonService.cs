@@ -90,10 +90,8 @@ namespace EasyFlips.Services
             if (_normalizeCache.TryGetValue(text, out string cached))
                 return cached;
 
-            // Chỉ đưa về chữ thường, không bỏ dấu
             string lower = text.ToLowerInvariant();
 
-            // Chuẩn hóa Unicode về FormC để tránh ký tự lạ
             string filtered = lower.Normalize(NormalizationForm.FormC);
 
             _normalizeCache[text] = filtered;
