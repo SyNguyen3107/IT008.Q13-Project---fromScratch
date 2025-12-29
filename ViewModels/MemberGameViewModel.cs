@@ -217,28 +217,38 @@ namespace EasyFlips.ViewModels
             CurrentPhase = GamePhase.Result;
             IsShowingResult = true;
 
-            // Nếu chưa nộp bài thì tự động nộp (tính là sai hoặc bỏ qua)
+            // Nếu người dùng chưa kịp bấm nút Submit mà đã hết giờ/lật thẻ
             if (IsInputEnabled)
             {
-                // Logic tự submit khi hết giờ (0 điểm)
-                SubmitAnswerCommand.Execute(null);
-                // Lưu ý: Execute là async, nhưng ở đây ta cần update UI ngay sau đó
-                // Để đơn giản, ta gán luôn giá trị mặc định nếu chưa kịp submit
-                if (string.IsNullOrEmpty(ResultMessage)) ResultMessage = $"Hết giờ! Đáp án: {CurrentCard?.Answer}";
+                // Tính toán nhanh kết quả mà không cần gọi qua Command để tránh delay UI
+                _pendingIsCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard?.Answer ?? "");
+                _pendingScoreEarned = _pendingIsCorrect ? 10 : 0;
+
+                if (_pendingIsCorrect) _pendingResultMessage = "Chính xác! +10đ";
+                else _pendingResultMessage = string.IsNullOrWhiteSpace(UserAnswer)
+                    ? $"Hết giờ!"
+                    : $"Sai rồi!";
+
+                // Cập nhật điểm và số liệu
+                Score += _pendingScoreEarned;
+                _localTotalAnswered++;
+                if (_pendingIsCorrect) _localCorrectCount++;
             }
             else
             {
-                // [QUAN TRỌNG] Lúc này mới cộng điểm vào UI Member
+                // Nếu đã Submit trước đó rồi, bây giờ chỉ việc cộng điểm vào UI
                 Score += _pendingScoreEarned;
-                ResultMessage = _pendingResultMessage;
             }
 
+            // HIỂN THỊ KẾT QUẢ CUỐI CÙNG LÊN UI
+            ResultMessage = _pendingResultMessage;
+            CorrectAnswer = CurrentCard?.Answer ?? "";
+
+            // Reset các trạng thái cho vòng sau
             TimeRemaining = 10;
             SetupTimer();
             IsInputEnabled = false;
             SubmitAnswerCommand.NotifyCanExecuteChanged();
-
-            // Reset biến tạm cho vòng sau
             _pendingScoreEarned = 0;
         }
 
@@ -255,7 +265,7 @@ namespace EasyFlips.ViewModels
 
                 // Chuẩn bị thông báo (nhưng chưa hiện)
                 if (_pendingIsCorrect) _pendingResultMessage = "Chính xác! +10đ";
-                else _pendingResultMessage = $"Sai rồi! Đáp án: {CurrentCard.Answer}";
+                else _pendingResultMessage = $"Sai rồi!";
 
                 // Cập nhật số liệu cục bộ
                 _localTotalAnswered++;
