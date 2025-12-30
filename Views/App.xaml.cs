@@ -188,7 +188,6 @@ namespace EasyFlips
             services.AddTransient<LoginViewModel>();
             services.AddTransient<RegisterViewModel>();
             services.AddTransient<SyncViewModel>();
-            services.AddTransient<LobbyViewModel>();
             services.AddTransient<JoinViewModel>();
             services.AddTransient<CreateRoomViewModel>();
             services.AddTransient<OtpViewModel>();
@@ -197,8 +196,8 @@ namespace EasyFlips
             services.AddTransient<MemberLobbyViewModel>();
             services.AddTransient<HostGameViewModel>();
             services.AddTransient<MemberGameViewModel>();
-            services.AddTransient<LeaderBoardViewModel>();
-            services.AddTransient<LeaderBoardWindow>(); // hoặc LeaderBoardWindow nếu dùng WPF
+            services.AddTransient<HostLeaderboardViewModel>();
+            services.AddTransient<MemberLeaderboardViewModel>();
             services.AddTransient<DashboardViewModel>();
 
             // Windows
@@ -214,7 +213,6 @@ namespace EasyFlips
             services.AddTransient<SyncWindow>();
             services.AddTransient<OtpWindow>();
             services.AddTransient<ResetPasswordWindow>();
-            services.AddTransient<LobbyWindow>();
             services.AddTransient<JoinWindow>();
             services.AddTransient<CreateRoomWindow>();
             services.AddTransient<TestRealtimeWindow>();
@@ -223,6 +221,8 @@ namespace EasyFlips
             services.AddTransient<HostGameWindow>();
             services.AddTransient<MemberGameWindow>();
             services.AddTransient<DashBoardWinDow>();
+            services.AddTransient<HostLeaderboardWindow>();
+            services.AddTransient<MemberLeaderboardWindow>();
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
             services.AddSingleton<UserSession>();
         }

@@ -132,18 +132,7 @@ namespace EasyFlips.ViewModels
         /// <summary>
         /// Cleanly disconnects from Realtime channel and navigates to the Leaderboard screen.
         /// </summary>
-        protected virtual async Task EndAndNavigateToLeaderboardAsync()
-        {
-            await _supabaseService.LeaveFlashcardSyncChannelAsync(ClassroomId);
-
-            _navigationService.ShowLeaderBoardWindow(
-                RoomId,
-                ClassroomId,
-                Players
-            );
-
-            ForceCloseWindow();
-        }
+        protected abstract Task NavigateToLeaderboardAsync();
 
         /// <summary>
         /// Handles the "Quit Game" action with confirmation dialog.
@@ -153,9 +142,15 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private string _quitConfirmationMessage = "Are you sure you want to quit the game?";
 
+        protected bool _isGameEnded = false;
+
+        //biến cờ kiểm soát trạng thái đang thoát
+        protected bool _isQuitting = false;
         [RelayCommand]
         public async Task QuitGame()
         {
+            // Nếu đang thoát rồi thì chặn ngay, tránh hiện dialog lần 2
+            if (_isQuitting) return;
             // Title: "Confirmation"
             if (MessageBox.Show(
                 QuitConfirmationMessage,
@@ -163,9 +158,11 @@ namespace EasyFlips.ViewModels
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
-
-            await _supabaseService.LeaveFlashcardSyncChannelAsync(ClassroomId);
+            _isQuitting = true;
+            
             await OnQuitSpecificAsync();
+            await _supabaseService.LeaveFlashcardSyncChannelAsync(ClassroomId);
+
 
             _navigationService.ShowMainWindow();
 

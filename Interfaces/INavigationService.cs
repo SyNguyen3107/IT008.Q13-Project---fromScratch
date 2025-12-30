@@ -18,17 +18,16 @@ namespace EasyFlips.Interfaces
         void OpenSyncWindow();
         void ShowResetPasswordWindow();
         void ShowOtpWindow(string email);
-        void ShowLobbyWindow(string roomId, bool isHost, Deck deck = null, int maxPlayers = 30, int waitTime = 300);
         void ShowJoinWindow();
         void ShowCreateRoomWindow();
-        Task ShowGameWindowAsync(string roomId, string classroomId, Deck selectedDeck, int maxPlayers , int timePerRound );
         Task ShowCreateRoomWindowAsync();
         Task ShowHostLobbyWindowAsync(string roomId);
         Task ShowMemberLobbyWindowAsync(string roomId);
         Task ShowHostGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound);
         Task ShowMemberGameWindowAsync(string roomId, string classroomId, Deck deck, int timePerRound);
+        void ShowHostLeaderboardWindow(string roomId, string classroomId, List<PlayerInfo> finalResults);
+        void ShowMemberLeaderboardWindow(string roomId, string classroomId);
         void CloseCurrentWindow();
-        void ShowLeaderBoardWindow(string roomId = null, string classroomId = null, IEnumerable<PlayerInfo> players = null);
         void NavigateToDashboard();
         public void NavigateToHome();
 

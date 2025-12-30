@@ -197,9 +197,23 @@ namespace EasyFlips.Services
         }
         public void ShowJoinWindow()
         {
-            // Cửa sổ trung gian (Chọn tạo hoặc nhập mã)
             var window = _serviceProvider.GetRequiredService<JoinWindow>();
-            window.Owner = Application.Current.MainWindow;
+
+            // [FIX 2] Kiểm tra an toàn trước khi gán Owner
+            // Lấy cửa sổ MainWindow thực sự đang active
+            var mainWindow = Application.Current.MainWindow;
+
+            // Chỉ gán Owner nếu MainWindow tồn tại, đang hiển thị, và KHÔNG PHẢI là chính cái cửa sổ Join này
+            if (mainWindow != null && mainWindow.IsVisible && mainWindow != window)
+            {
+                window.Owner = mainWindow;
+            }
+            else
+            {
+                // Nếu không tìm thấy Owner hợp lệ, căn giữa màn hình Desktop
+                window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+
             window.ShowDialog();
         }
 
@@ -208,41 +222,6 @@ namespace EasyFlips.Services
             // Cửa sổ setting của giáo viên
             var window = _serviceProvider.GetRequiredService<CreateRoomWindow>();
             window.Owner = Application.Current.MainWindow;
-            window.ShowDialog();
-        }
-
-        // [QUAN TRỌNG] Hàm mở Lobby nhận tham số
-        public void ShowLobbyWindow(string roomId, bool isHost, Deck deck = null, int maxPlayers = 30, int waitTime = 300)
-        {
-            var window = _serviceProvider.GetRequiredService<LobbyWindow>();
-
-            // Lấy ViewModel để truyền dữ liệu
-            if (window.DataContext is LobbyViewModel vm)
-            {
-                // Gọi hàm InitializeAsync mà chúng ta đã viết ở bước trước
-                // Lưu ý: Vì là async void (fire-and-forget) hoặc cần wrap trong Task.Run nếu muốn đợi
-                _ = vm.InitializeAsync(roomId, isHost, deck, maxPlayers, waitTime);
-            }
-
-            if (Application.Current.MainWindow != null)
-                window.Owner = Application.Current.MainWindow;
-
-            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            window.ShowDialog(); // Chặn cửa sổ chính
-        }
-        public async Task ShowGameWindowAsync(string roomId, string classroomId, Deck selectedDeck, int maxPlayers = 30, int timePerRound = 15)
-        {
-            var window = _serviceProvider.GetRequiredService<GameWindow>();
-
-            if (window.DataContext is GameViewModel vm)
-            {
-                await vm.InitializeAsync(roomId, classroomId, selectedDeck, maxPlayers, timePerRound);
-            }
-
-            if (Application.Current.MainWindow != null)
-                window.Owner = Application.Current.MainWindow;
-
-            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             window.ShowDialog();
         }
         public async Task ShowCreateRoomWindowAsync()
@@ -265,7 +244,6 @@ namespace EasyFlips.Services
             window.DataContext = vm;
             window.Show();
 
-            // Đóng tất cả cửa sổ cũ không cần thiết
             CloseSpecificWindows(typeof(CreateRoomWindow), typeof(JoinWindow), typeof(MainWindow));
         }
 
@@ -278,7 +256,6 @@ namespace EasyFlips.Services
             window.DataContext = vm;
             window.Show();
 
-            // Đóng tất cả cửa sổ cũ không cần thiết
             CloseSpecificWindows(typeof(JoinWindow), typeof(MainWindow));
         }
         /// <summary>
@@ -286,26 +263,53 @@ namespace EasyFlips.Services
         /// </summary>
         public void ShowMainWindow()
         {
-            // Kiểm tra an toàn để tránh crash
+            // Kiểm tra an toàn
             if (Application.Current == null) return;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                // Kiểm tra xem MainWindow đã tồn tại chưa
-                var existingWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
+                try
+                {
+                    // Tìm MainWindow đã có sẵn
+                    var existingWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
 
-                if (existingWindow != null)
-                {
-                    existingWindow.Show();
-                    if (existingWindow.WindowState == WindowState.Minimized)
-                        existingWindow.WindowState = WindowState.Normal;
-                    existingWindow.Activate();
+                    if (existingWindow != null)
+                    {
+                        existingWindow.Show();
+                        if (existingWindow.WindowState == WindowState.Minimized)
+                            existingWindow.WindowState = WindowState.Normal;
+                        existingWindow.Activate();
+
+                        // [QUAN TRỌNG 1] Cập nhật lại biến hệ thống để WPF biết đây là cửa sổ chính
+                        // Điều này giúp hàm ShowJoinWindow lấy đúng Owner
+                        Application.Current.MainWindow = existingWindow;
+                    }
+                    else
+                    {
+                        // Tạo mới nếu chưa có
+                        var newMain = _serviceProvider.GetRequiredService<MainWindow>();
+                        newMain.Show();
+
+                        // [QUAN TRỌNG 1] Gán cửa sổ mới tạo làm MainWindow hệ thống
+                        Application.Current.MainWindow = newMain;
+                    }
+
+                    // [QUAN TRỌNG 2] Đóng tất cả các cửa sổ vệ tinh
+                    // Nếu thiếu đoạn này, cửa sổ Game/Leaderboard sẽ không bao giờ tắt!
+                    CloseSpecificWindows(
+                        typeof(HostGameWindow),
+                        typeof(MemberGameWindow),
+                        typeof(HostLobbyWindow),
+                        typeof(MemberLobbyWindow),
+                        typeof(JoinWindow),
+                        typeof(CreateRoomWindow),
+                        typeof(HostLeaderboardWindow),
+                        typeof(MemberLeaderboardWindow)
+                    );
                 }
-                else
+                catch (Exception ex)
                 {
-                    // Nếu chưa có thì khởi tạo mới thông qua ServiceProvider (để giữ DI)
-                    var newMain = _serviceProvider.GetRequiredService<MainWindow>();
-                    newMain.Show();
+                    System.Diagnostics.Debug.WriteLine($"Error showing MainWindow: {ex.Message}");
                 }
             });
         }
@@ -367,6 +371,38 @@ namespace EasyFlips.Services
             // 3. Đóng Lobby (MemberLobbyWindow)
             CloseSpecificWindows(typeof(MemberLobbyWindow));
         }
+        public void ShowHostLeaderboardWindow(string roomId, string classroomId, List<PlayerInfo> finalResults)
+        {
+            // 1. Lấy ViewModel từ DI
+            var vm = _serviceProvider.GetRequiredService<HostLeaderboardViewModel>();
+
+            // 2. Gọi Initialize (Lưu ý: Hàm này trong VM nên là async void hoặc fire-and-forget task vì ShowWindow là void)
+            // Hoặc tốt nhất: Gọi đồng bộ phần data, phần async để chạy ngầm
+            _ = vm.InitializeAsync(roomId, classroomId, finalResults);
+
+            // 3. Tạo Window
+            var window = _serviceProvider.GetRequiredService<HostLeaderboardWindow>();
+            window.DataContext = vm;
+            window.Show();
+
+            //// 4. Đóng cửa sổ Game cũ
+            CloseSpecificWindows(typeof(HostGameWindow));
+        }
+
+        public void ShowMemberLeaderboardWindow(string roomId, string classroomId)
+        {
+            var vm = _serviceProvider.GetRequiredService<MemberLeaderboardViewModel>();
+
+            _ = vm.InitializeAsync(roomId, classroomId);
+
+            var window = _serviceProvider.GetRequiredService<MemberLeaderboardWindow>();
+            window.DataContext = vm;
+            window.Show();
+
+            
+            CloseSpecificWindows(typeof(MemberGameWindow));
+        }
+
         /// <summary>
         /// Hàm Helper: Đóng các cửa sổ thuộc các loại được chỉ định
         /// </summary>
@@ -382,33 +418,6 @@ namespace EasyFlips.Services
                 }
             }
         }
-        public void ShowLeaderBoardWindow(
-    string roomId = null,
-    string classroomId = null,
-    IEnumerable<PlayerInfo> players = null)
-        {
-            // Lấy cửa sổ hiện tại (đang mở)
-            var currentWindow = Application.Current.Windows
-                .OfType<Window>()
-                .SingleOrDefault(w => w.IsActive);
-
-            // Đóng cửa sổ hiện tại nếu có
-            currentWindow?.Close();
-
-            // Mở LeaderBoardWindow
-            var window = _serviceProvider.GetRequiredService<LeaderBoardWindow>();
-
-            if (window.DataContext is LeaderBoardViewModel vm)
-            {
-                vm.Initialize(roomId, classroomId, players ?? Enumerable.Empty<PlayerInfo>());
-            }
-
-            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            window.Show();
-        }
-
-
-
         public void CloseCurrentWindow()
         {
             // Logic đóng cửa sổ hiện tại an toàn

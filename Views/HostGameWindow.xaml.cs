@@ -25,9 +25,5 @@ namespace EasyFlips.Views
                 }
             };
         }
-
-        
-
-        // [ĐÃ XÓA] Logic OnClosed mở MainWindow -> Vì ViewModel đã lo việc này rồi!
     }
 }

@@ -13,15 +13,14 @@ namespace EasyFlips.ViewModels
     public partial class JoinViewModel : ObservableObject
     {
         private readonly INavigationService _navigationService;
-        private readonly IClassroomRepository _classroomRepository; // [ADD]
+        private readonly IClassroomRepository _classroomRepository;
 
         [ObservableProperty]
         private string _roomIdInput;
 
         [ObservableProperty]
-        private string _roomCode; // Binding với TextBox nhập mã
+        private string _roomCode;
 
-        // [UPDATE] Constructor nhận thêm IClassroomRepository
         public JoinViewModel(INavigationService navigationService, IClassroomRepository classroomRepository)
         {
             _navigationService = navigationService;
@@ -48,7 +47,7 @@ namespace EasyFlips.ViewModels
 
             try
             {
-                // [UPDATE] 1. Kiểm tra phòng trên Database
+                // 1. Kiểm tra phòng trên Database
                 var room = await _classroomRepository.GetClassroomByCodeAsync(code);
 
                 // 2. Validate các trường hợp
@@ -71,6 +70,7 @@ namespace EasyFlips.ViewModels
                 }
 
                 // 3. Hợp lệ -> Vào Lobby
+                // [CẬP NHẬT] Truyền thêm room.Id (UUID) vào tham số thứ 2
                 await _navigationService.ShowMemberLobbyWindowAsync(code);
             }
             catch (Exception ex)
@@ -78,18 +78,16 @@ namespace EasyFlips.ViewModels
                 MessageBox.Show($"Lỗi khi kiểm tra phòng: {ex.Message}", "Lỗi kết nối");
             }
         }
+
         [RelayCommand]
         private void CloseWindow()
         {
-            // 1. Kiểm tra nếu App đang shutdown thì không làm gì cả
             if (Application.Current == null) return;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
                 try
                 {
-                    // 2. Dùng .ToList() để tạo bản sao danh sách cửa sổ TRƯỚC khi duyệt
-                    // Điều này ngăn lỗi "Collection was modified" khi cửa sổ đang đóng
                     var window = Application.Current.Windows
                         .OfType<Window>()
                         .ToList()
@@ -99,7 +97,6 @@ namespace EasyFlips.ViewModels
                 }
                 catch (Exception)
                 {
-                    // Bỏ qua lỗi nếu cửa sổ đã đóng hoặc không thể truy cập
                 }
             });
         }

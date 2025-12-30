@@ -4,11 +4,17 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:cv="clr-namespace:EasyFlips.Converters"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
         Title="EasyFlips - Member Game" Height="750" Width="1100"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource Brush.Dark}">
-
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Closing">
+            <i:InvokeCommandAction Command="{Binding WindowClosingCommand}" 
+                           PassEventArgsToCommand="True"/>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
     <Window.Resources>
         <cv:BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <cv:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
@@ -341,7 +347,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
-                            <TextBlock Text="Đang đợi" />
+                            <TextBlock Text="WAITING" />
                             <TextBlock Text="..." x:Name="dots">
                                 <TextBlock.Triggers>
                                     <EventTrigger RoutedEvent="Loaded">
@@ -364,7 +370,7 @@
             <Border Background="#F21A1A1A"/>
 
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock Text="TRẬN ĐẤU SẼ BẮT ĐẦU TRONG" 
+                <TextBlock Text="STARING IN" 
                            Foreground="{StaticResource Brush.TextSecondary}" 
                            FontSize="18" 
                            FontWeight="Bold" 

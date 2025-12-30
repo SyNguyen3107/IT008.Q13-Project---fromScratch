@@ -1,11 +1,12 @@
-﻿using EasyFlips.Interfaces;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using System.Windows;
 
 namespace EasyFlips.ViewModels
@@ -218,13 +219,7 @@ namespace EasyFlips.ViewModels
                     IsInputEnabled = false;
                     DisposeTimer(); // Dừng timer ngay lập tức
 
-                    // [MỚI] Thông báo và điều hướng về MainWindow
-                    MessageBox.Show("The host has ended this session.", "Notification");
-
-                    // Thực hiện dọn dẹp giống như khi chủ động Quit
-                    await _supabaseService.LeaveFlashcardSyncChannelAsync(ClassroomId);
-                    _navigationService.ShowMainWindow();
-                    RequestCloseWindow(); // Gọi Action để View đóng cửa sổ
+                    await NavigateToLeaderboardAsync();
                     break;
             }
         }
@@ -343,6 +338,20 @@ namespace EasyFlips.ViewModels
             _countdownTimer?.Stop();
             _countdownTimer?.Dispose();
         }
+        [RelayCommand]
+        private async Task WindowClosing(CancelEventArgs e)
+        {
+            // 1. Nếu đang chuyển cảnh sang Leaderboard -> Cho qua
+            // Nếu game đã xong (Ended) HOẶC đang trong quá trình thoát (Quitting) -> Cho phép đóng luôn
+            if (_isGameEnded || _isQuitting)
+            {
+                return;
+            }
+
+            // 2. Nếu đang chơi -> Chặn lại và hỏi xác nhận
+            e.Cancel = true;
+            await QuitGame();
+        }
         protected override async Task OnQuitSpecificAsync()
         {
             try
@@ -351,6 +360,16 @@ namespace EasyFlips.ViewModels
                 await Task.CompletedTask;
             }
             catch { }
+        }
+        protected override async Task NavigateToLeaderboardAsync()
+        {
+            // 1. Bật cờ báo hiệu game kết thúc hợp lệ
+            _isGameEnded = true;
+
+            // 2. Gọi hàm Navigation
+            _navigationService.ShowMemberLeaderboardWindow(RoomId, ClassroomId);
+
+            await Task.CompletedTask;
         }
     }
 }

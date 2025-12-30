@@ -1,3 +1,4 @@
+using DiffPlex.DiffBuilder.Model;
 using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using Newtonsoft.Json;
@@ -17,7 +18,6 @@ using System.Threading.Tasks;
 using static Supabase.Postgrest.Constants;
 using static Supabase.Realtime.Constants;
 using static Supabase.Realtime.PostgresChanges.PostgresChangesOptions;
-
 
 namespace EasyFlips.Services
 {
@@ -572,14 +572,171 @@ namespace EasyFlips.Services
             {
                 await _client.From<Classroom>()
                              .Where(x => x.Id == classroomId)
-                             .Set(x => x.IsActive, false)
+                             .Set(x => x.IsActive, false) 
+                             .Set(x => x.Status, "CLOSED") 
                              .Update();
+
+                System.Diagnostics.Debug.WriteLine($"[Room Closed] ID: {classroomId}");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Deactivate] Error: {ex.Message}");
             }
         }
+        public async Task ReactivateClassroomAsync(string classroomId)
+        {
+            try
+            {
+                await _client.From<Classroom>()
+                             .Where(x => x.Id == classroomId)
+                             .Set(x => x.IsActive, true)       // [QUAN TRỌNG] Bật lại phòng
+                             .Set(x => x.Status, "WAITING")    // Đặt trạng thái chờ
+                             .Update();
+
+                System.Diagnostics.Debug.WriteLine($"[Room Reactivated] ID: {classroomId}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Reactivate] Error: {ex.Message}");
+            }
+        }
+        #region Leaderboard & Game Control
+        public async Task<List<PlayerInfo>> GetLeaderboardFromDbAsync(string classroomId)
+        {
+            try
+            {
+                // BƯỚC 1: Lấy dữ liệu điểm số
+                var subResponse = await _client.From<Submission>()
+                                               .Where(x => x.ClassroomId == classroomId)
+                                               .Get();
+                var allSubmissions = subResponse.Models;
+
+                if (allSubmissions == null || !allSubmissions.Any())
+                    return new List<PlayerInfo>();
+
+                // BƯỚC 2: Lấy danh sách UserID duy nhất để truy vấn Profile
+                var userIds = allSubmissions.Select(x => x.UserId).Distinct().ToList();
+
+                // BƯỚC 3: Truy vấn bảng Profiles để lấy Avatar mới nhất
+                // Lưu ý: Filter "id" phải khớp với tên cột trong DB Supabase (thường là 'id')
+                var proResponse = await _client.From<Profile>()
+                                               .Filter("id", Supabase.Postgrest.Constants.Operator.In, userIds)
+                                               .Get();
+                var profiles = proResponse.Models;
+
+                // BƯỚC 4: Xử lý Logic xếp hạng và Ghép Avatar (Join in Memory)
+                var leaderboard = allSubmissions
+                    .GroupBy(s => s.UserId)
+                    .Select(g =>
+                    {
+                        var bestSub = g.OrderByDescending(x => x.Score).FirstOrDefault();
+
+                        // Tìm profile tương ứng trong danh sách đã tải
+                        var userProfile = profiles.FirstOrDefault(p => p.Id == bestSub.UserId);
+
+                        // Ưu tiên lấy Avatar từ Profile (nếu có), nếu không dùng ảnh mặc định
+                        string finalAvatar = !string.IsNullOrEmpty(userProfile?.AvatarUrl)
+                            ? userProfile.AvatarUrl
+                            : "pack://application:,,,/Resources/Images/user_default.png";
+
+                        // Ưu tiên lấy Tên hiển thị từ Profile (nếu user đổi tên), nếu không lấy từ lúc submit
+                        string finalName = !string.IsNullOrEmpty(userProfile?.DisplayName)
+                            ? userProfile.DisplayName
+                            : (bestSub.DisplayName ?? "Unknown");
+
+                        return new PlayerInfo
+                        {
+                            Id = bestSub.UserId,
+                            Name = finalName,
+                            AvatarUrl = finalAvatar,
+                            Score = bestSub.Score,
+                            IsHost = false
+                        };
+                    })
+                    .OrderByDescending(p => p.Score)
+                    .ToList();
+
+                // BƯỚC 5: Gán Rank
+                for (int i = 0; i < leaderboard.Count; i++)
+                {
+                    leaderboard[i].Rank = i + 1;
+                }
+
+                return leaderboard;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DB Leaderboard] Error: {ex.Message}");
+                return new List<PlayerInfo>();
+            }
+        }
+
+        // HOST: Gửi tín hiệu điều khiển
+        public async Task SendGameControlSignalAsync(string classroomId, GameControlSignal signal)
+        {
+            try
+            {
+                var payload = new GameControlPayload
+                {
+                    Event = "control_signal",
+                    Signal = signal
+                };
+
+                // [FIX LỖI CS7036] Thêm tham số "control_signal" vào giữa
+                await _client.Realtime.Channel($"room-hybrid:{classroomId}")
+                    .Send(ChannelEventName.Broadcast, "control_signal", payload);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Signal Error: {ex.Message}");
+            }
+        }
+
+        public async Task<SubscribeResult> SubscribeToControlSignalsAsync(
+    string classroomId,
+    Action<GameControlSignal> onSignalReceived)
+        {
+            var result = new SubscribeResult();
+            try
+            {
+                var channelName = $"room-hybrid:{classroomId}";
+                var channel = _activeChannels.ContainsKey(channelName)
+                    ? _activeChannels[channelName]
+                    : _client.Realtime.Channel(channelName);
+
+                // Dùng Register<T> (Cách đúng cho phiên bản C# mới)
+                var controlBroadcaster = channel.Register<GameControlPayload>();
+
+                controlBroadcaster.AddBroadcastEventHandler((sender, basePayload) =>
+                {
+                    // [FIX LỖI CS1061] Ép kiểu từ BaseBroadcast sang GameControlPayload
+                    if (basePayload is GameControlPayload payload)
+                    {
+                        // Kiểm tra sự kiện và gọi callback
+                        if (payload.Event == "control_signal")
+                        {
+                            onSignalReceived?.Invoke(payload.Signal);
+                        }
+                    }
+                });
+
+                if (!_activeChannels.ContainsKey(channelName))
+                {
+                    await channel.Subscribe();
+                    _activeChannels[channelName] = channel;
+                }
+
+                result.Success = true;
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.ErrorMessage = ex.Message;
+            }
+            return result;
+        }
+        #endregion
+
     }
     public class CustomFileSessionHandler : IGotrueSessionPersistence<Session>
     {

@@ -103,7 +103,7 @@ namespace EasyFlips.ViewModels
                 var roomInfo = await _classroomRepository.GetClassroomByCodeAsync(RoomId);
                 if (roomInfo == null)
                 {
-                    MessageBox.Show("Phòng không tồn tại!", "Lỗi");
+                    MessageBox.Show("Room does not exist!", "Error");
                     ForceCloseWindow();
                     return;
                 }
@@ -114,20 +114,19 @@ namespace EasyFlips.ViewModels
                 TotalWaitTime = roomInfo.WaitTime;
                 AutoStartSeconds = roomInfo.WaitTime;
 
-                // Template Method: Cho phép lớp con thực hiện logic khởi tạo riêng
                 await OnInitializeSpecificAsync(roomInfo);
 
-                // Tải dữ liệu và bắt đầu polling
                 await RefreshLobbyState();
                 StartPolling();
                 _audioService.PlayLoopingAudio("Resources/Sound/Lobby.mp3");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi khởi tạo phòng: {ex.Message}");
+                MessageBox.Show($"Room initialization error: {ex.Message}", "Error");
                 ForceCloseWindow();
             }
         }
+
 
         // Abstract method để lớp con implement logic riêng khi init
         protected abstract Task OnInitializeSpecificAsync(Classroom roomInfo);

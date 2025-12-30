@@ -17,7 +17,7 @@ namespace EasyFlips.ViewModels
     {
         private readonly IDeckRepository _deckRepository;
         private const int HEARTBEAT_TIMEOUT_SECONDS = 15;
-       
+        private bool _isQuitting = false;
 
         [ObservableProperty] private Deck _selectedDeck;
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
@@ -164,7 +164,7 @@ namespace EasyFlips.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi bắt đầu game: {ex.Message}", "Lỗi");
+                MessageBox.Show($"Failed to start session: {ex.Message}", "Error");
                 StartPolling(); // Resume polling nếu lỗi
             }
         }
@@ -204,10 +204,12 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private async Task CloseRoom()
         {
-            if (MessageBox.Show("Bạn có chắc muốn giải tán phòng?", "Xác nhận", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (_isQuitting) return;
+            if (MessageBox.Show("Are you sure to end this session?", "Confirm", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 try
                 {
+                    _isQuitting = true;
                     StopPolling();
                     await _classroomRepository.DeleteClassroomAsync(RoomId);
 
