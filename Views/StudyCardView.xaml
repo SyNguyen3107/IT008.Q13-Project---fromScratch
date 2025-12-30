@@ -114,9 +114,13 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
                             <TextBlock Text="Correct: " Foreground="LightGray" FontSize="16"/>
                             <TextBlock Text="{Binding CorrectAnswer}" Foreground="#2ECC71" FontSize="22" FontWeight="Bold"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,5">
+                            <TextBlock Text="Score: " Foreground="LightGray" FontSize="16"/>
+                            <TextBlock Text="{Binding TotalScore}" Foreground="#2ECC71" FontSize="22" FontWeight="Bold"/>
                         </StackPanel>
 
                         <Image Source="{Binding BackImagePath, Converter={StaticResource ImagePathConverter}}"
