@@ -37,7 +37,6 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private bool isPasswordVisible;
 
-      
         public LoginViewModel(IAuthService authService, INavigationService navigationService, Supabase.Client client, UserSession userSession)
         {
             _authService = authService;
@@ -52,7 +51,6 @@ namespace EasyFlips.ViewModels
             }
         }
 
-       
         [RelayCommand]
         private async Task LoginAsync(object parameter)
         {

@@ -231,7 +231,6 @@ namespace EasyFlips.Services
                 return false;
             }
         }
-
         public bool IsRecoverySession()
         {
             var session = _supabaseService.Client.Auth.CurrentSession;
@@ -250,9 +249,6 @@ namespace EasyFlips.Services
                 return false;
             }
         }
-
-
-
 
         public async Task<bool> VerifyOtpAsync(string email, string token)
         {
@@ -274,13 +270,7 @@ namespace EasyFlips.Services
             {
                 return false;
             }
-
             return false;
         }
-
-        
-
-
-
     }
 }
