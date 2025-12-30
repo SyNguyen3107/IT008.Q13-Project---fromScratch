@@ -19,7 +19,7 @@ namespace EasyFlips.ViewModels
                                          IRecipient<DeckUpdatedMessage>,
                                          IRecipient<CardAddedMessage>,
                                          IRecipient<StudySessionCompletedMessage>,
-                                         IRecipient<SyncCompletedMessage> // [FIX]: Đăng ký nhận tin nhắn Sync xong
+                                         IRecipient<SyncCompletedMessage> 
     {
         private readonly IDeckRepository _deckRepository;
         private readonly INavigationService _navigationService;
@@ -30,8 +30,6 @@ namespace EasyFlips.ViewModels
 
         [ObservableProperty] private string currentEmail;
         [ObservableProperty] private bool _isConnected;
-
-        // [FIX] Expose UserSession để UI có thể binding đến AvatarURL
 
 
         public UserSession UserSession { get; private set; }
@@ -73,7 +71,6 @@ namespace EasyFlips.ViewModels
         public void Receive(StudySessionCompletedMessage message) => RefreshDecks();
         public void Receive(DeckUpdatedMessage message) => RefreshDecks();
 
-        // [FIX]: Xử lý khi Sync hoàn tất -> Reload toàn bộ Deck
         public void Receive(SyncCompletedMessage message) => RefreshDecks();
 
         private void RefreshDecks()
@@ -87,20 +84,17 @@ namespace EasyFlips.ViewModels
             Decks.Clear();
             foreach (var deck in decks) Decks.Add(deck);
         }
-        // [FIX] Tải avatar
         public MainViewModel(UserSession session)
         {
             UserSession = session;
 
-            // Kích hoạt tải ảnh lần đầu khi mở app
             if (!string.IsNullOrEmpty(UserSession.AvatarURL))
             {
                 UserSession.LoadAvatarImage(UserSession.AvatarURL);
             }
         }
-        // --- COMMANDS ---
 
-        // Lệnh Reload danh sách Deck (Gán vào nút "Decks" ở MainWindow)
+
         [RelayCommand]
         private async Task ReloadDecks()
         {
@@ -116,7 +110,6 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private void JoinLobby()
         {
-            // Thay đổi: Mở JoinWindow thay vì ShowLobbyWindow trực tiếp
             _navigationService.ShowJoinWindow();
         }
 
@@ -177,7 +170,7 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private void NavigateToDashboard()
         {
-            // Gọi Service điều hướng để hiển thị Dashboard
+            
             _navigationService.NavigateToDashboard();
         }
     }

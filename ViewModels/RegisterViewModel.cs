@@ -55,7 +55,6 @@ namespace EasyFlips.ViewModels
 
             try
             {
-                // [FIX]: Xử lý kết quả bool trả về từ RegisterAsync
                 bool isSuccess = await _authService.RegisterAsync(Email, Password, UserName);
 
                 if (isSuccess)

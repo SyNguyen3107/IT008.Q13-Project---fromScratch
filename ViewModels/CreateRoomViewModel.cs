@@ -20,15 +20,14 @@ namespace EasyFlips.ViewModels
         private readonly SupabaseService _supabaseService;
         private readonly UserSession _userSession;
 
-        // Dữ liệu binding ra UI
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
 
         [ObservableProperty] private Deck _selectedDeck;
         [ObservableProperty] private int _maxPlayers = 30;
-        [ObservableProperty] private int _timePerRound = 15; // Giây      
-        [ObservableProperty] private int _waitTimeMinutes = 5;// 0 nghĩa là tắt đếm ngược (Bắt đầu thủ công), 5 là 5 phút
+        [ObservableProperty] private int _timePerRound = 15;       
+        [ObservableProperty] private int _waitTimeMinutes = 5;
 
-        // Constructor nhận đầy đủ các Service cần thiết
+
         public CreateRoomViewModel(
             INavigationService navigationService,
             IDeckRepository deckRepository,
@@ -42,11 +41,11 @@ namespace EasyFlips.ViewModels
             _classroomRepository = classroomRepository;
             _authService = authService;
             _userSession = userSession;
-            _supabaseService = supabaseService; // [FIX]: Gán giá trị
+            _supabaseService = supabaseService; 
 
             LoadDecks();
         }
-        //=== LẤY DECK TỪ DATABASE ===
+
         private async void LoadDecks()
         {
             try
@@ -55,33 +54,33 @@ namespace EasyFlips.ViewModels
                 AvailableDecks.Clear();
                 foreach (var deck in decks) AvailableDecks.Add(deck);
 
-                // Chọn mặc định cái đầu tiên
+               
                 SelectedDeck = AvailableDecks.FirstOrDefault();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Không thể tải danh sách Deck: {ex.Message}");
+                MessageBox.Show($"Failed to load deck list: {ex.Message}", "Error");
             }
         }
-        //=== HÀM ĐƯỢC GỌI KHI NHẤN NÚT TẠO PHÒNG ===
+       
         [RelayCommand]
         private async Task ConfirmCreateRoom()
         {
             if (SelectedDeck == null)
             {
-                MessageBox.Show("Vui lòng chọn một bộ thẻ (Deck) để giảng dạy!", "Thông báo");
+                MessageBox.Show("Please select a deck to teach!", "Notification");
                 return;
             }
-            var hostId = _userSession.UserId; // Lấy ID người dùng hiện tại
-            // 1. Sinh mã phòng ngẫu nhiên (6 ký tự)
+            var hostId = _userSession.UserId; 
+          
             var random = new Random();
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            // Lấy 6 ký tự ngẫu nhiên tạo thành mã phòng
+
             string roomId = new string(Enumerable.Repeat(chars, 6).Select(s => s[random.Next(s.Length)]).ToArray());
 
             try
             {
-                // Thử làm mới Token trước khi gửi (Đề phòng Token hết hạn)
+                
                 if (_supabaseService.Client.Auth.CurrentSession != null)
                 {
                     await _supabaseService.Client.Auth.RefreshSession();
@@ -103,24 +102,23 @@ namespace EasyFlips.ViewModels
                 };
                 if (newRoom != null)
                 {
-                    // 2. Thêm Host vào danh sách thành viên với role 'owner'
+                    // Thêm Host vào danh sách thành viên với role 'owner'
                     //await _supabaseService.AddMemberAsync(newRoom.Id, hostId, "owner");
 
-                    // 3. CHUYỂN HƯỚNG SANG HOST LOBBY
-                    // Truyền RoomCode để Lobby load lại thông tin
+                  
                     await _classroomRepository.CreateClassroomAsync(newRoom);
 
                     await _navigationService.ShowHostLobbyWindowAsync(newRoom.RoomCode);
                 }
                 else
                 {
-                    MessageBox.Show("Lỗi khi tạo phòng, vui lòng thử lại.");
+                    MessageBox.Show("Error creating room, please try again.", "Error");
                 }
                 
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi: {ex.Message}\nInner: {ex.InnerException?.Message}", "Lỗi Supabase");
+                MessageBox.Show($"Error: {ex.Message}\nInner Exception: {ex.InnerException?.Message}", "Supabase Error");
             }
         }
 
@@ -130,7 +128,7 @@ namespace EasyFlips.ViewModels
             CloseWindow();
         }
 
-        // Helper để đóng cửa sổ hiện tại
+
         private void CloseWindow()
         {
             Application.Current.Windows.OfType<Window>()

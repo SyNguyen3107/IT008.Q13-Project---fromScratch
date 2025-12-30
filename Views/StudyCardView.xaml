@@ -85,9 +85,9 @@
                                Foreground="White" FontSize="32" FontWeight="SemiBold"
                                TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,15"/>
 
-                    <Image Source="{Binding CurrentCard.FrontImagePath, Converter={StaticResource ImagePathConverter}}"
+                    <Image Source="{Binding FrontImagePath, Converter={StaticResource ImagePathConverter}}"
                            Stretch="Uniform" MaxHeight="250" HorizontalAlignment="Center" Margin="0,0,0,15"
-                           Visibility="{Binding CurrentCard.FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
+                           Visibility="{Binding FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
 
                     <Button Command="{Binding PlayAudioCommand}" CommandParameter="{Binding FrontAudioPath}"
                             Visibility="{Binding FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}"
@@ -119,9 +119,9 @@
                             <TextBlock Text="{Binding CorrectAnswer}" Foreground="#2ECC71" FontSize="22" FontWeight="Bold"/>
                         </StackPanel>
 
-                        <Image Source="{Binding CurrentCard.BackImagePath, Converter={StaticResource ImagePathConverter}}"
+                        <Image Source="{Binding BackImagePath, Converter={StaticResource ImagePathConverter}}"
                                Stretch="Uniform" MaxHeight="250" HorizontalAlignment="Center" Margin="0,0,0,15"
-                               Visibility="{Binding CurrentCard.BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
+                               Visibility="{Binding BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"/>
 
                         <Button Command="{Binding PlayAudioCommand}" CommandParameter="{Binding BackAudioPath}"
                                 Visibility="{Binding BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}"

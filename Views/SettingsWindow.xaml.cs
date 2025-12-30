@@ -9,8 +9,6 @@ namespace EasyFlips.Views
         {
             InitializeComponent();
             DataContext = viewModel;
-            Owner = Application.Current.MainWindow;
-            WindowStartupLocation = WindowStartupLocation.CenterOwner;
         }
     }
 }

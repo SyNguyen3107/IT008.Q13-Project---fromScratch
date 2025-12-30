@@ -33,18 +33,16 @@ namespace EasyFlips.ViewModels
             set => SetProperty(ref _nextReviewText, value);
         }
 
-        // Khởi tạo sẵn 7 phần tử 0 để tránh lỗi Binding index trong XAML
         public ObservableCollection<double> WeeklyHeights { get; set; } =
             new ObservableCollection<double> { 0, 0, 0, 0, 0, 0, 0 };
 
         private readonly INavigationService _navigationService;
 
-        
-        // Constructor phải nhận cả 2 tham số
+
         public DashboardViewModel(IDeckRepository deckRepository, INavigationService navigationService)
         {
             _deckRepository = deckRepository;
-            _navigationService = navigationService; // Gán vào biến private
+            _navigationService = navigationService; 
             _ = LoadDataAsync();
         }
 
@@ -57,40 +55,35 @@ namespace EasyFlips.ViewModels
             var allProgress = allCards.Where(c => c.Progress != null).Select(c => c.Progress).ToList();
             double totalCards = allCards.Count > 0 ? allCards.Count : 1;
 
-            // --- Giữ nguyên các phần tính Stats, Streak, Width như cũ ---
             Stats.New = decks.Sum(d => d.NewCount);
             Stats.Learning = decks.Sum(d => d.LearnCount);
             Stats.DueToday = decks.Sum(d => d.DueCount);
             Stats.Review = allProgress.Count(p => p.Interval >= 21);
-            // Đảm bảo ép kiểu double cho một trong hai số trước khi chia
+
             Stats.MemoryStrength = (int)((double)Stats.Review / (double)totalCards * 100);
 
             var reviewDates = allProgress.Select(p => p.LastReviewDate).ToList();
             Stats.Streak = CalculateStreak(reviewDates);
 
-            // 3. THỰC HIỆN HÓA WEEKLY ACTIVITY (Sửa lỗi tại đây)
+
             var today = DateTime.Today;
-            var countsPerDay = new List<int>(); // Lưu trữ số thẻ học mỗi ngày để tính tổng
+            var countsPerDay = new List<int>(); 
 
             for (int i = 0; i < 7; i++)
             {
                 var targetDate = today.AddDays(-(6 - i));
 
-                // Đếm số lượng Progress có LastReviewDate trùng với ngày đang xét
+
                 int count = allProgress.Count(p => p.LastReviewDate.Date == targetDate.Date);
                 countsPerDay.Add(count);
 
-                // Cập nhật độ cao cột (Max 140px)
-                // Giả sử 50 thẻ/ngày là đạt đỉnh biểu đồ
                 WeeklyHeights[i] = Math.Min(140, (count / 50.0) * 140);
             }
 
-            // 4. Tính Active Time dựa trên dữ liệu thật vừa tính được
-            // (countsPerDay.Sum() là tổng số lượt review trong 7 ngày qua)
-            double totalMinutes = countsPerDay.Sum() * 1.5; // Mỗi lần review giả định mất 1.5 phút
+
+            double totalMinutes = countsPerDay.Sum() * 1.5; 
             ActiveTime = $"Active: {Math.Round(totalMinutes / 60, 1)}h";
 
-            // --- Tính Width cho UI ---
             NewWidth = (Stats.New / totalCards) * 250;
             LearningWidth = (Stats.Learning / totalCards) * 250;
             MasteredWidth = (Stats.Review / totalCards) * 250;
@@ -98,7 +91,7 @@ namespace EasyFlips.ViewModels
             OnPropertyChanged(nameof(Stats));
             OnPropertyChanged(nameof(WeeklyHeights));
             OnPropertyChanged(nameof(ActiveTime));
-            // Tìm thẻ có thời gian review sớm nhất trong tương lai
+
             var upcomingReviews = allCards
                 .Where(c => c.Progress != null)
                 .Select(c => c.Progress.LastReviewDate.AddDays(c.Progress.Interval))

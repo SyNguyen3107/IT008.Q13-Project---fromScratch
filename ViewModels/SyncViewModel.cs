@@ -87,7 +87,6 @@ namespace EasyFlips.ViewModels
                 await _syncService.ExecuteSyncAsync(Plan);
                 StatusMessage = "Sync completed successfully!";
 
-                // Gửi tin nhắn SyncCompletedMessage để MainViewModel reload toàn bộ
                 _messenger.Send(new SyncCompletedMessage());
 
                 Plan = new SyncService.SyncPlan();

@@ -1,6 +1,6 @@
 ﻿using System.IO;
 using System.Windows;
-using System.Windows.Media; // Cần tham chiếu đến PresentationCore và WindowsBase
+using System.Windows.Media; 
 
 namespace EasyFlips.Services
 {
@@ -19,7 +19,6 @@ namespace EasyFlips.Services
 
             try
             {
-                // Xử lý đường dẫn
                 Uri uri;
                 if (filePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
@@ -36,17 +35,16 @@ namespace EasyFlips.Services
             }
             catch (Exception)
             {
-                // Có thể log lỗi hoặc bỏ qua nếu file lỗi
+                
             }
         }
         public void PlayLoopingAudio(string relativePath)
         {
-            // relativePath ví dụ: "Resources/Sound/Lobby.mp3"
             string fullPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relativePath);
 
             if (!File.Exists(fullPath))
             {
-                MessageBox.Show("Không tìm thấy file mp3");
+                MessageBox.Show("MP3 file not found.");
                 return;
             }
 
@@ -73,16 +71,11 @@ namespace EasyFlips.Services
             player.Open(new Uri(fullPath, UriKind.Absolute));
             player.Play();
 
-            // Giải phóng sau khi phát xong
             player.MediaEnded += (s, e) =>
             {
                 player.Close();
             };
         }
-
-
-
-
 
 
         public void StopAudio()

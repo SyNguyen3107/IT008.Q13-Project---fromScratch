@@ -38,7 +38,6 @@ namespace EasyFlips.Services
             }
         }
 
-        // Hàm này có thể dùng cho Game Screen sau này
         public async Task JoinRoomAsync(string roomId)
         {
             if (_client == null) return;
@@ -47,10 +46,8 @@ namespace EasyFlips.Services
 
             try
             {
-                // Đăng ký channel mới
                 _channel = _client.Realtime.Channel($"room:{roomId}");
 
-                // Đăng ký Broadcast (Gửi tin nhắn qua lại giữa các máy)
                 _broadcast = _channel.Register<DictionaryBroadcast>(true, false);
 
                 _broadcast.AddBroadcastEventHandler((sender, args) =>

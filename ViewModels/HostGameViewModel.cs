@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Interfaces;
 using EasyFlips.Models;
@@ -15,8 +15,8 @@ using System.Windows.Threading;
 namespace EasyFlips.ViewModels
 {
     /// <summary>
-    /// ViewModel quản lý luồng game chính cho Host (Giáo viên).
-    /// Chịu trách nhiệm: Timer, Chuyển câu hỏi, Nhận điểm từ Member, Broadcast trạng thái.
+    /// ViewModel quáº£n lÃ½ luá»“ng game chÃ­nh cho Host (GiÃ¡o viÃªn).
+    /// Chá»‹u trÃ¡ch nhiá»‡m: Timer, Chuyá»ƒn cÃ¢u há»i, Nháº­n Ä‘iá»ƒm tá»« Member, Broadcast tráº¡ng thÃ¡i.
     /// </summary>
     public partial class HostGameViewModel : BaseGameViewModel
     {
@@ -56,7 +56,7 @@ namespace EasyFlips.ViewModels
         #region Initialization
 
         /// <summary>
-        /// Khởi tạo game, load deck, user và bắt đầu session.
+        /// Khá»Ÿi táº¡o game, load deck, user vÃ  báº¯t Ä‘áº§u session.
         /// </summary>
         public override async Task InitializeAsync(
             string roomId,
@@ -67,12 +67,11 @@ namespace EasyFlips.ViewModels
             await base.InitializeAsync(roomId, classroomId, deck, timePerRound);
 
             if (deck == null || deck.Cards.Count == 0)
-                throw new InvalidOperationException("Deck trống, không thể bắt đầu game");
+                throw new InvalidOperationException("The selected deck contains no cards. Game initialization failed.");
 
-            // 1. Subscribe kênh Realtime
             await SubscribeToRealtimeChannel();
 
-            // Delay nhỏ để đảm bảo kết nối ổn định
+            // Delay nhá» Ä‘á»ƒ Ä‘áº£m báº£o káº¿t ná»‘i á»•n Ä‘á»‹nh
             await Task.Delay(150);
 
             // 2. Sắp xếp thẻ theo ID để đảm bảo thứ tự
@@ -81,12 +80,10 @@ namespace EasyFlips.ViewModels
                 CurrentDeck.Cards = CurrentDeck.Cards.OrderBy(c => c.Id).ToList();
             }
 
-            // 3. Khởi tạo thẻ đầu tiên
             CurrentIndex = 0;
             CurrentCard = CurrentDeck.Cards.ElementAt(CurrentIndex);
             CurrentQuestionInfo = $"{CurrentIndex + 1}/{CurrentDeck.Cards.Count}";
 
-            // 4. Load danh sách thành viên và khởi tạo Leaderboard
             var members = await _supabaseService.GetClassroomMembersWithProfileAsync(classroomId);
             UpdatePlayerList(members);
 
@@ -104,10 +101,8 @@ namespace EasyFlips.ViewModels
                 });
             }
 
-            // 5. Bắt đầu Countdown vào game
             StartCountdown();
 
-            // Gửi tín hiệu Start Session lên Server
             _ = _supabaseService.StartFlashcardSessionAsync(
                 ClassroomId,
                 _authService.CurrentUserId,
@@ -132,15 +127,15 @@ namespace EasyFlips.ViewModels
         }
 
         /// <summary>
-        /// Handler nhận state từ Server (Host tự quản lý nên thường bỏ qua hoặc dùng để debug).
+        /// Handler nháº­n state tá»« Server (Host tá»± quáº£n lÃ½ nÃªn thÆ°á»ng bá» qua hoáº·c dÃ¹ng Ä‘á»ƒ debug).
         /// </summary>
         private void OnFlashcardStateReceived(FlashcardSyncState state)
         {
-            // Host là nguồn phát state nên không cần xử lý state nhận về
+            // Host lÃ  nguá»“n phÃ¡t state nÃªn khÃ´ng cáº§n xá»­ lÃ½ state nháº­n vá»
         }
 
         /// <summary>
-        /// Handler nhận điểm số từ Member gửi lên.
+        /// Handler nháº­n Ä‘iá»ƒm sá»‘ tá»« Member gá»­i lÃªn.
         /// </summary>
         private void OnScoreReceived(ScoreSubmission submission)
         {
@@ -151,13 +146,13 @@ namespace EasyFlips.ViewModels
                 Debug.WriteLine($"[HOST-RECEIVE] Name: {submission.DisplayName}");
                 Debug.WriteLine($"[HOST-RECEIVE] New Score: {submission.Score}");
 
-                // 1. Tìm user trong Leaderboard
+                // 1. TÃ¬m user trong Leaderboard
                 var existingUser = Leaderboard.FirstOrDefault(x => x.UserId == submission.UserId);
 
                 if (existingUser != null)
                 {
                     Debug.WriteLine($"[HOST-LOGIC] Found existing user: {existingUser.DisplayName} (Old Score: {existingUser.TotalScore})");
-                    // Cập nhật điểm
+                    // Cáº­p nháº­t Ä‘iá»ƒm
                     existingUser.TotalScore = submission.Score;
                     existingUser.CorrectCount = submission.CorrectCount;
                     existingUser.TotalAnswered = submission.TotalAnswered;
@@ -166,7 +161,7 @@ namespace EasyFlips.ViewModels
                 }
                 else
                 {
-                    // Nếu chưa có thì thêm mới (phòng trường hợp member vào sau)
+                    // Náº¿u chÆ°a cÃ³ thÃ¬ thÃªm má»›i (phÃ²ng trÆ°á»ng há»£p member vÃ o sau)
                     var newEntry = new LeaderboardEntry
                     {
                         UserId = submission.UserId,
@@ -179,10 +174,10 @@ namespace EasyFlips.ViewModels
                     Leaderboard.Add(newEntry);
                 }
 
-                // 2. Sắp xếp lại Leaderboard
+                // 2. Sáº¯p xáº¿p láº¡i Leaderboard
                 var sorted = Leaderboard.OrderByDescending(x => x.TotalScore).ToList();
 
-                // Kiểm tra xem thứ tự có thay đổi không mới vẽ lại
+                // Kiá»ƒm tra xem thá»© tá»± cÃ³ thay Ä‘á»•i khÃ´ng má»›i váº½ láº¡i
                 bool needResort = false;
                 for (int i = 0; i < sorted.Count; i++)
                 {
@@ -200,7 +195,7 @@ namespace EasyFlips.ViewModels
                     foreach (var item in sorted) Leaderboard.Add(item);
                 }
 
-                // Debug log trạng thái hiện tại
+                // Debug log tráº¡ng thÃ¡i hiá»‡n táº¡i
                 Debug.WriteLine("=== CURRENT LEADERBOARD STATE (MEMORY) ===");
                 foreach (var entry in Leaderboard)
                 {
@@ -217,7 +212,7 @@ namespace EasyFlips.ViewModels
         private void StartCountdown()
         {
             CurrentPhase = GamePhase.Waiting;
-            StatusMessage = "Chuẩn bị bắt đầu";
+            StatusMessage = "Preparing to start...";
             StatusColor = "#FF5E57";
             _ = BroadcastPhaseAsync(GamePhase.Countdown, FlashcardAction.StartSession);
             StartTimer(3);
@@ -226,7 +221,7 @@ namespace EasyFlips.ViewModels
         private async Task StartQuestionAsync()
         {
             CurrentPhase = GamePhase.Question;
-            StatusMessage = "Trả lời câu hỏi";
+            StatusMessage = "Answering...";
             StatusColor = "#FF5E57";
 
             StartTimer(TotalTimePerRound);
@@ -237,7 +232,7 @@ namespace EasyFlips.ViewModels
         private async Task StartResultAsync()
         {
             CurrentPhase = GamePhase.Result;
-            StatusMessage = "Xem kết quả";
+            StatusMessage = "Showing results...";
             StatusColor = "#27AE60";
 
             StartTimer(10);
@@ -251,12 +246,12 @@ namespace EasyFlips.ViewModels
             _ = BroadcastPhaseAsync(GamePhase.Finished, FlashcardAction.EndSession);
             CurrentPhase = GamePhase.Finished;
 
-            // [GỌI HÀM MỚI]
+            // [Gá»ŒI HÃ€M Má»šI]
             await NavigateToLeaderboardAsync();
         }
 
         /// <summary>
-        /// Gửi trạng thái game hiện tại xuống cho tất cả Member qua Realtime.
+        /// Gá»­i tráº¡ng thÃ¡i game hiá»‡n táº¡i xuá»‘ng cho táº¥t cáº£ Member qua Realtime.
         /// </summary>
         private async Task BroadcastPhaseAsync(GamePhase phase, FlashcardAction action)
         {
@@ -404,14 +399,14 @@ namespace EasyFlips.ViewModels
         }
 
         /// <summary>
-        /// Command chặn sự kiện đóng cửa sổ (Nút X) để đảm bảo quy trình thoát đúng.
+        /// Command cháº·n sá»± kiá»‡n Ä‘Ã³ng cá»­a sá»• (NÃºt X) Ä‘á»ƒ Ä‘áº£m báº£o quy trÃ¬nh thoÃ¡t Ä‘Ãºng.
         /// </summary>
         [RelayCommand]
         private async Task WindowClosing(CancelEventArgs e)
         {
-            // 1. Kiểm tra: Nếu Game đã kết thúc (đang chuyển sang Leaderboard)
-            // thì KHÔNG chặn đóng cửa sổ, và KHÔNG hỏi xác nhận quit.
-            // Nếu game đã xong (Ended) HOẶC đang trong quá trình thoát (Quitting) -> Cho phép đóng luôn
+            // 1. Kiá»ƒm tra: Náº¿u Game Ä‘Ã£ káº¿t thÃºc (Ä‘ang chuyá»ƒn sang Leaderboard)
+            // thÃ¬ KHÃ”NG cháº·n Ä‘Ã³ng cá»­a sá»•, vÃ  KHÃ”NG há»i xÃ¡c nháº­n quit.
+            // Náº¿u game Ä‘Ã£ xong (Ended) HOáº¶C Ä‘ang trong quÃ¡ trÃ¬nh thoÃ¡t (Quitting) -> Cho phÃ©p Ä‘Ã³ng luÃ´n
             if (_isGameEnded || _isQuitting)
             {
                 return;

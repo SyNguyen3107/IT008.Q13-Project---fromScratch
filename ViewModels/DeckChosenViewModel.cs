@@ -6,20 +6,19 @@ using System.Windows;
 
 namespace EasyFlips.ViewModels
 {
-    // ViewModel cho cửa sổ DeckChosenWindow
+   
     public partial class DeckChosenViewModel : ObservableObject
     {
         private readonly StudyService _studyService;
         private readonly INavigationService _navigationService;
 
-        // Lưu deckId để dùng khi người dùng nhấn Study Now
         private string _deckId;
 
         private string _deckName = "Loading..";
 
         private int _newCount;
 
-        /// Số thẻ mới
+
         public String DeckName
         {
             get => _deckName;
@@ -33,7 +32,7 @@ namespace EasyFlips.ViewModels
 
         private int _learningCount;
 
-        /// Số thẻ đang học
+ 
         public int LearningCount
         {
             get => _learningCount;
@@ -42,7 +41,6 @@ namespace EasyFlips.ViewModels
 
         private int _reviewCount;
 
-        /// Số thẻ ôn tập
         public int ReviewCount
         {
             get => _reviewCount;
@@ -56,33 +54,32 @@ namespace EasyFlips.ViewModels
             _navigationService = navigationService;
         }
 
-        // Hàm khởi tạo bất đồng bộ: lấy thống kê từ StudyService
-        // Ghi chú: gọi từ NavigationService khi mở cửa sổ
+
         public async Task InitializeAsync(string deckId)
         {
-            _deckId = deckId; // lưu lại deckId để dùng cho StudyNowCommand
+            _deckId = deckId; 
 
 
-            // Gọi service để lấy thông tin thống kê (New/Learning/Review)
+          
             var stats = await _studyService.GetDeckStatsAsync(deckId);
 
-            // Cập nhật thuộc tính (UI sẽ tự động cập nhật nhờ SetProperty)
+          
             DeckName = stats.DeckName ?? "Unknown";
             NewCount = stats?.NewCount ?? 0;
             LearningCount = stats?.LearningCount ?? 0;
             ReviewCount = stats?.ReviewCount ?? 0;
         }
 
-        // Lệnh mở cửa sổ học cho deck hiện tại
+       
         [RelayCommand]
         private void StudyNow(Window window)
         {
-            // 1. Kiểm tra xem có thẻ nào cần học không
+           
             int totalCardsToStudy = NewCount + LearningCount + ReviewCount;
 
             if (totalCardsToStudy > 0)
             {
-                // Có thẻ -> Mở cửa sổ học
+               
                 _navigationService.ShowStudyWindow(_deckId);
 
                 if (window != null)
@@ -92,7 +89,7 @@ namespace EasyFlips.ViewModels
             }
             else
             {
-                // Không có thẻ -> Chỉ hiện thông báo
+                
                 MessageBox.Show("You have already completed this deck!\nPlease comeback later.",
                                 "Completed",
                                 MessageBoxButton.OK,

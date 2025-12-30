@@ -1,8 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DiffPlex.DiffBuilder.Model;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -13,7 +17,6 @@ namespace EasyFlips.ViewModels
 {
     public partial class MemberGameViewModel : BaseGameViewModel
     {
-        private readonly ComparisonService _comparisonService;
         private int _lastProcessedIndex = -1;
         private FlashcardAction _lastProcessedAction = FlashcardAction.None;
         private System.Timers.Timer? _countdownTimer;
@@ -23,15 +26,14 @@ namespace EasyFlips.ViewModels
         [ObservableProperty]
         private bool _isShowingStartCountdown;
 
-        // [LOGIC MỚI] Biến theo dõi tổng số liệu cục bộ để Upsert
         private int _localCorrectCount = 0;
         private int _localTotalAnswered = 0;
 
         private int _pendingScoreEarned = 0;
         private string _pendingResultMessage = string.Empty;
         private bool _pendingIsCorrect = false;
-
-        // [FIX LỖI IAuthService] Lưu tên hiển thị tại đây thay vì gọi AuthService liên tục
+        private readonly ComparisonService _comparisonService = new ComparisonService();
+        public ObservableCollection<DiffPiece> ComparisonPieces { get; } = new();
         private string _myDisplayName = "Unknown Player";
 
         [ObservableProperty]
@@ -45,7 +47,7 @@ namespace EasyFlips.ViewModels
         private int _score;
 
         [ObservableProperty]
-        private string _connectionStatus = "Đang kết nối...";
+        private string _connectionStatus = "Connecting...";
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SubmitAnswerCommand))]
@@ -81,11 +83,10 @@ namespace EasyFlips.ViewModels
                 if (deck == null) deck = await _supabaseService.GetDeckByClassroomIdAsync(classroomId);
                 if (deck != null && deck.Cards != null) deck.Cards = deck.Cards.OrderBy(c => c.Id).ToList();
 
-                // [FIX LỖI] Logic lấy DisplayName an toàn (Không phụ thuộc IAuthService thiếu field)
                 var userId = _authService.CurrentUserId;
                 if (!string.IsNullOrEmpty(userId))
                 {
-                    // 1. Ưu tiên: Lấy từ bảng Profile
+               
                     var profile = await _supabaseService.GetProfileAsync(userId);
                     if (profile != null && !string.IsNullOrEmpty(profile.DisplayName))
                     {
@@ -93,7 +94,6 @@ namespace EasyFlips.ViewModels
                     }
                     else
                     {
-                        // 2. Dự phòng: Lấy từ Supabase Client trực tiếp (Bỏ qua IAuthService)
                         var email = _supabaseService.Client.Auth.CurrentUser?.Email;
                         if (!string.IsNullOrEmpty(email))
                         {
@@ -101,7 +101,6 @@ namespace EasyFlips.ViewModels
                         }
                         else
                         {
-                            // 3. Đường cùng
                             _myDisplayName = $"Player {userId.Substring(0, 4)}";
                         }
                     }
@@ -123,7 +122,6 @@ namespace EasyFlips.ViewModels
             time = timePerRound;
             await SubscribeToRealtimeChannel();
 
-            // Load lại trạng thái cũ nếu lỡ vào sau
             var currentClassroom = await _supabaseService.GetClassroomAsync(classroomId);
             if (currentClassroom?.SyncState != null) OnFlashcardStateReceived(currentClassroom.SyncState);
             SetupTimer();
@@ -153,12 +151,11 @@ namespace EasyFlips.ViewModels
         private async Task RunInitialCountdown(int seconds)
         {
             IsShowingStartCountdown = true;
-            IsInputEnabled = false; // Khóa không cho gõ khi đang đếm 3.2.1
+            IsInputEnabled = false; 
             StartCountdownValue = seconds;
 
             while (StartCountdownValue > 0)
             {
-                // _audioService.PlaySound("beep.mp3"); // Nếu bạn muốn thêm âm thanh
                 await Task.Delay(1000);
                 StartCountdownValue--;
             }
@@ -169,7 +166,7 @@ namespace EasyFlips.ViewModels
         protected override async Task SubscribeToRealtimeChannel()
         {
             var result = await _supabaseService.SubscribeToFlashcardChannelAsync(ClassroomId, OnFlashcardStateReceived);
-            ConnectionStatus = result.Success ? "Đã kết nối" : "Lỗi kết nối";
+            ConnectionStatus = result.Success ? "Connected" : "Connection Failed";
         }
 
         private void OnFlashcardStateReceived(FlashcardSyncState state)
@@ -217,7 +214,7 @@ namespace EasyFlips.ViewModels
                     break;
                 case FlashcardAction.EndSession:
                     IsInputEnabled = false;
-                    DisposeTimer(); // Dừng timer ngay lập tức
+                    DisposeTimer(); 
 
                     await NavigateToLeaderboardAsync();
                     break;
@@ -240,41 +237,63 @@ namespace EasyFlips.ViewModels
         {
             CurrentPhase = GamePhase.Result;
             IsShowingResult = true;
-
-            // Nếu người dùng chưa kịp bấm nút Submit mà đã hết giờ/lật thẻ
             if (IsInputEnabled)
             {
-                // Tính toán nhanh kết quả mà không cần gọi qua Command để tránh delay UI
                 _pendingIsCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard?.Answer ?? "");
                 _pendingScoreEarned = _pendingIsCorrect ? 10 : 0;
 
-                if (_pendingIsCorrect) _pendingResultMessage = "Chính xác! +10đ";
+                if (_pendingIsCorrect) _pendingResultMessage = "Excellent! +10 Points";
                 else _pendingResultMessage = string.IsNullOrWhiteSpace(UserAnswer)
-                    ? $"Hết giờ!"
-                    : $"Sai rồi!";
+                    ? "Timeout!"
+                    : "Incorrect!";
 
-                // Cập nhật điểm và số liệu
                 Score += _pendingScoreEarned;
                 _localTotalAnswered++;
                 if (_pendingIsCorrect) _localCorrectCount++;
             }
             else
             {
-                // Nếu đã Submit trước đó rồi, bây giờ chỉ việc cộng điểm vào UI
                 Score += _pendingScoreEarned;
             }
 
-            // HIỂN THỊ KẾT QUẢ CUỐI CÙNG LÊN UI
             ResultMessage = _pendingResultMessage;
             CorrectAnswer = CurrentCard?.Answer ?? "";
-
-            // Reset các trạng thái cho vòng sau
+            GenerateComparison();
             TimeRemaining = 10;
             SetupTimer();
             IsInputEnabled = false;
             SubmitAnswerCommand.NotifyCanExecuteChanged();
             _pendingScoreEarned = 0;
         }
+
+
+        private void GenerateComparison()
+        {
+            ComparisonPieces.Clear();
+            if (string.IsNullOrEmpty(CorrectAnswer)) return;
+
+            int score = _comparisonService.SmartScore(UserAnswer, CorrectAnswer);
+
+            List<DiffPiece> pieces;
+            if (score < 50)
+            {
+                pieces = _comparisonService.GetWordDiff(UserAnswer, CorrectAnswer);
+            }
+            else
+            {
+                pieces = _comparisonService.GetCharDiff(UserAnswer, CorrectAnswer);
+            }
+
+            if (pieces.Count == 0 && !string.IsNullOrEmpty(UserAnswer))
+            {
+                ComparisonPieces.Add(new DiffPiece(UserAnswer, ChangeType.Unchanged));
+            }
+            else
+            {
+                foreach (var piece in pieces) ComparisonPieces.Add(piece);
+            }
+        }
+
 
         [RelayCommand(CanExecute = nameof(CanSubmit))]
         private async Task SubmitAnswer()
@@ -283,32 +302,24 @@ namespace EasyFlips.ViewModels
 
             if (CurrentCard != null)
             {
-                // Tính toán kết quả NGẦM
                 _pendingIsCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard.Answer);
                 _pendingScoreEarned = _pendingIsCorrect ? 10 : 0;
 
-                // Chuẩn bị thông báo (nhưng chưa hiện)
-                if (_pendingIsCorrect) _pendingResultMessage = "Chính xác! +10đ";
-                else _pendingResultMessage = $"Sai rồi!";
+                if (_pendingIsCorrect) _pendingResultMessage = "Excellent! +10 Points";
+                else _pendingResultMessage = "Incorrect!";
 
-                // Cập nhật số liệu cục bộ
                 _localTotalAnswered++;
                 if (_pendingIsCorrect) _localCorrectCount++;
 
-                // [QUAN TRỌNG] Tính tổng điểm DỰ KIẾN để gửi Server, nhưng CHƯA cộng vào UI Score
                 int projectedTotalScore = Score + _pendingScoreEarned;
 
-                // [UX] Hiện thông báo chờ
-                ResultMessage = "Đã nộp bài! Chờ kết quả...";
+                ResultMessage = "Handed in! Calculating results...";
 
-                // Gửi điểm lên Server ngay để Host cập nhật Realtime (Host sẽ thấy điểm tăng ngay)
-                // Nếu bạn muốn Host cũng chưa thấy điểm tăng thì gửi 'Score' cũ, 
-                // nhưng thường Host cần thấy điểm ngay.
                 await _supabaseService.SendFlashcardScoreAsync(
                     ClassroomId,
                     _authService.CurrentUserId,
                     _myDisplayName,
-                    projectedTotalScore, // Gửi điểm đã cộng
+                    projectedTotalScore, 
                     _localCorrectCount,
                     _localTotalAnswered
                 );
@@ -356,7 +367,6 @@ namespace EasyFlips.ViewModels
         {
             try
             {
-                // Logic rời phòng (nếu cần)
                 await Task.CompletedTask;
             }
             catch { }

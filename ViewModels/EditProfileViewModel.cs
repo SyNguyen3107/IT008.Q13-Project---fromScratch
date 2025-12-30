@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using EasyFlips.Services; 
-using Microsoft.Win32;    // Dùng cho OpenFileDialog của WPF
+using EasyFlips.Services;
+using Microsoft.Win32;
 using System.Windows;
 using System.Diagnostics;
 
@@ -13,7 +13,6 @@ namespace EasyFlips.ViewModels
     {
         private readonly UserSession _userSession;
         private readonly SupabaseService _supabaseService;
-        // Hành động để báo cho View biết là cần đóng cửa sổ (dùng cho nút Cancel)
         public Action CloseAction { get; set; }
 
 
@@ -28,9 +27,7 @@ namespace EasyFlips.ViewModels
         private bool isBusy;
         public bool IsNotBusy => !IsBusy;
 
-        // Biến này để lưu đường dẫn file ảnh trên máy tính (để upload sau này)
         private string _selectedLocalImagePath;
-        // Constructor: Nhận vào UserSession và SupabaseService để lấy dữ liệu hiện tại
         public EditProfileViewModel(UserSession userSession, SupabaseService supabaseService)
         {
             _userSession = userSession;
@@ -49,11 +46,9 @@ namespace EasyFlips.ViewModels
             }
             else
             {
-                // Nếu đang test giao diện mà chưa có UserSession thật
-                // Hãy gán dữ liệu giả để không bị trống
                 Email = "demo@easyflips.com";
             }
-            _selectedLocalImagePath = null; // Reset ảnh chọn tạm
+            _selectedLocalImagePath = null;
         }
 
         [RelayCommand]
@@ -66,11 +61,8 @@ namespace EasyFlips.ViewModels
 
             if (openFileDialog.ShowDialog() == true)
             {
-                // Lưu đường dẫn file local để lát nữa upload
                 _selectedLocalImagePath = openFileDialog.FileName;
                 CanSave = true;
-                // 2. Hiển thị ngay lên giao diện (Preview)
-                // WPF tự động hiển thị ảnh từ đường dẫn file cục bộ
                 AvatarURL = _selectedLocalImagePath;
             }
         }
@@ -79,24 +71,21 @@ namespace EasyFlips.ViewModels
         public async Task SaveProfileAsync()
         {
             Debug.WriteLine($"[EditProfile] SaveProfileAsync called. IsBusy={IsBusy}");
-            
-            if (IsBusy) return; // Chặn bấm liên tục
-            IsBusy = true;
+
+            if (IsBusy) return; IsBusy = true;
 
             try
             {
                 Debug.WriteLine($"[EditProfile] Starting save. UserId={_userSession?.UserId}, UserName={UserName}");
-                
+
                 string finalAvatarUrl = AvatarURL;
 
-                // 1. Nếu có chọn ảnh mới từ máy tính -> Upload lên Supabase
                 if (!string.IsNullOrEmpty(_selectedLocalImagePath) && System.IO.File.Exists(_selectedLocalImagePath))
                 {
                     Debug.WriteLine($"[EditProfile] Uploading avatar from: {_selectedLocalImagePath}");
-                    
-                    // Upload và giữ lại avatar cũ làm backup
+
                     var uploadedUrl = await _supabaseService.ReplaceAvatarWithBackupAsync(_userSession.UserId, _selectedLocalImagePath);
-                    
+
                     if (!string.IsNullOrEmpty(uploadedUrl))
                     {
                         finalAvatarUrl = uploadedUrl;
@@ -105,7 +94,7 @@ namespace EasyFlips.ViewModels
                     else
                     {
                         Debug.WriteLine("[EditProfile] Avatar upload failed");
-                        MessageBox.Show("Không thể upload ảnh đại diện. Vui lòng thử lại.", "Lỗi");
+                        MessageBox.Show("Failed to upload profile picture. Please try again.", "Error");
                         return;
                     }
                 }
@@ -114,14 +103,12 @@ namespace EasyFlips.ViewModels
                     Debug.WriteLine($"[EditProfile] No new avatar selected. _selectedLocalImagePath={_selectedLocalImagePath}");
                 }
 
-                //2.Cập nhật thông tin profile lên Supabase(display_name)
                 if (!string.IsNullOrEmpty(UserName))
                 {
                     Debug.WriteLine($"[EditProfile] Updating profile: UserName={UserName}, AvatarUrl={finalAvatarUrl}");
                     await _supabaseService.UpdateProfileAsync(_userSession.UserId, UserName, finalAvatarUrl);
                 }
 
-                // 3. Cập nhật lại Session cục bộ để hiển thị ngay
                 if (_userSession != null)
                 {
                     _userSession.UpdateUserInfo(UserName, finalAvatarUrl);
@@ -133,17 +120,16 @@ namespace EasyFlips.ViewModels
 
 
                 Debug.WriteLine("[EditProfile] Save completed successfully!");
-                MessageBox.Show("Đã lưu thành công!", "Thông báo");
+                MessageBox.Show("Saved successfully!", "Notification");
 
                 _selectedLocalImagePath = null;
                 CanSave = false;
-                // Đóng cửa sổ sau khi lưu
                 CloseAction?.Invoke();
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[EditProfile] Save error: {ex.Message}\n{ex.StackTrace}");
-                MessageBox.Show("Có lỗi xảy ra: " + ex.Message, "Lỗi");
+                MessageBox.Show("An error occurred: " + ex.Message, "Error");
             }
             finally
             {
@@ -153,7 +139,6 @@ namespace EasyFlips.ViewModels
         }
         partial void OnUserNameChanged(string value)
         {
-            // Kiểm tra nếu tên mới khác với tên hiện tại trong session thì cho phép lưu
             if (_userSession != null)
             {
                 CanSave = value != _userSession.UserName || !string.IsNullOrEmpty(_selectedLocalImagePath);
@@ -169,7 +154,6 @@ namespace EasyFlips.ViewModels
         {
             LoadUserData();
 
-            // 2. Gọi hành động đóng cửa sổ (Code-behind sẽ xử lý việc này)
             CloseAction?.Invoke();
         }
     }

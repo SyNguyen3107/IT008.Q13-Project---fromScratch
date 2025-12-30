@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging; // Cần cho IMessenger
+using CommunityToolkit.Mvvm.Messaging; 
 using DiffPlex.DiffBuilder.Model;
-using EasyFlips.Messages; // Cần cho các Message
+using EasyFlips.Messages; 
 using EasyFlips.Models;
 using EasyFlips.Services;
 using System;
@@ -16,12 +16,11 @@ namespace EasyFlips.ViewModels
     {
         private readonly StudyService _studyService;
         private readonly AudioService _audioService;
-        private readonly IMessenger _messenger; // [NEW] Dùng để gửi thông báo hoàn thành
+        private readonly IMessenger _messenger; 
 
         private string _currentDeckId;
         private Card? _currentCard;
 
-        // Giả sử ComparisonService được new trực tiếp (hoặc inject nếu bạn đã đăng ký DI)
         private readonly ComparisonService _comparisonService = new ComparisonService();
 
         // --- Properties ---
@@ -53,7 +52,7 @@ namespace EasyFlips.ViewModels
         public IAsyncRelayCommand GoodCommand { get; }
         public IAsyncRelayCommand EasyCommand { get; }
 
-        // Inject thêm IMessenger
+  
         public StudyViewModel(StudyService studyService, AudioService audioService, IMessenger messenger)
         {
             _studyService = studyService;
@@ -96,20 +95,18 @@ namespace EasyFlips.ViewModels
                 }
                 else
                 {
-                    // Hết thẻ -> Hiển thị chúc mừng
+                   
                     QuestionText = "Congratulations!";
                     AnswerText = "You have finished studying this deck for now.";
                     CorrectAnswer = "";
                     FrontImagePath = null; BackImagePath = null;
                     FrontAudioPath = null; BackAudioPath = null;
                     
-                    IsAnswerVisible = true; // Hiện text chúc mừng
+                    IsAnswerVisible = true; 
 
-                    // [FIX]: Truyền _currentDeckId vào message để khớp với Constructor
                     _messenger.Send(new StudySessionCompletedMessage(_currentDeckId));
                 }
 
-                // Cập nhật trạng thái nút bấm
                 AgainCommand.NotifyCanExecuteChanged();
                 HardCommand.NotifyCanExecuteChanged();
                 GoodCommand.NotifyCanExecuteChanged();
@@ -173,10 +170,10 @@ namespace EasyFlips.ViewModels
             {
                 if (_currentCard == null) return;
 
-                // Xử lý logic SM-2 và lưu DB
+               
                 await _studyService.ProcessReviewAsync(_currentCard, outcome);
 
-                // Load thẻ tiếp theo
+                
                 await LoadNextCardAsync();
             }
             catch (Exception ex)
