@@ -52,14 +52,15 @@ namespace EasyFlips.Services
                 .ToListAsync();
 
             var cloudResponse = await _supabaseClient
-                .From<Deck>()
-                .Select("id, updated_at, name, description")
-                .Get();
+             .From<Deck>()
+             .Select("id, updated_at, name, description")
+             .Where(x => x.UserId == userId) 
+             .Get();
             var cloudDecks = cloudResponse.Models;
 
             foreach (var lDeck in localDecks)
             {
-                // [FIX]: So sánh ID không phân biệt hoa thường để tránh lỗi duplicate
+
                 var cDeck = cloudDecks.FirstOrDefault(c => string.Equals(c.Id, lDeck.Id, StringComparison.OrdinalIgnoreCase));
 
                 if (cDeck == null)
