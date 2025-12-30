@@ -5,6 +5,7 @@ using EasyFlips.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,6 +14,7 @@ namespace EasyFlips.ViewModels
     public partial class DashboardViewModel : BaseViewModel
     {
         private readonly IDeckRepository _deckRepository;
+        private readonly INavigationService _navigationService;
 
         public DashboardStats Stats { get; set; } = new DashboardStats();
 
@@ -24,8 +26,10 @@ namespace EasyFlips.ViewModels
 
         private double _masteredWidth;
         public double MasteredWidth { get => _masteredWidth; set => SetProperty(ref _masteredWidth, value); }
-        private string _activeTime = "0h";
+
+        private string _activeTime = "0m";
         public string ActiveTime { get => _activeTime; set => SetProperty(ref _activeTime, value); }
+
         private string _nextReviewText = "No reviews scheduled";
         public string NextReviewText
         {
@@ -36,116 +40,117 @@ namespace EasyFlips.ViewModels
         public ObservableCollection<double> WeeklyHeights { get; set; } =
             new ObservableCollection<double> { 0, 0, 0, 0, 0, 0, 0 };
 
-        private readonly INavigationService _navigationService;
-
-
         public DashboardViewModel(IDeckRepository deckRepository, INavigationService navigationService)
         {
             _deckRepository = deckRepository;
-            _navigationService = navigationService; 
+            _navigationService = navigationService;
             _ = LoadDataAsync();
         }
 
-        private async Task LoadDataAsync()
+        public async Task LoadDataAsync()
         {
-            var decks = (await _deckRepository.GetAllAsync())?.ToList();
-            if (decks == null || !decks.Any()) return;
-
-            var allCards = decks.SelectMany(d => d.Cards ?? new List<Card>()).ToList();
-            var allProgress = allCards.Where(c => c.Progress != null).Select(c => c.Progress).ToList();
-            double totalCards = allCards.Count > 0 ? allCards.Count : 1;
-
-            Stats.New = decks.Sum(d => d.NewCount);
-            Stats.Learning = decks.Sum(d => d.LearnCount);
-            Stats.DueToday = decks.Sum(d => d.DueCount);
-            Stats.Review = allProgress.Count(p => p.Interval >= 21);
-
-            Stats.MemoryStrength = (int)((double)Stats.Review / (double)totalCards * 100);
-
-            var reviewDates = allProgress.Select(p => p.LastReviewDate).ToList();
-            Stats.Streak = CalculateStreak(reviewDates);
-
-
-            var today = DateTime.Today;
-            var countsPerDay = new List<int>(); 
-
-            for (int i = 0; i < 7; i++)
+            try
             {
-                var targetDate = today.AddDays(-(6 - i));
+                var decks = (await _deckRepository.GetAllAsync())?.ToList();
+                if (decks == null || !decks.Any()) return;
 
+                var allCards = decks.SelectMany(d => d.Cards ?? new List<Card>()).ToList();
+                var now = DateTime.Now;
+                double totalCards = allCards.Count > 0 ? (double)allCards.Count : 1.0;
 
-                int count = allProgress.Count(p => p.LastReviewDate.Date == targetDate.Date);
-                countsPerDay.Add(count);
+                // --- 1. PHÂN LOẠI TRẠNG THÁI ---
+                Stats.New = allCards.Count(c => c.Progress == null);
+                Stats.Learning = allCards.Count(c => c.Progress != null && c.Progress.Interval < 1);
+                Stats.DueToday = allCards.Count(c => c.Progress != null && c.Progress.DueDate <= now);
 
-                WeeklyHeights[i] = Math.Min(140, (count / 50.0) * 140);
+                // Mastered: Tính từ Interval >= 3 ngày để thanh bar có màu sớm
+                int masteredCount = allCards.Count(c => c.Progress != null && c.Progress.Interval >= 3);
+                Stats.Review = masteredCount;
+
+                // --- 2. TÍNH STRENGTH & MASTERY XP (DÙNG VÒNG LẶP ĐỂ TRÁNH LỖI) ---
+                double totalMemoryScore = 0;
+                double totalXp = 0;
+                var learnedCards = allCards.Where(c => c.Progress != null).ToList();
+
+                foreach (var card in learnedCards)
+                {
+                    // Tính XP: Repetitions * EaseFactor
+                    
+                    double factor = (card.Progress.EaseFactor == 0) ? 2.5 : card.Progress.EaseFactor;
+
+                    // Sau đó thực hiện tính toán
+                    totalXp += (card.Progress.Repetitions * factor);
+
+                    // Tính Memory Score cho từng thẻ (Interval 21 ngày = 100%)
+                    totalMemoryScore += Math.Min(100, (card.Progress.Interval / 21.0) * 100);
+                }
+
+                // Gán kết quả (Sử dụng ép kiểu int rõ ràng)
+                Stats.Streak = (int)totalXp; // Đây là Mastery XP
+                Stats.MemoryStrength = learnedCards.Any() ? (int)(totalMemoryScore / totalCards) : 0;
+
+                // --- 3. BIỂU ĐỒ & THỜI GIAN ---
+                var reviewDates = learnedCards
+                    .Where(c => c.Progress.LastReviewDate != default(DateTime))
+                    .Select(c => c.Progress.LastReviewDate)
+                    .ToList();
+
+                var today = DateTime.Today;
+                for (int i = 0; i < 7; i++)
+                {
+                    var targetDate = today.AddDays(-(6 - i));
+                    int count = reviewDates.Count(d => d.Date == targetDate.Date);
+                    WeeklyHeights[i] = Math.Min(140, (count / 15.0) * 140);
+                }
+
+                double totalMins = reviewDates.Count * 0.25;
+                ActiveTime = totalMins < 60 ? $"{Math.Round(totalMins, 0)}m" : $"{Math.Round(totalMins / 60, 1)}h";
+
+                // --- 4. ĐỘ RỘNG THANH BAR ---
+                NewWidth = (Stats.New / totalCards) * 250;
+                LearningWidth = (Stats.Learning / totalCards) * 250;
+                MasteredWidth = (masteredCount / totalCards) * 250;
+
+                UpdateNextReviewText(allCards);
+
+                // --- 5. THÔNG BÁO UI ---
+                OnPropertyChanged(nameof(Stats));
+                OnPropertyChanged(nameof(ActiveTime));
+                OnPropertyChanged(nameof(NewWidth));
+                OnPropertyChanged(nameof(LearningWidth));
+                OnPropertyChanged(nameof(MasteredWidth));
+                OnPropertyChanged(nameof(WeeklyHeights));
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Dashboard] Error: {ex.Message}");
+            }
+        }
 
-
-            double totalMinutes = countsPerDay.Sum() * 1.5; 
-            ActiveTime = $"Active: {Math.Round(totalMinutes / 60, 1)}h";
-
-            NewWidth = (Stats.New / totalCards) * 250;
-            LearningWidth = (Stats.Learning / totalCards) * 250;
-            MasteredWidth = (Stats.Review / totalCards) * 250;
-
-            OnPropertyChanged(nameof(Stats));
-            OnPropertyChanged(nameof(WeeklyHeights));
-            OnPropertyChanged(nameof(ActiveTime));
-
-            var upcomingReviews = allCards
+        private void UpdateNextReviewText(List<Card> allCards)
+        {
+            var nextDue = allCards
                 .Where(c => c.Progress != null)
-                .Select(c => c.Progress.LastReviewDate.AddDays(c.Progress.Interval))
+                .Select(c => c.Progress.DueDate)
                 .Where(due => due > DateTime.Now)
                 .OrderBy(due => due)
-                .ToList();
+                .FirstOrDefault();
 
-            if (upcomingReviews.Any())
+            if (nextDue != default(DateTime))
             {
-                var nextDue = upcomingReviews.First();
-                var timeDiff = nextDue - DateTime.Now;
-
-                if (timeDiff.TotalDays >= 1)
-                    NextReviewText = $"Next review in {Math.Round(timeDiff.TotalDays, 0)}d";
-                else if (timeDiff.TotalHours >= 1)
-                    NextReviewText = $"Next review in {Math.Round(timeDiff.TotalHours, 0)}h";
-                else
-                    NextReviewText = $"Next review in {Math.Round(timeDiff.TotalMinutes, 0)}m";
+                var diff = nextDue - DateTime.Now;
+                if (diff.TotalDays >= 1) NextReviewText = $"Next in {Math.Round(diff.TotalDays, 0)}d";
+                else if (diff.TotalHours >= 1) NextReviewText = $"Next in {Math.Round(diff.TotalHours, 0)}h";
+                else NextReviewText = $"Next in {Math.Round(diff.TotalMinutes, 0)}m";
             }
-
+            else
+            {
+                NextReviewText = "No reviews scheduled";
+            }
             OnPropertyChanged(nameof(NextReviewText));
         }
 
-        private int CalculateStreak(IEnumerable<DateTime> reviewDates)
-        {
-            if (reviewDates == null || !reviewDates.Any()) return 0;
-
-            var sortedDates = reviewDates
-                .Select(d => d.Date)
-                .Distinct()
-                .OrderByDescending(d => d)
-                .ToList();
-
-            var today = DateTime.Today;
-            if (sortedDates[0] < today.AddDays(-1)) return 0;
-
-            int streak = 0;
-            DateTime expectedDate = sortedDates[0];
-
-            foreach (var date in sortedDates)
-            {
-                if (date == expectedDate)
-                {
-                    streak++;
-                    expectedDate = expectedDate.AddDays(-1);
-                }
-                else break;
-            }
-            return streak;
-        }
         [RelayCommand]
-        private void GoBack()
-        {
-            _navigationService.NavigateToHome();
-        }
+        private void GoBack() => _navigationService.NavigateToHome();
     }
 }
