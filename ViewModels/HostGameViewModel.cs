@@ -363,6 +363,7 @@ namespace EasyFlips.ViewModels
 
         private async Task GoToNextCardOrEndAsync()
         {
+            StopAudio();
             if (CurrentIndex + 1 >= CurrentDeck.Cards.Count)
             {
                 await EndGameAsync();
@@ -420,7 +421,7 @@ namespace EasyFlips.ViewModels
         {
             // 1. Bật cờ báo hiệu game kết thúc hợp lệ
             _isGameEnded = true;
-
+            StopAudio();
             // 2. Chuyển đổi dữ liệu
             var finalResults = Players.ToList();
 

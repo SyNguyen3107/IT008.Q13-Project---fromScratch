@@ -192,8 +192,19 @@ namespace EasyFlips.ViewModels
                 }
             });
         }
-        
-
+        [RelayCommand]
+        public void PlayAudio(string? path)
+        {
+            // Kiểm tra path hợp lệ
+            if (!string.IsNullOrEmpty(path))
+            {
+                _audioService.PlayAudio(path);
+            }
+        }
+        public void StopAudio()
+        {
+            _audioService.StopAudio();
+        }
         #endregion
 
         #region Realtime Contract

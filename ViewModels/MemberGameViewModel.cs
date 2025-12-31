@@ -222,6 +222,7 @@ namespace EasyFlips.ViewModels
 
         private void PrepareForNewQuestion()
         {
+            StopAudio();
             CurrentPhase = GamePhase.Question;
             _hasSubmitted = false; // [RESET CỜ] Reset trạng thái nộp bài cho câu mới
             UserAnswer = "";
@@ -382,6 +383,7 @@ namespace EasyFlips.ViewModels
         {
             if (_isGameEnded || _isQuitting)
             {
+                StopAudio();
                 return;
             }
 
@@ -400,6 +402,7 @@ namespace EasyFlips.ViewModels
 
         protected override async Task NavigateToLeaderboardAsync()
         {
+            StopAudio();
             _isGameEnded = true;
             _navigationService.ShowMemberLeaderboardWindow(RoomId, ClassroomId);
             await Task.CompletedTask;
