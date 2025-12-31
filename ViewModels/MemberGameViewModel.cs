@@ -30,6 +30,8 @@ namespace EasyFlips.ViewModels
         private int _pendingScoreEarned = 0;
         private string _pendingResultMessage = string.Empty;
         private bool _pendingIsCorrect = false;
+        [ObservableProperty]
+        private bool _isCorrect = false;
 
         // [THÊM] Cờ kiểm soát trạng thái nộp bài
         private bool _hasSubmitted = false;
@@ -282,6 +284,7 @@ namespace EasyFlips.ViewModels
             // ---------------------------
 
             ResultMessage = _pendingResultMessage;
+            IsCorrect = _pendingIsCorrect;
             CorrectAnswer = CurrentCard?.Answer ?? "";
             GenerateComparison();
             TimeRemaining = 10;
@@ -333,6 +336,8 @@ namespace EasyFlips.ViewModels
 
                 if (_pendingIsCorrect) _pendingResultMessage = "Excellent! +10 Points";
                 else _pendingResultMessage = "Incorrect!";
+                
+                IsCorrect = _pendingIsCorrect;
 
                 _localTotalAnswered++;
                 if (_pendingIsCorrect) _localCorrectCount++;
