@@ -12,8 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{02EA68
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "EasyFlips_AlphaRealease", "EasyFlips_AlphaRealease\EasyFlips_AlphaRealease.vdproj", "{2880BC3D-FF7D-02D1-72E8-E52971D62264}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,8 +22,6 @@ Global
 		{BC9D9464-22D0-43C4-A0AB-6AB2580103AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC9D9464-22D0-43C4-A0AB-6AB2580103AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BC9D9464-22D0-43C4-A0AB-6AB2580103AD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2880BC3D-FF7D-02D1-72E8-E52971D62264}.Debug|Any CPU.ActiveCfg = Debug
-		{2880BC3D-FF7D-02D1-72E8-E52971D62264}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
