@@ -19,6 +19,9 @@ namespace EasyFlips.ViewModels
         private const int HEARTBEAT_TIMEOUT_SECONDS = 15;
         private bool _isQuitting = false;
 
+        // [THÊM] Biến lưu UUID thật của phòng (để dùng cho Deactivate/Update)
+        private string _realClassroomIdUUID;
+
         [ObservableProperty] private Deck _selectedDeck;
         public ObservableCollection<Deck> AvailableDecks { get; } = new ObservableCollection<Deck>();
 
@@ -37,6 +40,9 @@ namespace EasyFlips.ViewModels
 
         protected override async Task OnInitializeSpecificAsync(Classroom roomInfo)
         {
+            // [THÊM] Lưu lại UUID ngay khi có thông tin phòng
+            _realClassroomIdUUID = roomInfo.Id;
+
             var decks = await _deckRepository.GetAllAsync();
             AvailableDecks.Clear();
             foreach (var d in decks) AvailableDecks.Add(d);
@@ -79,8 +85,8 @@ namespace EasyFlips.ViewModels
             foreach (var userId in usersToKick)
             {
                 System.Diagnostics.Debug.WriteLine($"[AutoKick] Kicking user: {userId}");
+                // Sử dụng biến _realClassroomIdUUID đã được lưu
                 await _classroomRepository.RemoveMemberAsync(_realClassroomIdUUID, userId);
-
             }
         }
 
@@ -105,7 +111,6 @@ namespace EasyFlips.ViewModels
                 StopAutoStart();
                 StopPolling();
 
-
                 var fullDeck = await _deckRepository.GetByIdAsync(SelectedDeck.Id);
                 if (fullDeck == null || fullDeck.Cards == null || !fullDeck.Cards.Any())
                 {
@@ -116,7 +121,6 @@ namespace EasyFlips.ViewModels
 
                 var uploadSuccess = await _supabaseService.UploadDeckToCloudAsync(fullDeck);
 
-
                 if (!uploadSuccess)
                 {
                     MessageBox.Show("Failed to upload the deck to the server. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -126,13 +130,15 @@ namespace EasyFlips.ViewModels
                 System.Diagnostics.Debug.WriteLine($"[Host] ✅ Upload deck thành công!");
 
                 System.Diagnostics.Debug.WriteLine($"[Host] 🔄 Đang lưu DeckId: {SelectedDeck.Id}");
+
+                // Dùng biến UUID
                 await _classroomRepository.UpdateClassroomSettingsAsync(
                    _realClassroomIdUUID,
                    SelectedDeck.Id,
                    MaxPlayers,
                    TimePerRound,
                    TotalWaitTime
-               );
+                );
                 System.Diagnostics.Debug.WriteLine($"[Host] ✅ Đã lưu DeckId thành công");
 
                 System.Diagnostics.Debug.WriteLine($"[Host] 🔄 Đang cập nhật status sang PLAYING...");
@@ -150,8 +156,6 @@ namespace EasyFlips.ViewModels
             }
         }
 
-
-
         protected override async void NavigateToGame()
         {
             CanCloseWindow = true;
@@ -159,7 +163,7 @@ namespace EasyFlips.ViewModels
             Deck deckToPass = GetSelectedDeck();
             await _navigationService.ShowHostGameWindowAsync(
                 RoomId,
-                _realClassroomIdUUID,
+                _realClassroomIdUUID, // Truyền UUID chính xác
                 deckToPass,
                 TimePerRound
             );
@@ -170,11 +174,9 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private async Task WindowClosing(CancelEventArgs e)
         {
-
             if (!CanCloseWindow)
             {
                 e.Cancel = true;
-
                 await CloseRoom();
             }
         }
@@ -189,7 +191,20 @@ namespace EasyFlips.ViewModels
                 {
                     _isQuitting = true;
                     StopPolling();
-                    await _classroomRepository.DeleteClassroomAsync(RoomId);
+
+                    // --- [FIX LỖI 23503] ---
+                    // Sử dụng _realClassroomIdUUID để đảm bảo Update đúng phòng
+                    if (!string.IsNullOrEmpty(_realClassroomIdUUID))
+                    {
+                        await _supabaseService.DeactivateClassroomAsync(_realClassroomIdUUID);
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("Cảnh báo: Không tìm thấy UUID của phòng để đóng.");
+                        // Fallback: Thử dùng RoomId nếu logic repository của bạn hỗ trợ tìm kiếm bằng code
+                        // Nhưng tốt nhất vẫn là dùng UUID
+                    }
+                    // -----------------------
 
                     _navigationService.ShowMainWindow();
 
@@ -198,6 +213,7 @@ namespace EasyFlips.ViewModels
                 }
                 catch (Exception ex)
                 {
+                    _isQuitting = false;
                     MessageBox.Show($"Failed to disband the room: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
@@ -212,8 +228,8 @@ namespace EasyFlips.ViewModels
                 var settingsWindow = new Views.SettingsWindow(settingsVm);
 
                 var parentWindow = Application.Current.Windows
-                                          .OfType<Window>()
-                                          .FirstOrDefault(w => w.IsActive && w != settingsWindow);
+                                            .OfType<Window>()
+                                            .FirstOrDefault(w => w.IsActive && w != settingsWindow);
                 if (parentWindow != null)
                 {
                     settingsWindow.Owner = parentWindow;
@@ -227,7 +243,7 @@ namespace EasyFlips.ViewModels
                 if (settingsWindow.ShowDialog() == true)
                 {
                     await _classroomRepository.UpdateClassroomSettingsAsync(
-                    _realClassroomIdUUID,
+                    _realClassroomIdUUID, // Dùng UUID
                     settingsVm.SelectedDeck?.Id,
                     settingsVm.MaxPlayers,
                     settingsVm.TimePerRound,
@@ -250,7 +266,5 @@ namespace EasyFlips.ViewModels
                 MessageBox.Show($"Failed to open settings: {ex.Message}", "Error");
             }
         }
-
-
     }
 }

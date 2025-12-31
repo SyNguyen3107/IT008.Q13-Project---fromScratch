@@ -137,14 +137,4 @@
     <Folder Include="other\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- SQL Files - Set Build Action to None to prevent VS from parsing them -->
-    <None Include="Database\*.sql">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
-    <None Include="Database\*.md">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>

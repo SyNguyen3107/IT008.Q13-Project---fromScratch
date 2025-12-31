@@ -15,7 +15,6 @@ namespace EasyFlips.ViewModels
         private readonly SupabaseService _supabaseService;
         private readonly INavigationService _navigationService;
 
-        // [THÊM] Cần Repository để lấy RoomCode từ ID khi quay lại Lobby
         private readonly IClassroomRepository _classroomRepository;
 
         // Các thuộc tính Binding UI
@@ -23,6 +22,8 @@ namespace EasyFlips.ViewModels
         [ObservableProperty] private PlayerInfo _secondPlace;
         [ObservableProperty] private PlayerInfo _thirdPlace;
         public ObservableCollection<PlayerInfo> RestOfPlayers { get; } = new();
+        public Action CloseAction { get; set; }
+        private bool _hasLeft = false;
 
         private string _roomId;
         private string _classroomId;
@@ -83,34 +84,36 @@ namespace EasyFlips.ViewModels
 
         private void OnSignalReceived(GameControlSignal signal)
         {
+            if (_hasLeft) return;
             Application.Current.Dispatcher.Invoke(async () =>
             {
-                if (signal == GameControlSignal.CloseRoom)
+                if (signal == GameControlSignal.ReturnToLobby)
                 {
-                    // 1. Tìm cửa sổ MemberLeaderboard đang mở
-                    var ownerWindow = Application.Current.Windows
-                                        .OfType<Views.MemberLeaderboardWindow>() // Nhớ using EasyFlips.Views;
-                                        .FirstOrDefault();
-
-                    // 2. Hiển thị thông báo gắn liền với cửa sổ đó
-                    if (ownerWindow != null && ownerWindow.IsVisible)
+                    // Host bấm New Game -> Về Lobby
+                    try
                     {
-                        MessageBox.Show(
-                            ownerWindow, // [QUAN TRỌNG] Gán chủ sở hữu là cửa sổ này
-                            "Chủ phòng đã giải tán phòng chơi.",
-                            "Thông báo",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                        var room = await _classroomRepository.GetClassroomAsync(_classroomId);
+                        if (room != null)
+                        {
+                            await _navigationService.ShowMemberLobbyWindowAsync(room.RoomCode);
+                        }
                     }
-                    else
+                    catch
                     {
-                        // Fallback: Nếu không tìm thấy cửa sổ (hiếm), hiện bình thường
-                        MessageBox.Show("Chủ phòng đã giải tán phòng chơi.", "Thông báo");
+                        // Fallback nếu lỗi: Thử dùng _roomId nếu nó tình cờ là Code
+                        await _navigationService.ShowMemberLobbyWindowAsync(_roomId);
                     }
+                    CloseAction?.Invoke();
+                }
+                else if (signal == GameControlSignal.CloseRoom)
+                {
+                    // Host đóng phòng -> Về Home
+                    MessageBox.Show("Host has ended this session. Returning to home...", "Notification");
 
-                    // 3. Dọn dẹp và về Home
                     await _supabaseService.LeaveFlashcardSyncChannelAsync(_classroomId);
+                    _hasLeft = true;
                     _navigationService.ShowMainWindow();
+                    CloseAction?.Invoke();
                 }
             });
         }
@@ -120,6 +123,7 @@ namespace EasyFlips.ViewModels
         {
             if (MessageBox.Show("Do you want to return to Main window?", "Confirm", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
+                _hasLeft = true;
                 // [FIX] Hủy đăng ký Realtime khi chủ động rời đi
                 await _supabaseService.LeaveFlashcardSyncChannelAsync(_classroomId);
 

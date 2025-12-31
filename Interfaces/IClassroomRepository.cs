@@ -10,6 +10,7 @@ namespace EasyFlips.Interfaces
 
         // Tìm kiếm phòng theo Mã (RoomCode)
         Task<Classroom> GetClassroomByCodeAsync(string code);
+        Task<Classroom> GetClassroomAsync(string id);
 
         // Xóa phòng (Dùng khi Giáo viên đóng phòng)
         Task DeleteClassroomAsync(string code);

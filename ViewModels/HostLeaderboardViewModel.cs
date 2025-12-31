@@ -26,6 +26,8 @@ namespace EasyFlips.ViewModels
         private string _roomId;
         private string _classroomId;
 
+        public Action CloseAction { get; set; }
+
         public HostLeaderboardViewModel(
             SupabaseService supabaseService,
             INavigationService navigationService,
@@ -82,34 +84,22 @@ namespace EasyFlips.ViewModels
         {
             try
             {
+
                 await _supabaseService.ReactivateClassroomAsync(_classroomId);
 
-                // 2. Gửi tín hiệu cho Member về Lobby
-                await _supabaseService.SendGameControlSignalAsync(_classroomId, GameControlSignal.ReturnToLobby);
+                _ = _supabaseService.SendGameControlSignalAsync(_classroomId, GameControlSignal.ReturnToLobby);
 
-                // 3. Host về Lobby
-                // Lấy lại RoomCode để truyền vào Lobby (vì hàm ShowHostLobbyWindowAsync cần Code)
-                var room = await _classroomRepository.GetClassroomByCodeAsync(_classroomId);
-
-                // Lưu ý: Lúc này GetClassroomAsync có thể vẫn trả về null nếu repository cache lại query cũ
-                // hoặc hàm GetClassroomAsync của bạn lọc IsActive=true.
-                // Tuy nhiên do ta vừa Reactivate ở trên nên hy vọng Supabase đã cập nhật kịp.
-
+                // 3. Host về Lobby ngay lập tức
+                var room = await _classroomRepository.GetClassroomAsync(_classroomId);
                 if (room != null)
                 {
                     await _navigationService.ShowHostLobbyWindowAsync(room.RoomCode);
                 }
-                else
-                {
-                    // Fallback nếu không lấy được room (hiếm gặp), dùng tạm Code lưu trong ViewModel (nếu có)
-                    // Hoặc báo lỗi nhẹ
-                    MessageBox.Show("Không thể khởi động lại phòng. Vui lòng tạo phòng mới.");
-                    _navigationService.ShowMainWindow();
-                }
+                CloseAction?.Invoke();
             }
             catch (System.Exception ex)
             {
-                MessageBox.Show($"Lỗi thao tác: {ex.Message}");
+                MessageBox.Show($"Lỗi: {ex.Message}");
             }
         }
 
@@ -132,6 +122,8 @@ namespace EasyFlips.ViewModels
                     await _supabaseService.DeactivateClassroomAsync(_classroomId);
                     // 5. Host về Home
                     _navigationService.ShowMainWindow();
+
+                    CloseAction?.Invoke();
                 }
                 catch (System.Exception ex)
                 {

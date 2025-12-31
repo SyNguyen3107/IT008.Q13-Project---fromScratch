@@ -404,9 +404,6 @@ namespace EasyFlips.ViewModels
         [RelayCommand]
         private async Task WindowClosing(CancelEventArgs e)
         {
-            // 1. Kiá»ƒm tra: Náº¿u Game Ä‘Ã£ káº¿t thÃºc (Ä‘ang chuyá»ƒn sang Leaderboard)
-            // thÃ¬ KHÃ”NG cháº·n Ä‘Ã³ng cá»­a sá»•, vÃ  KHÃ”NG há»i xÃ¡c nháº­n quit.
-            // Náº¿u game Ä‘Ã£ xong (Ended) HOáº¶C Ä‘ang trong quÃ¡ trÃ¬nh thoÃ¡t (Quitting) -> Cho phÃ©p Ä‘Ã³ng luÃ´n
             if (_isGameEnded || _isQuitting)
             {
                 return;

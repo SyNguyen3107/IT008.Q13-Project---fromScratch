@@ -60,7 +60,26 @@ namespace EasyFlips.Repositories
                 return null;
             }
         }
-
+        public async Task<Classroom> GetClassroomAsync(string id)
+        {
+            try
+            {
+                // Tìm theo ID (Primary Key)
+                // LƯU Ý: Không filter is_active ở đây, để ta lấy được cả phòng đã đóng
+                var response = await _client.From<Classroom>()
+                                            .Select("*")
+                                            .Match(new Dictionary<string, string>
+                                            {
+                                        { "id", id }
+                                            })
+                                            .Single(); // Single() tốt hơn Get() khi tìm theo ID
+                return response;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
         //=== CẬP NHẬT CỘT STATUS CỦA CLASSROOM THEO ROOM CODE ===
         /// <summary>
         /// Cập nhật trạng thái (Status) của phòng học dựa trên mã code.

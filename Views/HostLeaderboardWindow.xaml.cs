@@ -1,5 +1,7 @@
-﻿using System;
+﻿using EasyFlips.ViewModels;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,32 +21,76 @@ namespace EasyFlips.Views
     /// </summary>
     public partial class HostLeaderboardWindow : Window
     {
-        public HostLeaderboardWindow()
+        public HostLeaderboardWindow(HostLeaderboardViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = viewModel;
+
+            // [QUAN TRỌNG] Gán hành động đóng cửa sổ
+            if (viewModel.CloseAction == null)
+            {
+                viewModel.CloseAction = new Action(this.Close);
+            }
         }
         private void OnSaveImageClick(object sender, RoutedEventArgs e)
         {
-            // Render Visual thành Bitmap
-            RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap(
-                (int)this.ActualWidth, (int)this.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-            renderTargetBitmap.Render(this);
-
-            // Lưu File
-            Microsoft.Win32.SaveFileDialog dlg = new Microsoft.Win32.SaveFileDialog();
-            dlg.FileName = $"Leaderboard_{DateTime.Now:yyyyMMdd_HHmmss}";
-            dlg.DefaultExt = ".png";
-            dlg.Filter = "PNG Image (.png)|*.png";
-
-            if (dlg.ShowDialog() == true)
+            try
             {
-                PngBitmapEncoder encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
-                using (var stream = System.IO.File.Create(dlg.FileName))
+                // 1. Lấy kích thước thực tế của cửa sổ
+                int width = (int)this.ActualWidth;
+                int height = (int)this.ActualHeight;
+
+                // 2. Render visual thành bitmap
+                RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+                renderTargetBitmap.Render(this);
+
+                // 3. Tạo Encoder (PNG)
+                PngBitmapEncoder pngImage = new PngBitmapEncoder();
+                pngImage.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+
+                // --- [SỬA ĐOẠN NÀY] ---
+
+                // B1: Lấy đường dẫn AppData/Roaming
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+                // B2: Kết hợp tạo đường dẫn thư mục mong muốn: .../AppData/Roaming/EasyFlips/Record
+                string folderPath = System.IO.Path.Combine(appDataPath, "EasyFlips", "Record");
+
+                // B3: Kiểm tra và TẠO THƯ MỤC nếu chưa tồn tại (Rất quan trọng)
+                if (!System.IO.Directory.Exists(folderPath))
                 {
-                    encoder.Save(stream);
+                    System.IO.Directory.CreateDirectory(folderPath);
                 }
-                MessageBox.Show("Đã lưu ảnh thành công!");
+
+                // B4: Tạo đường dẫn file đầy đủ
+                string fileName = $"Leaderboard_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+                string filePath = System.IO.Path.Combine(folderPath, fileName);
+
+                // -----------------------
+
+                // 4. Lưu ra file
+                using (Stream fileStream = File.Create(filePath))
+                {
+                    pngImage.Save(fileStream);
+                }
+
+                // 5. Thông báo thành công
+                // (Tùy chọn: Hỏi user có muốn mở thư mục vừa lưu không)
+                var result = MessageBox.Show(
+                    $"Đã lưu ảnh thành công!\nĐường dẫn: {filePath}\n\nBạn có muốn mở thư mục chứa ảnh không?",
+                    "Lưu thành công",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Mở thư mục lên cho user xem
+                    System.Diagnostics.Process.Start("explorer.exe", folderPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi lưu ảnh: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

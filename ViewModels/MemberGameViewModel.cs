@@ -1,8 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DiffPlex.DiffBuilder.Model;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using EasyFlips.Interfaces;
 using EasyFlips.Models;
 using EasyFlips.Services;
@@ -32,6 +30,10 @@ namespace EasyFlips.ViewModels
         private int _pendingScoreEarned = 0;
         private string _pendingResultMessage = string.Empty;
         private bool _pendingIsCorrect = false;
+
+        // [THÊM] Cờ kiểm soát trạng thái nộp bài
+        private bool _hasSubmitted = false;
+
         private readonly ComparisonService _comparisonService = new ComparisonService();
         public ObservableCollection<DiffPiece> ComparisonPieces { get; } = new();
         private string _myDisplayName = "Unknown Player";
@@ -86,7 +88,6 @@ namespace EasyFlips.ViewModels
                 var userId = _authService.CurrentUserId;
                 if (!string.IsNullOrEmpty(userId))
                 {
-               
                     var profile = await _supabaseService.GetProfileAsync(userId);
                     if (profile != null && !string.IsNullOrEmpty(profile.DisplayName))
                     {
@@ -151,7 +152,7 @@ namespace EasyFlips.ViewModels
         private async Task RunInitialCountdown(int seconds)
         {
             IsShowingStartCountdown = true;
-            IsInputEnabled = false; 
+            IsInputEnabled = false;
             StartCountdownValue = seconds;
 
             while (StartCountdownValue > 0)
@@ -197,7 +198,6 @@ namespace EasyFlips.ViewModels
         {
             switch (action)
             {
-
                 case FlashcardAction.StartSession:
                     if (!_hasStartedFirstCountdown)
                     {
@@ -214,8 +214,7 @@ namespace EasyFlips.ViewModels
                     break;
                 case FlashcardAction.EndSession:
                     IsInputEnabled = false;
-                    DisposeTimer(); 
-
+                    DisposeTimer();
                     await NavigateToLeaderboardAsync();
                     break;
             }
@@ -224,6 +223,7 @@ namespace EasyFlips.ViewModels
         private void PrepareForNewQuestion()
         {
             CurrentPhase = GamePhase.Question;
+            _hasSubmitted = false; // [RESET CỜ] Reset trạng thái nộp bài cho câu mới
             UserAnswer = "";
             ResultMessage = string.Empty;
             IsShowingResult = false;
@@ -233,28 +233,52 @@ namespace EasyFlips.ViewModels
             SubmitAnswerCommand.NotifyCanExecuteChanged();
         }
 
-        private void HandleFlipCard()
+        private async void HandleFlipCard()
         {
             CurrentPhase = GamePhase.Result;
             IsShowingResult = true;
-            if (IsInputEnabled)
+
+            // --- [LOGIC AUTO-SUBMIT] ---
+            if (!_hasSubmitted)
             {
+                // Trường hợp 1: Hết giờ hoặc chưa bấm Submit -> Tự động chấm điểm
                 _pendingIsCorrect = _comparisonService.IsAnswerAcceptable(UserAnswer, CurrentCard?.Answer ?? "");
                 _pendingScoreEarned = _pendingIsCorrect ? 10 : 0;
 
                 if (_pendingIsCorrect) _pendingResultMessage = "Excellent! +10 Points";
-                else _pendingResultMessage = string.IsNullOrWhiteSpace(UserAnswer)
-                    ? "Timeout!"
-                    : "Incorrect!";
+                else _pendingResultMessage = string.IsNullOrWhiteSpace(UserAnswer) ? "Timeout!" : "Incorrect!";
 
-                Score += _pendingScoreEarned;
+                // Cập nhật thống kê local
                 _localTotalAnswered++;
                 if (_pendingIsCorrect) _localCorrectCount++;
+
+                // Cộng điểm local (Hiển thị ngay cho user thấy)
+                Score += _pendingScoreEarned;
+
+                // [QUAN TRỌNG] GỬI ĐIỂM LÊN SERVER ĐỂ LEADERBOARD THẤY
+                await _supabaseService.SendFlashcardScoreAsync(
+                    ClassroomId,
+                    _authService.CurrentUserId,
+                    _myDisplayName,
+                    Score, // Gửi điểm tổng mới nhất
+                    _localCorrectCount,
+                    _localTotalAnswered
+                );
+
+                _hasSubmitted = true; // Đánh dấu để không gửi lại
             }
             else
             {
-                Score += _pendingScoreEarned;
+                // Trường hợp 2: Đã bấm Submit trước đó -> Chỉ cần đồng bộ hiển thị
+                // Vì hàm SubmitAnswer bên dưới đã gửi điểm lên Server rồi, nên ở đây KHÔNG gửi nữa để tránh Spam/Dup.
+
+                // Tuy nhiên, ta cần đảm bảo Score hiển thị local khớp với Server.
+                // Hàm SubmitAnswer mới (bên dưới) ĐÃ cộng điểm rồi, nên ở đây KHÔNG cần cộng nữa.
+                // Nếu cộng tiếp Score += _pendingScoreEarned ở đây sẽ bị gấp đôi điểm.
+
+                // -> Để an toàn, ta chỉ set lại các thông báo kết quả.
             }
+            // ---------------------------
 
             ResultMessage = _pendingResultMessage;
             CorrectAnswer = CurrentCard?.Answer ?? "";
@@ -266,7 +290,6 @@ namespace EasyFlips.ViewModels
             _pendingScoreEarned = 0;
         }
 
-
         private void GenerateComparison()
         {
             ComparisonPieces.Clear();
@@ -274,7 +297,7 @@ namespace EasyFlips.ViewModels
 
             int score = _comparisonService.SmartScore(UserAnswer, CorrectAnswer);
 
-            List<DiffPiece> pieces;
+            System.Collections.Generic.List<DiffPiece> pieces;
             if (score < 50)
             {
                 pieces = _comparisonService.GetWordDiff(UserAnswer, CorrectAnswer);
@@ -294,10 +317,12 @@ namespace EasyFlips.ViewModels
             }
         }
 
-
         [RelayCommand(CanExecute = nameof(CanSubmit))]
         private async Task SubmitAnswer()
         {
+            if (_hasSubmitted) return; // Chặn nếu đã nộp rồi
+            _hasSubmitted = true;      // Đánh dấu đã nộp ngay lập tức
+
             IsInputEnabled = false;
 
             if (CurrentCard != null)
@@ -311,15 +336,17 @@ namespace EasyFlips.ViewModels
                 _localTotalAnswered++;
                 if (_pendingIsCorrect) _localCorrectCount++;
 
-                int projectedTotalScore = Score + _pendingScoreEarned;
+                // [FIX] Cập nhật điểm hiển thị Local ngay lập tức
+                Score += _pendingScoreEarned;
 
                 ResultMessage = "Handed in! Calculating results...";
 
+                // Gửi điểm tổng hợp lên Server
                 await _supabaseService.SendFlashcardScoreAsync(
                     ClassroomId,
                     _authService.CurrentUserId,
                     _myDisplayName,
-                    projectedTotalScore, 
+                    Score, // Gửi điểm Score đã được cộng
                     _localCorrectCount,
                     _localTotalAnswered
                 );
@@ -349,20 +376,19 @@ namespace EasyFlips.ViewModels
             _countdownTimer?.Stop();
             _countdownTimer?.Dispose();
         }
+
         [RelayCommand]
         private async Task WindowClosing(CancelEventArgs e)
         {
-            // 1. Nếu đang chuyển cảnh sang Leaderboard -> Cho qua
-            // Nếu game đã xong (Ended) HOẶC đang trong quá trình thoát (Quitting) -> Cho phép đóng luôn
             if (_isGameEnded || _isQuitting)
             {
                 return;
             }
 
-            // 2. Nếu đang chơi -> Chặn lại và hỏi xác nhận
             e.Cancel = true;
             await QuitGame();
         }
+
         protected override async Task OnQuitSpecificAsync()
         {
             try
@@ -371,14 +397,11 @@ namespace EasyFlips.ViewModels
             }
             catch { }
         }
+
         protected override async Task NavigateToLeaderboardAsync()
         {
-            // 1. Bật cờ báo hiệu game kết thúc hợp lệ
             _isGameEnded = true;
-
-            // 2. Gọi hàm Navigation
             _navigationService.ShowMemberLeaderboardWindow(RoomId, ClassroomId);
-
             await Task.CompletedTask;
         }
     }
