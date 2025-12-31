@@ -81,7 +81,7 @@ namespace EasyFlips.Services
                             File.Copy(sourceFile, destFile, true);
                         }
 
-                        return destFile;
+                        return mediaName;
                     }
 
                     return null;
