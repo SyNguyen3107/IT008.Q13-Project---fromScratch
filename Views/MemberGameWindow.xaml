@@ -327,34 +327,34 @@
                                     </Style.Triggers>
                                 </Style>
                             </Grid.Style>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Image Grid.Row="0" Source="{Binding CurrentCard.FrontImagePath, Converter={StaticResource ImagePathConverter}}" 
-                                   Visibility="{Binding CurrentCard.FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"
-                                   Stretch="Uniform" Margin="0,0,0,25" MaxHeight="280"/>
-                            <TextBlock Grid.Row="1" Text="{Binding CurrentCard.FrontText, TargetNullValue='Loading...'}" 
-                                       Foreground="White" FontSize="40" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
-                            <Button Command="{Binding PlayAudioCommand}" 
-             CommandParameter="{Binding CurrentCard.FrontAudioPath}"
-             Width="40" Height="40" Margin="10,0"
-             Background="Transparent" BorderThickness="0" Cursor="Hand"
-             Visibility="{Binding CurrentCard.FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="20">
-                                            <TextBlock Text="🔊" FontSize="20" Foreground="#6C5DD3" 
-HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="bdr" Property="Background" Value="#20FFFFFF"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
+                            <ScrollViewer VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Image Source="{Binding CurrentCard.FrontImagePath, Converter={StaticResource ImagePathConverter}}" 
+                                           Visibility="{Binding CurrentCard.FrontImagePath, Converter={StaticResource NullToCollapsedConverter}}"
+                                           Stretch="Uniform" Margin="0,0,0,15" MaxHeight="280"/>
+                                    <TextBlock Text="{Binding CurrentCard.FrontText, TargetNullValue='Loading...'}" 
+                                               Foreground="White" FontSize="40" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
+                                    <Button Command="{Binding PlayAudioCommand}" 
+                                            CommandParameter="{Binding CurrentCard.FrontAudioPath}"
+                                            Width="40" Height="40" Margin="0,30,0,0" HorizontalAlignment="Center"
+                                            Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                            Visibility="{Binding CurrentCard.FrontAudioPath, Converter={StaticResource NullToCollapsedConverter}}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="20">
+                                                    <TextBlock Text="🔊" FontSize="20" Foreground="#6C5DD3" 
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="bdr" Property="Background" Value="#20FFFFFF"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </StackPanel>
+                            </ScrollViewer>
                         </Grid>
 
                         <Grid x:Name="BackFace">
@@ -410,18 +410,16 @@ HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
 
-                                    <TextBlock Text="{Binding CurrentCard.BackText}" Foreground="White" FontSize="48" 
-                       FontWeight="ExtraBold" TextAlignment="Center" TextWrapping="Wrap"/>
                                     <Button Command="{Binding PlayAudioCommand}" 
-             CommandParameter="{Binding CurrentCard.BackAudioPath}"
-             Width="40" Height="40" Margin="10,0"
-             Background="Transparent" BorderThickness="0" Cursor="Hand"
-             Visibility="{Binding CurrentCard.BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}">
+                                            CommandParameter="{Binding CurrentCard.BackAudioPath}"
+                                            Width="40" Height="40" Margin="0,0,0,15" HorizontalAlignment="Center"
+                                            Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                            Visibility="{Binding CurrentCard.BackAudioPath, Converter={StaticResource NullToCollapsedConverter}}">
                                         <Button.Template>
                                             <ControlTemplate TargetType="Button">
                                                 <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="20">
                                                     <TextBlock Text="🔊" FontSize="20" Foreground="#FFCE73" 
-HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
@@ -431,6 +429,8 @@ HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </ControlTemplate>
                                         </Button.Template>
                                     </Button>
+                                    <TextBlock Text="{Binding CurrentCard.BackText}" Foreground="White" FontSize="48" 
+                                               FontWeight="ExtraBold" TextAlignment="Center" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </ScrollViewer>
                         </Grid>
