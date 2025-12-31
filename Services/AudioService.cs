@@ -1,6 +1,8 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
 using System.Windows;
-using System.Windows.Media; 
+using System.Windows.Media;
+using EasyFlips.Helpers;
 
 namespace EasyFlips.Services
 {
@@ -16,7 +18,7 @@ namespace EasyFlips.Services
         public void PlayAudio(string filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath)) return;
-
+            Debug.WriteLine($"Playing audio from: {filePath}");
             try
             {
                 Uri uri;
@@ -26,7 +28,12 @@ namespace EasyFlips.Services
                 }
                 else
                 {
-                    if (!File.Exists(filePath)) return;
+                    if (!Path.IsPathRooted(filePath))
+                    { string appMediaFolder = PathHelper.GetMediaFolderPath(); 
+                        filePath = Path.Combine(appMediaFolder, filePath); 
+                    }
+
+                        if (!File.Exists(filePath)) return;
                     uri = new Uri(filePath, UriKind.Absolute);
                 }
 

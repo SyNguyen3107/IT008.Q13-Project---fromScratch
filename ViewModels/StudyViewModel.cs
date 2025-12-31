@@ -160,6 +160,7 @@ namespace EasyFlips.ViewModels
         private void PlayAudio(string? path)
         {
             if (!string.IsNullOrEmpty(path)) _audioService.PlayAudio(path);
+           
         }
 
         public void StopAudio() => _audioService.StopAudio();

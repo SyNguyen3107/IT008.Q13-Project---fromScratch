@@ -13,12 +13,12 @@
 
         <DockPanel Grid.Row="0" Margin="0,0,0,40">
             <Button Command="{Binding GoBackCommand}" 
-            DockPanel.Dock="Right"
-            Background="#1AFFFFFF" 
-            BorderThickness="0" 
-            Cursor="Hand"
-            Padding="20,10"
-            VerticalAlignment="Center">
+                    DockPanel.Dock="Right"
+                    Background="#1AFFFFFF" 
+                    BorderThickness="0" 
+                    Cursor="Hand"
+                    Padding="20,10"
+                    VerticalAlignment="Center">
                 <Button.Resources>
                     <Style TargetType="Border">
                         <Setter Property="CornerRadius" Value="15"/>
@@ -45,18 +45,18 @@
                     </LinearGradientBrush>
                 </Border.Background>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="STRENGTH" Foreground="#CCFFFFFF" FontSize="11" FontWeight="Bold"/>
+                    <TextBlock Text="MEMORY STRENGTH" Foreground="#CCFFFFFF" FontSize="11" FontWeight="Bold"/>
                     <TextBlock Text="{Binding Stats.MemoryStrength, StringFormat='{}{0}%'}" Foreground="White" FontSize="42" FontWeight="Black" Margin="0,5"/>
-                    <TextBlock Text="Excellent progress!" Foreground="#CCFFFFFF" FontSize="11"/>
+                    <TextBlock Text="Overall proficiency" Foreground="#CCFFFFFF" FontSize="11"/>
                 </StackPanel>
             </Border>
 
             <Border Margin="10" Background="#1E1E26" CornerRadius="24" Padding="25" BorderBrush="#1AFFFFFF" BorderThickness="1">
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="CURRENT STREAK" Foreground="#A0A0B0" FontSize="11" FontWeight="Bold"/>
-                    <TextBlock Text="{Binding Stats.Streak, StringFormat='{}{0} Days'}" Foreground="White" FontSize="42" FontWeight="Black" Margin="0,5"/>
+                    <TextBlock Text="MASTERY POINTS" Foreground="#A0A0B0" FontSize="11" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Stats.Streak, StringFormat='{}{0} XP'}" Foreground="White" FontSize="42" FontWeight="Black" Margin="0,5"/>
                     <Border Height="4" Background="#10FFFFFF" CornerRadius="2" Margin="0,10,0,0">
-                        <Border Width="120" HorizontalAlignment="Left" Background="#FF9800" CornerRadius="2"/>
+                        <Border Width="150" HorizontalAlignment="Left" Background="#FF9800" CornerRadius="2"/>
                     </Border>
                 </StackPanel>
             </Border>
@@ -82,34 +82,34 @@
 
                     <StackPanel Margin="0,0,0,25">
                         <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="New Content" Foreground="White" FontSize="14"/>
-                            <TextBlock Text="{Binding Stats.New}" Foreground="{StaticResource Brush.Accent2}" DockPanel.Dock="Right" FontWeight="Bold"/>
+                            <TextBlock Text="New Content (Unseen)" Foreground="White" FontSize="14"/>
+                            <TextBlock Text="{Binding Stats.New}" Foreground="#FFB74D" DockPanel.Dock="Right" FontWeight="Bold"/>
                         </DockPanel>
                         <Border Height="8" Background="#0DFFFFFF" CornerRadius="4">
-                            <Border Background="{StaticResource Brush.Accent2}" CornerRadius="4" HorizontalAlignment="Left" 
-                                    Width="{Binding NewWidth, FallbackValue=20}"/>
+                            <Border Background="#FFB74D" CornerRadius="4" HorizontalAlignment="Left" 
+                                    Width="{Binding NewWidth, FallbackValue=0}"/>
                         </Border>
                     </StackPanel>
 
                     <StackPanel Margin="0,0,0,25">
                         <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="Active Learning" Foreground="White" FontSize="14"/>
-                            <TextBlock Text="{Binding Stats.Learning}" Foreground="{StaticResource Brush.Primary}" DockPanel.Dock="Right" FontWeight="Bold"/>
+                            <TextBlock Text="Active Learning (Short Interval)" Foreground="White" FontSize="14"/>
+                            <TextBlock Text="{Binding Stats.Learning}" Foreground="#64B5F6" DockPanel.Dock="Right" FontWeight="Bold"/>
                         </DockPanel>
                         <Border Height="8" Background="#0DFFFFFF" CornerRadius="4">
-                            <Border Background="{StaticResource Brush.Primary}" CornerRadius="4" HorizontalAlignment="Left" 
-                                    Width="{Binding LearningWidth, FallbackValue=20}"/>
+                            <Border Background="#64B5F6" CornerRadius="4" HorizontalAlignment="Left" 
+                                    Width="{Binding LearningWidth, FallbackValue=0}"/>
                         </Border>
                     </StackPanel>
 
                     <StackPanel>
                         <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="Mastered" Foreground="White" FontSize="14"/>
-                            <TextBlock Text="{Binding Stats.Review}" Foreground="{StaticResource Brush.Accent1}" DockPanel.Dock="Right" FontWeight="Bold"/>
+                            <TextBlock Text="Mastered (Interval ≥ 3d)" Foreground="White" FontSize="14"/>
+                            <TextBlock Text="{Binding Stats.Review}" Foreground="#81C784" DockPanel.Dock="Right" FontWeight="Bold"/>
                         </DockPanel>
                         <Border Height="8" Background="#0DFFFFFF" CornerRadius="4">
-                            <Border Background="{StaticResource Brush.Accent1}" CornerRadius="4" HorizontalAlignment="Left" 
-                                    Width="{Binding MasteredWidth, FallbackValue=20}"/>
+                            <Border Background="#81C784" CornerRadius="4" HorizontalAlignment="Left" 
+                                    Width="{Binding MasteredWidth, FallbackValue=0}"/>
                         </Border>
                     </StackPanel>
                 </StackPanel>
@@ -120,14 +120,14 @@
                     <TextBlock Text="WEEKLY ACTIVITY" Foreground="#A0A0B0" FontSize="12" FontWeight="Bold" Margin="0,0,0,20"/>
                     <UniformGrid Columns="7" Height="140" VerticalAlignment="Bottom">
                         <Border Background="#1AFFFFFF" Height="{Binding WeeklyHeights[0]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
-                        <Border Background="{StaticResource Brush.Primary}" Height="{Binding WeeklyHeights[1]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                        <Border Background="#6200EE" Height="{Binding WeeklyHeights[1]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
                         <Border Background="#1AFFFFFF" Height="{Binding WeeklyHeights[2]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
-                        <Border Background="{StaticResource Brush.Primary}" Height="{Binding WeeklyHeights[3]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                        <Border Background="#6200EE" Height="{Binding WeeklyHeights[3]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
                         <Border Background="#1AFFFFFF" Height="{Binding WeeklyHeights[4]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
-                        <Border Background="{StaticResource Brush.Primary}" Height="{Binding WeeklyHeights[5]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
-                        <Border Background="{StaticResource Brush.Primary}" Height="{Binding WeeklyHeights[6]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                        <Border Background="#6200EE" Height="{Binding WeeklyHeights[5]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
+                        <Border Background="#6200EE" Height="{Binding WeeklyHeights[6]}" VerticalAlignment="Bottom" Margin="4" CornerRadius="4"/>
                     </UniformGrid>
-                    <TextBlock Text="{Binding ActiveTime}" Foreground="White" FontSize="14" FontWeight="Bold" Margin="0,20,0,0" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding ActiveTime, StringFormat='Time: {0}'}" Foreground="White" FontSize="14" FontWeight="Bold" Margin="0,20,0,0" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
         </Grid>
