@@ -22,7 +22,6 @@ namespace EasyFlips
     public partial class App : Application
     {
         public static IServiceProvider ServiceProvider { get; private set; }
-        public static string ProfileId { get; private set; } = "default";
 
         public App()
         {
@@ -34,43 +33,19 @@ namespace EasyFlips
         {
             base.OnStartup(e);
 
-            // 1. Parse tham số dòng lệnh trước tiên
-            ParseCommandLineArgs(e.Args);
-
-            // [FIX] KHÔNG gán MainWindow.Title ở đây vì MainWindow chưa được khởi tạo -> Gây Crash.
-            // Việc gán Title sẽ thực hiện trong InitializeApp sau khi tạo Window.
-
-            // 2. Cấu hình dịch vụ
+            // 1. Cấu hình dịch vụ
             var services = new ServiceCollection();
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider();
 
-            // 3. Khởi chạy ứng dụng
+            // 2. Khởi chạy ứng dụng
             InitializeApp();
-        }
-
-        private void ParseCommandLineArgs(string[] args)
-        {
-            // Parse: EasyFlips.exe --profile=1
-            foreach (var arg in args)
-            {
-                if (arg.StartsWith("--profile="))
-                {
-                    ProfileId = arg.Replace("--profile=", "").Trim();
-                    break;
-                }
-            }
-
-            // Validate profile ID
-            if (string.IsNullOrEmpty(ProfileId))
-            {
-                ProfileId = "default";
-            }
         }
 
         private void ConfigureServices(IServiceCollection services)
         {
-            string dbPath = GetProfileDatabasePath();
+            // Lấy đường dẫn DB (Logic debug/release nằm trong hàm này)
+            string dbPath = GetDatabasePath();
 
             // Đăng ký DB Context
             services.AddDbContext<AppDbContext>(options =>
@@ -94,13 +69,12 @@ namespace EasyFlips
             }
             catch (Exception)
             {
-                // Xử lý lỗi hỏng file DB (như code cũ của bạn)
-                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string dbPath = Path.Combine(appData, "EasyFlips", $"EasyFlipsAppDB_Profile{ProfileId}.db");
+                // Xử lý lỗi hỏng file DB
+                string dbPath = GetDatabasePath();
 
                 try { if (File.Exists(dbPath)) File.Delete(dbPath); } catch { }
 
-                MessageBox.Show($"Cơ sở dữ liệu profile '{ProfileId}' bị lỗi và đã được làm mới.\nVui lòng khởi động lại.",
+                MessageBox.Show($"Cơ sở dữ liệu bị lỗi và đã được làm mới.\nVui lòng khởi động lại.",
                                 "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 Current.Shutdown();
                 return;
@@ -137,8 +111,7 @@ namespace EasyFlips
                 windowToShow = loginWindow;
             }
 
-            // [FIX] Gán Title ở đây mới an toàn
-            windowToShow.Title = $"EasyFlips - Profile: {ProfileId}";
+            windowToShow.Title = "EasyFlips";
             windowToShow.Show();
         }
 
@@ -151,8 +124,8 @@ namespace EasyFlips
                 {
                     AutoRefreshToken = true,
                     AutoConnectRealtime = true,
-                    // [QUAN TRỌNG] Sử dụng bộ lưu session riêng biệt cho từng Profile
-                    SessionHandler = new ProfileSessionPersistence()
+                    // Sử dụng bộ lưu session mặc định của App
+                    SessionHandler = new AppSessionPersistence()
                 };
 
                 // Giả sử AppConfig đã có
@@ -227,16 +200,17 @@ namespace EasyFlips
             services.AddSingleton<UserSession>();
         }
 
-        private string GetProfileDatabasePath()
+        private string GetDatabasePath()
         {
-            string fileName = $"EasyFlipsAppDB_{ProfileId}.db";
+            // Tên file DB chuẩn, không còn phụ thuộc ProfileId
+            string fileName = "EasyFlipsAppDB.db";
 
 #if DEBUG
             // Debug: Lưu ngay tại thư mục project để dễ tìm
             string baseDirectory = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../../../"));
             return Path.Combine(baseDirectory, fileName);
 #else
-            // Release: Lưu trong AppData
+            // Release: Lưu trong AppData/Roaming
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string appFolder = Path.Combine(appData, "EasyFlips");
             if (!Directory.Exists(appFolder)) Directory.CreateDirectory(appFolder);
@@ -257,17 +231,16 @@ namespace EasyFlips
         }
     }
 
-    // [CLASS QUAN TRỌNG] Tách biệt file session cho từng Profile
-    public class ProfileSessionPersistence : IGotrueSessionPersistence<Session>
+    // [CLASS QUAN TRỌNG] Lưu session vào file cache chuẩn
+    public class AppSessionPersistence : IGotrueSessionPersistence<Session>
     {
         private readonly string _filePath;
 
-        public ProfileSessionPersistence()
+        public AppSessionPersistence()
         {
-            // Tạo tên file session dựa trên ProfileId (VD: .gotrue_profile1.cache)
-            // Lưu file này cùng chỗ với file exe
+            // Lưu file session cố định
             string directory = AppDomain.CurrentDomain.BaseDirectory;
-            _filePath = Path.Combine(directory, $".gotrue_{App.ProfileId}.cache");
+            _filePath = Path.Combine(directory, ".gotrue.cache");
         }
 
         public void SaveSession(Session session)
