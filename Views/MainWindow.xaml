@@ -168,10 +168,18 @@
                             <TextBlock Text="Sync Data"/>
                         </StackPanel>
                     </Button>
+
                     <Button Command="{Binding NavigateToDashboardCommand}" Style="{StaticResource SidebarBtnStyle}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="📊" Margin="0,0,15,0"/>
                             <TextBlock Text="Analytics"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Click="OpenRecords_Click" Style="{StaticResource SidebarBtnStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🖼️" Margin="0,0,15,0"/>
+                            <TextBlock Text="Records"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>

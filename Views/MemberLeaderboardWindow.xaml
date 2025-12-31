@@ -209,18 +209,7 @@
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
-                    <Button Content="NEW GAME" Command="{Binding PlayNewGameCommand}" Width="180" Height="55" Margin="12,0" Background="#6C5DD3" Foreground="White" FontWeight="Bold" Cursor="Hand">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="16">
-                                    <Border.Effect>
-                                        <DropShadowEffect Color="#6C5DD3" BlurRadius="20" Opacity="0.4" ShadowDepth="0"/>
-                                    </Border.Effect>
-                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
+                    
                     <Button Content="LEAVE ROOM" Command="{Binding  LeaveRoomCommand}" Width="180" Height="55" Margin="12,0" Background="#C0392B" Foreground="White" FontWeight="Bold" Cursor="Hand">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">

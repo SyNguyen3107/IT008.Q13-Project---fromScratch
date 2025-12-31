@@ -116,6 +116,28 @@ namespace EasyFlips
             // Ví dụ: Xóa history để không back lại được trang Login
             // ((Frame)sender).NavigationService.RemoveBackEntry();
         }
+        private void OpenRecords_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 1. Lấy đường dẫn AppData/Roaming/EasyFlips/Record
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string folderPath = System.IO.Path.Combine(appDataPath, "EasyFlips", "Record");
+
+                // 2. Đảm bảo thư mục tồn tại (tránh lỗi nếu chưa lưu ảnh nào)
+                if (!System.IO.Directory.Exists(folderPath))
+                {
+                    System.IO.Directory.CreateDirectory(folderPath);
+                }
+
+                // 3. Mở thư mục bằng Windows Explorer
+                System.Diagnostics.Process.Start("explorer.exe", folderPath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Không thể mở thư mục: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 }
 
