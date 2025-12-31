@@ -410,6 +410,10 @@
                                         </StackPanel>
                                     </Border>
 
+                                    <Image Source="{Binding CurrentCard.BackImagePath, Converter={StaticResource ImagePathConverter}}"
+                                           Visibility="{Binding CurrentCard.BackImagePath, Converter={StaticResource NullToCollapsedConverter}}"
+                                           Stretch="Uniform" MaxHeight="250" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+
                                     <Button Command="{Binding PlayAudioCommand}" 
                                             CommandParameter="{Binding CurrentCard.BackAudioPath}"
                                             Width="40" Height="40" Margin="0,0,0,15" HorizontalAlignment="Center"
